@@ -259,6 +259,7 @@ export const en: Dictionary = {
     columnShare: 'Market share',
     columnCsat: 'CSAT',
     columnBrand: 'Brand',
+    columnGameRank: 'Game rank',
     sortBy: 'Sort by',
     tieBreakNote: 'Ties are broken by: cumulative net profit → final market share → brand awareness.',
   },
@@ -408,6 +409,9 @@ export const en: Dictionary = {
   },
   errors: {
     sessionNotFound: 'Game session not found',
+    memberNotFound: 'No user found with that email. The student must sign in at least once first.',
+    cannotDemoteSelf: 'You cannot change your own role',
+    invalidInput: 'The submitted data is not valid',
     invalidCompanyName: 'Company or product name is invalid (1-60 characters)',
     notYourSession: 'This is not your game session',
     quarterOutOfRange: 'Invalid quarter',

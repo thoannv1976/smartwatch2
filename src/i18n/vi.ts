@@ -259,6 +259,7 @@ export const vi = {
     columnShare: 'Thị phần',
     columnCsat: 'CSAT',
     columnBrand: 'Thương hiệu',
+    columnGameRank: 'Hạng game',
     sortBy: 'Sắp xếp theo',
     tieBreakNote: 'Đồng điểm xét theo: lợi nhuận luỹ kế → thị phần → nhận biết thương hiệu.',
   },
@@ -407,6 +408,9 @@ export const vi = {
   },
   errors: {
     sessionNotFound: 'Không tìm thấy lượt chơi',
+    memberNotFound: 'Không tìm thấy người dùng với email này. Sinh viên cần đăng nhập ít nhất 1 lần.',
+    cannotDemoteSelf: 'Bạn không thể tự thay đổi vai trò của chính mình',
+    invalidInput: 'Dữ liệu nhập không hợp lệ',
     invalidCompanyName: 'Tên công ty hoặc tên sản phẩm không hợp lệ (1–60 ký tự)',
     notYourSession: 'Đây không phải lượt chơi của bạn',
     quarterOutOfRange: 'Quý không hợp lệ',

@@ -1,0 +1,174 @@
+import Link from 'next/link';
+import { requireRolePage } from '@/server/auth/guards';
+import { getRepositories } from '@/db/repositories/firestore';
+import { getTranslations } from '@/i18n/server';
+import { RoleSelect } from '@/components/instructor/RoleSelect';
+import {
+  Card,
+  CardTitle,
+  EmptyState,
+  InfoNote,
+  PageHeader,
+  TableScroll,
+  Td,
+  Th,
+} from '@/components/ui/primitives';
+import { getGameConfig, SELECTABLE_SCENARIO_VERSIONS } from '@/domain/simulation';
+import { formatDate, formatInteger, formatMoney } from '@/lib/format';
+
+export const metadata = { title: 'Quản trị — Smartwatch CEO Challenge' };
+
+/** Admin: users, courses and the read-only engine configuration (spec 9.3). */
+export default async function AdminPage() {
+  const admin = await requireRolePage('ADMIN', '/admin');
+  const { t, locale } = await getTranslations();
+
+  const repos = getRepositories();
+  const [users, courses] = await Promise.all([repos.users.list(200), repos.courses.listAll()]);
+
+  return (
+    <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6">
+      <PageHeader title={t.admin.title} subtitle={admin.displayName} />
+
+      <Card>
+        <CardTitle>
+          {t.admin.users} ({users.length})
+        </CardTitle>
+        {users.length === 0 ? (
+          <EmptyState>{t.common.none}</EmptyState>
+        ) : (
+          <TableScroll>
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <Th>{t.auth.displayName}</Th>
+                  <Th>{t.auth.email}</Th>
+                  <Th>{t.admin.changeRole}</Th>
+                  <Th>{t.home.startedAt}</Th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr key={user.uid}>
+                    <Td className="text-ink-100">{user.displayName}</Td>
+                    <Td className="text-ink-400">{user.email}</Td>
+                    <Td>
+                      <RoleSelect uid={user.uid} role={user.role} isSelf={user.uid === admin.uid} />
+                    </Td>
+                    <Td className="text-ink-400">{formatDate(user.createdAt, locale)}</Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableScroll>
+        )}
+      </Card>
+
+      <Card>
+        <CardTitle>
+          {t.instructor.courses} ({courses.length})
+        </CardTitle>
+        {courses.length === 0 ? (
+          <EmptyState>{t.common.none}</EmptyState>
+        ) : (
+          <TableScroll>
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <Th>{t.instructor.courseName}</Th>
+                  <Th>{t.instructor.semester}</Th>
+                  <Th />
+                </tr>
+              </thead>
+              <tbody>
+                {courses.map((course) => (
+                  <tr key={course.id}>
+                    <Td className="text-ink-100">{course.courseName}</Td>
+                    <Td className="text-ink-300">{course.semester}</Td>
+                    <Td align="right">
+                      <Link
+                        href={`/instructor/courses/${course.id}`}
+                        className="text-brand-400 underline-offset-2 hover:underline"
+                      >
+                        {t.instructor.viewDetail}
+                      </Link>
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableScroll>
+        )}
+      </Card>
+
+      <Card>
+        <CardTitle hint={t.admin.configReadOnly}>{t.admin.engineConfig}</CardTitle>
+        <div className="flex flex-col gap-4">
+          {SELECTABLE_SCENARIO_VERSIONS.map((version) => {
+            const config = getGameConfig(version);
+            return (
+              <div key={version} className="rounded-lg border border-ink-700/60 bg-ink-900/50 p-4">
+                <p className="font-mono text-sm font-semibold text-brand-400">
+                  {version} · engine {config.engineVersion}
+                </p>
+                <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:grid-cols-4">
+                  <Entry label="quarters" value={String(config.quarters)} />
+                  <Entry
+                    label="marketUnitsBase"
+                    value={formatInteger(config.marketUnitsBase, locale)}
+                  />
+                  <Entry
+                    label="referencePrice"
+                    value={formatMoney(config.referencePrice, locale)}
+                  />
+                  <Entry label="strategyPoints" value={String(config.strategyPoints)} />
+                  <Entry
+                    label="quarterlyStrategicInvestment"
+                    value={formatMoney(config.quarterlyStrategicInvestment, locale)}
+                  />
+                  <Entry
+                    label="quarterlyFixedOperatingCost"
+                    value={formatMoney(config.quarterlyFixedOperatingCost, locale)}
+                  />
+                  <Entry
+                    label="playerStartingCash"
+                    value={formatMoney(config.playerStartingCash, locale)}
+                  />
+                  <Entry
+                    label="priceIndex"
+                    value={`${config.priceIndexMin}–${config.priceIndexMax}`}
+                  />
+                  <Entry
+                    label="random"
+                    value={`${config.randomMin}–${config.randomMax}`}
+                  />
+                  <Entry
+                    label="profitScoreDivisor"
+                    value={formatInteger(config.profitScoreDivisor, locale)}
+                  />
+                  <Entry label="quarterlyRankBy" value={config.quarterlyRankBy} />
+                  <Entry
+                    label="playerStart"
+                    value={`B${config.playerStart.brandAwareness} P${config.playerStart.productQuality} T${config.playerStart.technology} D${config.playerStart.distribution} C${config.playerStart.customerExperience}`}
+                  />
+                </dl>
+              </div>
+            );
+          })}
+        </div>
+        <div className="mt-4">
+          <InfoNote>{t.admin.configReadOnly}</InfoNote>
+        </div>
+      </Card>
+    </main>
+  );
+}
+
+function Entry({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <dt className="font-mono text-ink-400">{label}</dt>
+      <dd className="tnum text-ink-100">{value}</dd>
+    </div>
+  );
+}
