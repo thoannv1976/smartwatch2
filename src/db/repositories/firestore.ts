@@ -29,6 +29,36 @@ import type {
  * The security rules deny the client SDK everything (see firestore.rules), so
  * "the browser only sends decisions, the server calculates everything" (spec
  * 13.1) is enforced by the datastore itself and not merely by convention.
+ *
+ * ---------------------------------------------------------------------------
+ * INDEX REQUIREMENTS — read this before changing any query in this file.
+ *
+ * The Firestore EMULATOR DOES NOT ENFORCE INDEXES. A query that needs one the
+ * project does not have passes every local test and then fails in production
+ * with FAILED_PRECONDITION. So the index each query relies on is written down
+ * here, and anything in the "declared" column must exist in
+ * firestore.indexes.json.
+ *
+ *   query                                              index
+ *   users      email ==                                automatic single-field
+ *   users      orderBy createdAt desc                  automatic single-field
+ *   courses    instructorId ==                         automatic single-field
+ *   courses    orderBy createdAt desc                  automatic single-field
+ *   members    uid == + orderBy joinedAt  (GROUP)      declared composite
+ *   assignments courseId == / in                       automatic single-field
+ *   gameSessions userId == + orderBy startedAt desc    declared composite
+ *   gameSessions assignmentId ==                       automatic single-field
+ *   gameSessions userId == AND assignmentId == (count) declared composite
+ *   finalResults assignmentId == + orderBy <5 columns> declared composite x5
+ *   finalResults userId ==                             automatic single-field
+ *
+ * Two rules worth remembering:
+ *  - automatic single-field indexes are COLLECTION scope only, so any
+ *    collectionGroup() query needs an index declared explicitly;
+ *  - one equality filter plus an orderBy on a DIFFERENT field needs a
+ *    composite index, and sorting in memory instead (as several methods below
+ *    deliberately do) avoids needing one.
+ * ---------------------------------------------------------------------------
  */
 
 export const COLLECTIONS = {
@@ -180,10 +210,25 @@ class FirestoreCourseRepository implements CourseRepository {
   }
 
   async listCoursesForStudent(uid: string): Promise<CourseDoc[]> {
-    // Collection-group query over every course's members subcollection.
+    /*
+     * Collection-group query over every course's members subcollection.
+     *
+     * The `orderBy` is LOAD-BEARING, not cosmetic. Firestore creates automatic
+     * single-field indexes with COLLECTION scope only, so a collection-group
+     * query needs an index declared explicitly. Without the orderBy this query
+     * is implicitly ordered by __name__ and would need a collection-group
+     * single-field index on `uid` (a `fieldOverrides` entry); with it, the
+     * composite (uid ASC, joinedAt ASC) COLLECTION_GROUP index in
+     * firestore.indexes.json serves it exactly.
+     *
+     * Removing it does not fail any test — the Firestore emulator does not
+     * enforce indexes — it fails in production with FAILED_PRECONDITION, on the
+     * student home page.
+     */
     const snap = await this.db
       .collectionGroup(COLLECTIONS.courseMembers)
       .where('uid', '==', uid)
+      .orderBy('joinedAt', 'asc')
       .get();
     const courseIds = [...new Set(snap.docs.map((d) => (d.data() as CourseMemberDoc).courseId))];
     if (courseIds.length === 0) return [];

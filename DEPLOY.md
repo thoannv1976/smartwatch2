@@ -285,6 +285,13 @@ you see it again, look for a second `initializeApp` call.
 index is still building, or step 4 was skipped. The link creates the missing
 index.
 
+**A page fails with `FAILED_PRECONDITION` / "The query requires an index"** —
+a query is missing an index. Note that the Firestore emulator does not enforce
+indexes, so this class of bug never appears in local testing. The index each
+query depends on is tabulated at the top of
+`src/db/repositories/firestore.ts`; the error's console link also creates the
+missing index directly.
+
 **A student sees "You are not enrolled in the course for this assignment"** —
 they are not on the course roster. Add them by email (step 10.2).
 

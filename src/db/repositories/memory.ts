@@ -129,12 +129,16 @@ class MemoryCourseRepository implements CourseRepository {
   }
 
   async listCoursesForStudent(uid: string): Promise<CourseDoc[]> {
-    const ids: string[] = [];
+    // Ordered by the member's joinedAt, matching the Firestore implementation's
+    // orderBy — so the two behave identically and tests reflect production.
+    const memberships: { courseId: string; joinedAt: number }[] = [];
     for (const [courseId, bucket] of this.members) {
-      if (bucket.has(uid)) ids.push(courseId);
+      const member = bucket.get(uid);
+      if (member) memberships.push({ courseId, joinedAt: member.joinedAt });
     }
-    return ids
-      .map((id) => this.courses.get(id))
+    return memberships
+      .sort((a, b) => a.joinedAt - b.joinedAt)
+      .map((m) => this.courses.get(m.courseId))
       .filter((c): c is CourseDoc => c !== undefined)
       .map(clone);
   }
