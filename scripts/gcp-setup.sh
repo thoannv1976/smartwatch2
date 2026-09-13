@@ -106,6 +106,58 @@ for role in roles/datastore.user roles/firebaseauth.admin roles/iam.serviceAccou
   ok "granted $role"
 done
 
+# --- 3b. Cloud Build permissions -------------------------------------------
+# The build is what deploys, so the CLOUD BUILD service account needs its own
+# grants — separate from the runtime account above. The one that always bites:
+# deploying a Cloud Run service that RUNS AS another service account requires
+# `iam.serviceAccounts.actAs` on that account, which no service account has by
+# default. Without it the build reaches the deploy step and fails there, after
+# the image is already built and the tests have already passed.
+
+step "Granting the Cloud Build service account permission to deploy"
+PROJECT_NUMBER="$(gcloud projects describe "$PROJECT_ID" --format='value(projectNumber)')"
+
+# Which account a build actually runs as depends on the project's age and
+# settings: older projects use the legacy Cloud Build account, newer ones the
+# Compute Engine default account. Grant to whichever exist rather than guessing.
+BUILD_SAS=(
+  "${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com"
+  "${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+)
+
+GRANTED_ANY=0
+for BUILD_SA in "${BUILD_SAS[@]}"; do
+  if ! gcloud iam service-accounts describe "$BUILD_SA" --project "$PROJECT_ID" >/dev/null 2>&1; then
+    continue
+  fi
+
+  for role in roles/run.admin roles/artifactregistry.writer roles/logging.logWriter; do
+    gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+      --member="serviceAccount:${BUILD_SA}" --role="$role" \
+      --condition=None --quiet >/dev/null
+  done
+
+  # Scoped to the runtime account alone, not granted project-wide.
+  gcloud iam service-accounts add-iam-policy-binding "$SA_EMAIL" \
+    --member="serviceAccount:${BUILD_SA}" \
+    --role="roles/iam.serviceAccountUser" \
+    --project "$PROJECT_ID" --quiet >/dev/null
+
+  ok "granted run.admin, artifactregistry.writer, logWriter and actAs to $BUILD_SA"
+  GRANTED_ANY=1
+done
+
+if [[ "$GRANTED_ANY" -eq 0 ]]; then
+  warn "found no Cloud Build service account to grant. The deploy step will fail."
+  warn "Check which account your builds run as:"
+  warn "  https://console.cloud.google.com/cloud-build/settings/service-account?project=$PROJECT_ID"
+fi
+
+# IAM changes are eventually consistent; a deploy started immediately can still
+# see the old policy.
+ok "waiting 15s for the IAM changes to propagate"
+sleep 15
+
 # --- 4. Artifact Registry --------------------------------------------------
 
 step "Creating the Artifact Registry repository"

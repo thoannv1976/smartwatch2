@@ -303,3 +303,19 @@ they are not on the course roster. Add them by email (step 10.2).
 
 **`PERMISSION_DENIED` in the Cloud Run logs** — the runtime service account is
 missing `roles/datastore.user` (step 5).
+
+**The build fails at the deploy step (step 4) after the image built and the
+tests passed** — the Cloud Build service account cannot deploy. Two grants it
+needs and has by default: `roles/run.admin`, and `roles/iam.serviceAccountUser`
+**on the runtime service account** — deploying a service that runs as another
+account requires `iam.serviceAccounts.actAs` on it. Re-running
+`./scripts/gcp-setup.sh` grants both (section 3b).
+
+Note that which account a build runs as depends on the project: older projects
+use `PROJECT_NUMBER@cloudbuild.gserviceaccount.com`, newer ones the Compute
+Engine default `PROJECT_NUMBER-compute@developer.gserviceaccount.com`. The
+script grants to whichever exist. To see the real error:
+
+```bash
+gcloud beta builds log <BUILD_ID> --project "$PROJECT_ID" | tail -40
+```
