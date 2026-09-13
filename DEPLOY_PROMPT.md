@@ -16,6 +16,10 @@ git checkout claude/inspiring-darwin-4xajv8
 
 Khoảng 7 phút cho lần đầu, ~2 phút cho mỗi lần deploy lại. Xem `DEPLOY.md`.
 
+**Không có bước `firebase login`** — toàn bộ phần Firebase (tạo web app, bật
+Email/Password, publish rules, tạo index) chạy qua REST API bằng chính token
+gcloud mà Cloud Shell đã có. Không có gì phải bấm, không có gì phải dán.
+
 Chỉ dùng prompt bên dưới khi bạn muốn agent **tự xử lý lỗi và tự kiểm chứng**
 thay bạn.
 
@@ -41,6 +45,7 @@ tuyệt đối đừng bấm qua GCP Console — chậm hơn hàng chục lần 
 1. Đọc `DEPLOY.md` mục "Fast path" và `scripts/gcp-setup.sh` để biết script làm gì.
 2. Kiểm tra tiền đề: `gcloud auth list` phải có account active. Nếu chưa, DỪNG
    và bảo tôi chạy `gcloud auth login` — đừng cố vòng qua.
+   ĐỪNG chạy `firebase login`: script không cần nó và luồng OAuth đó sẽ treo.
 3. Chạy `./scripts/gcp-setup.sh <PROJECT_ID> <REGION> <ADMIN_EMAIL>`.
    Script này idempotent: nếu lỗi giữa đường, sửa nguyên nhân rồi chạy lại.
 4. Chạy `./scripts/deploy.sh`.

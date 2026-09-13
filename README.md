@@ -88,7 +88,7 @@ deployment to an AI agent.
 | `npm run lint` | ESLint |
 | `npm run balance` | Balance report for both scenarios |
 | `npm run seed:demo` | Seed a demo course, assignment and played games (emulators or a throwaway project) |
-| `./scripts/gcp-setup.sh <project>` | One-time, idempotent GCP provisioning |
+| `./scripts/gcp-setup.sh <project>` | One-time, idempotent GCP provisioning (no `firebase login`) |
 | `./scripts/deploy.sh` | Build, test, deploy to Cloud Run (~2 min) |
 
 ### Internal simulation test mode

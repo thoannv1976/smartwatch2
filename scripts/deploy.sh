@@ -44,38 +44,13 @@ HOST="${URL#https://}"
 
 # --- Authorised domain ------------------------------------------------------
 # Firebase rejects sign-in from a hostname it does not know, and the Cloud Run
-# hostname is only knowable after the first deploy. Add it every time: it is a
+# hostname is only knowable after the first deploy. Run it every time: it is a
 # no-op once present, and forgetting it is the single most common reason a fresh
-# deployment "works" but nobody can log in.
+# deployment serves pages but nobody can sign in. The helper MERGES into the
+# existing domain list rather than replacing it.
 
-step "Authorising $HOST for Firebase sign-in"
-TOKEN="$(gcloud auth print-access-token)"
-CONFIG_URL="https://identitytoolkit.googleapis.com/admin/v2/projects/${PROJECT_ID}/config"
-CURRENT="$(curl -sS -f -H "Authorization: Bearer ${TOKEN}" "$CONFIG_URL" 2>/dev/null || true)"
-
-if [[ -z "$CURRENT" ]]; then
-  warn "could not read the Identity Platform config."
-  warn "Add $HOST by hand at:"
-  warn "  https://console.firebase.google.com/project/$PROJECT_ID/authentication/settings"
-elif printf '%s' "$CURRENT" | grep -q "\"$HOST\""; then
-  ok "already authorised"
-else
-  EXISTING="$(printf '%s' "$CURRENT" \
-    | tr -d '\n ' \
-    | grep -oE '"authorizedDomains":\[[^]]*\]' \
-    | sed 's/"authorizedDomains":\[//; s/\]$//' || true)"
-  DOMAINS="${EXISTING:+${EXISTING},}\"${HOST}\""
-
-  if curl -sS -f -X PATCH "${CONFIG_URL}?updateMask=authorizedDomains" \
-    -H "Authorization: Bearer ${TOKEN}" \
-    -H 'Content-Type: application/json' \
-    -d "{\"authorizedDomains\":[${DOMAINS}]}" >/dev/null 2>&1; then
-    ok "authorised"
-  else
-    warn "could not add it over the API. Add $HOST by hand at:"
-    warn "  https://console.firebase.google.com/project/$PROJECT_ID/authentication/settings"
-  fi
-fi
+python3 scripts/firebase_setup.py authorize-domain "$PROJECT_ID" "$HOST" || \
+  warn "could not authorise $HOST automatically — see the link above"
 
 # --- Smoke check ------------------------------------------------------------
 # Not a substitute for the eight-point verification in DEPLOY_PROMPT.md, but it

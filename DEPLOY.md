@@ -20,6 +20,16 @@ runtime service account with its three roles, the Artifact Registry repository
 and the Firebase web app, deploys the rules and indexes, and writes
 `.deploy.env`. If it fails halfway, just run it again.
 
+**There is no `firebase login`.** The Firebase side is done over the Firebase
+Management, Firebase Rules, Firestore Admin and Identity Platform REST APIs
+using the gcloud credentials Cloud Shell already has
+(`scripts/firebase_setup.py`). Nothing is interactive, so an agent can run it
+too. To see exactly what it will send before running it for real:
+
+```bash
+python3 scripts/firebase_setup.py --dry-run setup YOUR_PROJECT_ID
+```
+
 After that, every redeploy is one command:
 
 ```bash
@@ -30,8 +40,9 @@ Two things still need a human in a browser, once each. `gcp-setup.sh` and
 `deploy.sh` print the exact links:
 
 1. **Google sign-in** needs an OAuth client (Email/Password works without it).
-2. **Authorized domains** — `deploy.sh` tries to add the Cloud Run hostname over
-   the Identity Platform API and tells you if it could not.
+2. **Authorized domains** — `deploy.sh` adds the Cloud Run hostname over the
+   Identity Platform API automatically (merging into the existing list), and
+   tells you if it could not.
 
 ### How long it takes
 

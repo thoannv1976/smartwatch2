@@ -67,6 +67,8 @@ gcloud services enable \
   firestore.googleapis.com \
   identitytoolkit.googleapis.com \
   iamcredentials.googleapis.com \
+  firebase.googleapis.com \
+  firebaserules.googleapis.com \
   --project "$PROJECT_ID"
 ok "APIs enabled"
 
@@ -117,77 +119,33 @@ else
   ok "created"
 fi
 
-# --- 5. Firebase web app ---------------------------------------------------
-# Fetched with the CLI rather than copied out of the console by hand.
+# --- 5-7. Firebase: web app, sign-in provider, rules, indexes -------------
+# Done over the Firebase REST APIs with the gcloud token we already have, so
+# there is no `firebase login` and nothing interactive. See
+# scripts/firebase_setup.py; run it with --dry-run to see exactly what it sends.
 
-step "Getting the Firebase web app configuration"
-if ! command -v firebase >/dev/null; then
-  warn "firebase-tools is not installed; installing it locally"
-  npm install -g firebase-tools >/dev/null 2>&1 || {
-    echo "Could not install firebase-tools. Run: npm install -g firebase-tools" >&2
-    exit 1
-  }
-fi
+step "Configuring Firebase (web app, Email/Password, rules, indexes)"
+command -v python3 >/dev/null || { echo "python3 is required." >&2; exit 1; }
 
-if ! firebase projects:list --json >/dev/null 2>&1; then
-  echo "firebase CLI is not authenticated. Run: firebase login" >&2
+FIREBASE_OUT="$(mktemp)"
+trap 'rm -f "$FIREBASE_OUT"' EXIT
+
+if ! python3 scripts/firebase_setup.py setup "$PROJECT_ID" | tee "$FIREBASE_OUT"; then
+  echo "Firebase setup failed. Fix the cause above and re-run this script." >&2
   exit 1
 fi
 
-APP_ID="$(firebase apps:list WEB --project "$PROJECT_ID" 2>/dev/null \
-  | grep -oE '1:[0-9]+:web:[0-9a-f]+' | head -1 || true)"
+API_KEY="$(grep -m1 '^FIREBASE_API_KEY=' "$FIREBASE_OUT" | cut -d= -f2-)"
+AUTH_DOMAIN="$(grep -m1 '^FIREBASE_AUTH_DOMAIN=' "$FIREBASE_OUT" | cut -d= -f2-)"
+APP_ID="$(grep -m1 '^FIREBASE_APP_ID=' "$FIREBASE_OUT" | cut -d= -f2-)"
 
-if [[ -z "$APP_ID" ]]; then
-  firebase apps:create WEB "Smartwatch CEO Challenge" --project "$PROJECT_ID" >/dev/null
-  APP_ID="$(firebase apps:list WEB --project "$PROJECT_ID" 2>/dev/null \
-    | grep -oE '1:[0-9]+:web:[0-9a-f]+' | head -1 || true)"
-  ok "created web app"
-else
-  ok "reusing existing web app"
-fi
-
-if [[ -z "$APP_ID" ]]; then
-  echo "Could not determine the Firebase web app id. Create one in the console and re-run." >&2
-  exit 1
-fi
-
-SDK_CONFIG="$(firebase apps:sdkconfig WEB "$APP_ID" --project "$PROJECT_ID" --json 2>/dev/null || true)"
-API_KEY="$(printf '%s' "$SDK_CONFIG" | grep -oE '"apiKey"[[:space:]]*:[[:space:]]*"[^"]+"' | sed 's/.*"\([^"]*\)"$/\1/' | head -1)"
-AUTH_DOMAIN="$(printf '%s' "$SDK_CONFIG" | grep -oE '"authDomain"[[:space:]]*:[[:space:]]*"[^"]+"' | sed 's/.*"\([^"]*\)"$/\1/' | head -1)"
-AUTH_DOMAIN="${AUTH_DOMAIN:-${PROJECT_ID}.firebaseapp.com}"
-
-if [[ -z "$API_KEY" ]]; then
-  echo "Could not read the web apiKey from firebase apps:sdkconfig." >&2
+if [[ -z "$API_KEY" || -z "$APP_ID" ]]; then
+  echo "Could not read the Firebase web config from the setup output." >&2
   echo "Get it from https://console.firebase.google.com/project/$PROJECT_ID/settings/general" >&2
   exit 1
 fi
 ok "appId $APP_ID"
-ok "authDomain $AUTH_DOMAIN"
-
-# --- 6. Sign-in providers --------------------------------------------------
-# Email/Password is configurable over the Identity Platform admin API.
-# Google sign-in needs an OAuth client, which realistically means the console.
-
-step "Enabling the Email/Password sign-in provider"
-TOKEN="$(gcloud auth print-access-token)"
-if curl -sS -f -X PATCH \
-  "https://identitytoolkit.googleapis.com/admin/v2/projects/${PROJECT_ID}/config?updateMask=signIn.email.enabled,signIn.email.passwordRequired" \
-  -H "Authorization: Bearer ${TOKEN}" \
-  -H 'Content-Type: application/json' \
-  -d '{"signIn":{"email":{"enabled":true,"passwordRequired":true}}}' >/dev/null 2>&1; then
-  ok "enabled"
-else
-  warn "could not enable it over the API (Firebase Auth may need initialising once in the console)."
-  warn "Enable it here: https://console.firebase.google.com/project/$PROJECT_ID/authentication/providers"
-fi
-
-# --- 7. Rules and indexes --------------------------------------------------
-# The rules deny the client SDK everything; that is what makes "the browser
-# sends only decisions" a property the database enforces.
-
-step "Deploying the Firestore rules and indexes"
-firebase deploy --only firestore:rules,firestore:indexes --project "$PROJECT_ID" --non-interactive
-ok "deployed (composite indexes build in the background for a minute or two)"
+ok "authDomain ${AUTH_DOMAIN:-${PROJECT_ID}.firebaseapp.com}"
 
 # --- 8. Remember the answers ----------------------------------------------
 
