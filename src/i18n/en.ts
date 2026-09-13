@@ -408,6 +408,7 @@ export const en: Dictionary = {
   },
   errors: {
     sessionNotFound: 'Game session not found',
+    invalidCompanyName: 'Company or product name is invalid (1-60 characters)',
     notYourSession: 'This is not your game session',
     quarterOutOfRange: 'Invalid quarter',
     gameAlreadyCompleted: 'This game is already completed',

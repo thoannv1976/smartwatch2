@@ -1,0 +1,101 @@
+import 'server-only';
+import { cookies } from 'next/headers';
+import { cache } from 'react';
+import { getAdminAuth } from '@/db/firestore';
+import { getRepositories } from '@/db/repositories/firestore';
+import type { Role, UserDoc } from '@/db/models';
+
+/**
+ * Server-side authentication (spec 9.3, 13.1).
+ *
+ * Flow: the browser signs in with Firebase Auth, sends the resulting ID token to
+ * POST /api/auth/session, and the server exchanges it for an httpOnly session
+ * cookie. Every request then verifies that cookie with the Admin SDK.
+ *
+ * The ROLE always comes from the user document in Firestore, never from the
+ * token. A student cannot promote themselves by tampering with a client-side
+ * claim, because the claim is not consulted.
+ */
+
+export const SESSION_COOKIE = 'session';
+const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 5; // 5 days
+
+/** The signed-in user. Aliased so call sites read as authentication, not storage. */
+export type AuthenticatedUser = UserDoc;
+
+/** Exchanges a Firebase ID token for a session cookie value. */
+export async function createSessionCookie(idToken: string): Promise<{
+  value: string;
+  maxAgeSeconds: number;
+}> {
+  const value = await getAdminAuth().createSessionCookie(idToken, {
+    expiresIn: SESSION_MAX_AGE_MS,
+  });
+  return { value, maxAgeSeconds: SESSION_MAX_AGE_MS / 1000 };
+}
+
+/**
+ * Resolves the signed-in user, or null.
+ *
+ * Wrapped in React's `cache` so a page that calls it in a layout and again in a
+ * component still verifies the cookie and reads the user document once per
+ * request.
+ */
+export const getCurrentUser = cache(async (): Promise<AuthenticatedUser | null> => {
+  const store = await cookies();
+  const cookie = store.get(SESSION_COOKIE)?.value;
+  if (!cookie) return null;
+
+  try {
+    // checkRevoked: a disabled or signed-out account stops working immediately.
+    const decoded = await getAdminAuth().verifySessionCookie(cookie, true);
+    const user = await getRepositories().users.get(decoded.uid);
+    return user;
+  } catch {
+    // An expired, revoked or malformed cookie is simply "not signed in".
+    return null;
+  }
+});
+
+export class AuthorizationError extends Error {
+  constructor(
+    /** Key in the `errors` dictionary section. */
+    readonly key: 'unauthorized' | 'forbidden',
+  ) {
+    super(key);
+    this.name = 'AuthorizationError';
+  }
+}
+
+export async function requireUser(): Promise<AuthenticatedUser> {
+  const user = await getCurrentUser();
+  if (!user) throw new AuthorizationError('unauthorized');
+  return user;
+}
+
+const ROLE_RANK: Record<Role, number> = { STUDENT: 0, INSTRUCTOR: 1, ADMIN: 2 };
+
+/** True when `role` is at least as privileged as `minimum`. */
+export function hasRole(role: Role, minimum: Role): boolean {
+  return ROLE_RANK[role] >= ROLE_RANK[minimum];
+}
+
+/** Requires at least the given role; admins pass every check. */
+export async function requireRole(minimum: Role): Promise<AuthenticatedUser> {
+  const user = await requireUser();
+  if (!hasRole(user.role, minimum)) throw new AuthorizationError('forbidden');
+  return user;
+}
+
+/**
+ * Role assigned to a brand-new account.
+ *
+ * Everyone starts as a STUDENT. The single exception is the bootstrap admin
+ * email from the environment, which exists so the very first deployment has
+ * someone who can promote the real instructors — otherwise nobody could.
+ */
+export function initialRoleFor(email: string): Role {
+  const bootstrap = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
+  if (bootstrap && email.trim().toLowerCase() === bootstrap) return 'ADMIN';
+  return 'STUDENT';
+}

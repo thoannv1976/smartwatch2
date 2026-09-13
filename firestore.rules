@@ -1,0 +1,29 @@
+rules_version = '2';
+
+// ---------------------------------------------------------------------------
+// Smartwatch CEO Challenge — Firestore security rules
+//
+// The browser NEVER reads or writes game data directly. Every read and write
+// goes through the Next.js server, which uses the Firebase Admin SDK and is not
+// subject to these rules. The browser only uses Firebase Auth (to sign in and
+// obtain an ID token) and then talks to this app's own API.
+//
+// So these rules deny everything. That is not laziness — it is what makes
+// spec 13.1 ("the browser sends only player decisions; revenue, units, profit,
+// market share, score and ranking are always calculated server-side") an
+// enforced property of the datastore rather than a convention. A student who
+// opens the console cannot write a market share, read another student's
+// decisions, or discover the five AI competitors' exact allocations.
+//
+// If a future version needs direct client reads (for example a live
+// leaderboard), add a narrowly scoped allow-read for that one collection here —
+// never a blanket allow.
+// ---------------------------------------------------------------------------
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

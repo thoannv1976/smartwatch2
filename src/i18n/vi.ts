@@ -407,6 +407,7 @@ export const vi = {
   },
   errors: {
     sessionNotFound: 'Không tìm thấy lượt chơi',
+    invalidCompanyName: 'Tên công ty hoặc tên sản phẩm không hợp lệ (1–60 ký tự)',
     notYourSession: 'Đây không phải lượt chơi của bạn',
     quarterOutOfRange: 'Quý không hợp lệ',
     gameAlreadyCompleted: 'Lượt chơi đã hoàn thành',
