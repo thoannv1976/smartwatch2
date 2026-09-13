@@ -77,6 +77,15 @@ Firebase configuration is only needed to sign in and persist games — see
 [DEPLOY_PROMPT.md](./DEPLOY_PROMPT.md) has a ready-made prompt for handing the
 deployment to an AI agent.
 
+## Documentation
+
+| | |
+|---|---|
+| [HUONG_DAN.md](./HUONG_DAN.md) | **User guide** (Vietnamese) — step by step for students, instructors and admins |
+| [DEPLOY.md](./DEPLOY.md) | Deploying to Google Cloud, plus local emulator setup |
+| [DEPLOY_PROMPT.md](./DEPLOY_PROMPT.md) | Ready-made prompt for handing the deployment to an agent |
+| [ACCEPTANCE.md](./ACCEPTANCE.md) | All twenty acceptance criteria and how each was verified |
+
 ### Scripts
 
 | Command | What it does |
