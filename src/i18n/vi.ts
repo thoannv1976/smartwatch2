@@ -377,7 +377,11 @@ export const vi = {
       'Bạn giữ giá cao (chỉ số trung bình {value}). Mức giá này chỉ bền khi sản phẩm, công nghệ, thương hiệu và CX đủ mạnh để biện minh.',
     distributionBottleneck:
       'Năng lực phân phối chỉ đạt {value}/100, nên một phần cầu tiềm năng không bao giờ trở thành đơn hàng.',
+    distributionStrength:
+      'Phân phối đạt {value}/100, nhờ đó gần như toàn bộ cầu tiềm năng đã chuyển được thành đơn hàng.',
     cxStrength: 'CSAT cuối kỳ {value}/100 cho thấy trải nghiệm khách hàng là điểm mạnh thật sự.',
+    cxMiddling:
+      'CSAT cuối kỳ {value}/100 ở mức trung bình: chưa thành điểm mạnh nhưng cũng chưa kéo thương hiệu xuống.',
     cxWeak: 'CSAT cuối kỳ chỉ {value}/100 — khách hàng chưa hài lòng, kéo giảm thương hiệu và cầu.',
     growthNoProfit:
       'Doanh thu tăng nhưng lợi nhuận luỹ kế âm ({value}): đây là tăng trưởng chưa bền vững.',

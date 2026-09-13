@@ -377,7 +377,11 @@ export const en: Dictionary = {
       'You held a premium price (average index {value}). That only holds up when product, technology, brand and CX justify it.',
     distributionBottleneck:
       'Distribution reached only {value}/100, so part of your potential demand never became an order.',
+    distributionStrength:
+      'Distribution reached {value}/100, so almost all of your potential demand converted into orders.',
     cxStrength: 'A final CSAT of {value}/100 shows customer experience became a real strength.',
+    cxMiddling:
+      'A final CSAT of {value}/100 is middling: not yet a strength, but not dragging the brand down either.',
     cxWeak:
       'Final CSAT was only {value}/100 — dissatisfied customers dragged down both brand and demand.',
     growthNoProfit:
