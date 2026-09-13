@@ -1,0 +1,16 @@
+node_modules
+.next
+.git
+.github
+coverage
+tests
+scripts
+*.md
+!README.md
+.env
+.env.local
+.env*.local
+firebase-debug.log
+.firebase
+Dockerfile
+.dockerignore

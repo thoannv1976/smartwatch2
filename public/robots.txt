@@ -1,0 +1,3 @@
+# A course assignment, not a public site.
+User-agent: *
+Disallow: /
