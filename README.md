@@ -74,6 +74,8 @@ npm run balance      # the game-balance report
 
 Firebase configuration is only needed to sign in and persist games — see
 [DEPLOY.md](./DEPLOY.md), which also covers running against the local emulators.
+[DEPLOY_PROMPT.md](./DEPLOY_PROMPT.md) has a ready-made prompt for handing the
+deployment to an AI agent.
 
 ### Scripts
 
