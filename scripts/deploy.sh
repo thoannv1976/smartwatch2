@@ -35,8 +35,49 @@ echo "    project: $PROJECT_ID"
 SHORT_SHA="$(git rev-parse --short HEAD 2>/dev/null || date +%Y%m%d-%H%M%S)"
 echo "    tag:     $SHORT_SHA"
 
-gcloud builds submit --config cloudbuild.yaml --project "$PROJECT_ID" \
-  --substitutions="SHORT_SHA=${SHORT_SHA},_REGION=${REGION},_SERVICE=${SERVICE},_FIREBASE_API_KEY=${FIREBASE_API_KEY},_FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN},_FIREBASE_APP_ID=${FIREBASE_APP_ID},_BOOTSTRAP_ADMIN_EMAIL=${BOOTSTRAP_ADMIN_EMAIL:-}"
+# Submitted with --async, then polled here.
+#
+# `gcloud builds submit` without --async CANCELS the build if the terminal is
+# interrupted — a Ctrl+C, or Cloud Shell timing out, kills work that is running
+# fine on Google's side. Submitting async decouples the two: the build survives,
+# and this loop is just a viewer you can leave whenever you like.
+BUILD_ID="$(gcloud builds submit --async --config cloudbuild.yaml --project "$PROJECT_ID" \
+  --substitutions="SHORT_SHA=${SHORT_SHA},_REGION=${REGION},_SERVICE=${SERVICE},_FIREBASE_API_KEY=${FIREBASE_API_KEY},_FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN},_FIREBASE_APP_ID=${FIREBASE_APP_ID},_BOOTSTRAP_ADMIN_EMAIL=${BOOTSTRAP_ADMIN_EMAIL:-}" \
+  --format='value(id)')"
+
+if [[ -z "$BUILD_ID" ]]; then
+  echo "Could not submit the build." >&2
+  exit 1
+fi
+
+LOG_URL="https://console.cloud.google.com/cloud-build/builds/${BUILD_ID}?project=${PROJECT_ID}"
+ok "build $BUILD_ID"
+echo "    logs: $LOG_URL"
+
+# Ctrl+C stops watching only. The build is not cancelled.
+trap 'printf "\n"; warn "Stopped watching — the build is STILL RUNNING."; warn "Follow it at: $LOG_URL"; warn "To cancel it for real: gcloud builds cancel $BUILD_ID --project $PROJECT_ID"; exit 130' INT
+
+step "Waiting for the build (first run ~4 min, redeploy ~2 min)"
+while true; do
+  STATUS="$(gcloud builds describe "$BUILD_ID" --project "$PROJECT_ID" --format='value(status)' 2>/dev/null || echo UNKNOWN)"
+  case "$STATUS" in
+    SUCCESS)
+      ok "build succeeded"
+      break
+      ;;
+    FAILURE | INTERNAL_ERROR | TIMEOUT | CANCELLED | EXPIRED)
+      echo "Build finished with status $STATUS." >&2
+      echo "Logs: $LOG_URL" >&2
+      exit 1
+      ;;
+    *)
+      printf '.'
+      sleep 5
+      ;;
+  esac
+done
+trap - INT
+printf '\n'
 
 URL="$(gcloud run services describe "$SERVICE" --region "$REGION" \
   --project "$PROJECT_ID" --format='value(status.url)')"

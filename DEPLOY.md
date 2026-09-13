@@ -36,6 +36,12 @@ After that, every redeploy is one command:
 ./scripts/deploy.sh      # ~2 minutes
 ```
 
+The build is submitted with `--async` and then polled, so **Ctrl+C only stops
+watching** — the build keeps running, and the script tells you where to follow
+it. (A plain `gcloud builds submit` does the opposite: interrupting it, or
+Cloud Shell timing out, cancels the build.) To watch again, or to cancel for
+real, use the two commands the script prints.
+
 Two things still need a human in a browser, once each. `gcp-setup.sh` and
 `deploy.sh` print the exact links:
 
