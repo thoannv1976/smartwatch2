@@ -1,0 +1,25 @@
+node_modules/
+.next/
+out/
+build/
+dist/
+coverage/
+
+# env
+.env
+.env.local
+.env*.local
+!.env.example
+
+# firebase
+.firebase/
+firebase-debug.log
+*-debug.log
+serviceAccount*.json
+
+# editor / os
+.DS_Store
+.idea/
+.vscode/
+*.tsbuildinfo
+next-env.d.ts
