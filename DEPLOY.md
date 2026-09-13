@@ -55,7 +55,7 @@ Two things still need a human in a browser, once each. `gcp-setup.sh` and
 | | First deploy | Redeploy (lockfile unchanged) |
 |---|---|---|
 | `npm ci` | 37s | **skipped** — cached layer |
-| typecheck + 113 tests | 7s | 7s, in parallel with the build |
+| typecheck + 118 tests | 7s | 7s, in parallel with the build |
 | `next build` | ~55s | ~55s |
 | image push + Cloud Run rollout | ~60s | ~40s |
 | **total** | **~4 min** | **~2 min** |
@@ -304,18 +304,28 @@ they are not on the course roster. Add them by email (step 10.2).
 **`PERMISSION_DENIED` in the Cloud Run logs** — the runtime service account is
 missing `roles/datastore.user` (step 5).
 
-**The build fails at the deploy step (step 4) after the image built and the
-tests passed** — the Cloud Build service account cannot deploy. Two grants it
-needs and has by default: `roles/run.admin`, and `roles/iam.serviceAccountUser`
-**on the runtime service account** — deploying a service that runs as another
-account requires `iam.serviceAccounts.actAs` on it. Re-running
-`./scripts/gcp-setup.sh` grants both (section 3b).
-
-Note that which account a build runs as depends on the project: older projects
-use `PROJECT_NUMBER@cloudbuild.gserviceaccount.com`, newer ones the Compute
-Engine default `PROJECT_NUMBER-compute@developer.gserviceaccount.com`. The
-script grants to whichever exist. To see the real error:
+**The build fails at the deploy step after the image built and the tests
+passed.** Read the real error before assuming a cause — the two candidates look
+identical from the build summary:
 
 ```bash
 gcloud beta builds log <BUILD_ID> --project "$PROJECT_ID" | tail -40
 ```
+
+*`Image not found` / `manifest unknown`* — the image was built but never pushed,
+so `gcloud run deploy` is pointing at a tag that is not in Artifact Registry.
+`cloudbuild.yaml` must push it in an explicit step that the deploy `waitFor`s.
+An `images:` block does **not** work here: Cloud Build pushes those only after
+every step has finished, which is after the deploy. `tests/deploy/cloudbuild.test.ts`
+asserts this, so a regression fails `npm test` rather than a four-minute build.
+
+*`PERMISSION_DENIED` / `caller does not have permission`* — the Cloud Build
+service account cannot deploy. It needs `roles/run.admin` and
+`roles/iam.serviceAccountUser` **on the runtime service account**, because
+deploying a service that runs as another account requires
+`iam.serviceAccounts.actAs` on it. Re-running `./scripts/gcp-setup.sh` grants
+both (section 3b). Which account a build runs as depends on the project age:
+older projects use `PROJECT_NUMBER@cloudbuild.gserviceaccount.com`, newer ones
+the Compute Engine default
+`PROJECT_NUMBER-compute@developer.gserviceaccount.com`. The script grants to
+whichever exist.

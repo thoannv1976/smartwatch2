@@ -27,7 +27,7 @@ experience and price have to hold together.
 | **Data** | Cloud Firestore, behind repository interfaces |
 | **Auth** | Firebase Authentication (Google + email/password) → httpOnly session cookie |
 | **Hosting** | Cloud Run, one deployable app (no microservices) |
-| **Tests** | Vitest — 113 tests, no emulator or credentials required |
+| **Tests** | Vitest — 118 tests, no emulator or credentials required |
 | **Languages** | Vietnamese (default) and English |
 
 ### The engine is the product
@@ -68,7 +68,7 @@ one stored result, never a second different one.
 ```bash
 npm install
 npm run dev          # http://localhost:3000
-npm test             # 113 tests
+npm test             # 118 tests
 npm run balance      # the game-balance report
 ```
 

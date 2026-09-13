@@ -3,7 +3,7 @@
 Status of each of the twenty build-checklist items, and how it was verified.
 
 Verification types:
-- **test** — an automated test in `npm test` (113 tests)
+- **test** — an automated test in `npm test` (118 tests)
 - **browser** — driven in Chromium against the Firebase Auth and Firestore
   emulators during development
 - **manual** — needs a real GCP project; see the note at the end
@@ -25,7 +25,7 @@ Verification types:
 | 13 | Instructor can inspect each student's six-quarter history | Done | browser: student detail page with every decision beside the KPI it produced, plus the AI allocations |
 | 14 | Instructor can export official results to CSV | Done | test: `csv-export.test.ts`; browser: both exports download with the right rows |
 | 15 | Official quarter submissions are idempotent and server-authoritative | Done | test: a repeat submission returns the stored result, a tampered repeat is ignored, and three concurrent submissions produce one quarter |
-| 16 | Simulation engine has automated tests | Done | 113 tests, including all thirteen the spec makes a release requirement |
+| 16 | Simulation engine has automated tests | Done | 118 tests, including all thirteen the spec makes a release requirement |
 | 17 | Application deploys to Cloud Run and connects securely to Cloud SQL | Adapted | The database is Firestore, not Cloud SQL, at your request. The runtime uses Application Default Credentials, so no key file exists. **Deployment itself is not verified here** — see the note below |
 | 18 | Scenario and engine versions are stored on every session | Done | test: asserted on session creation and carried into every final result |
 | 19 | No V1 feature requires real-time third-party market data | Done | The engine imports nothing and calls nothing; competitors are rule-based, not generative |
