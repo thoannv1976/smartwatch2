@@ -10,9 +10,25 @@ import { getAuth, type Auth } from 'firebase-admin/auth';
  * Application Default Credentials, so no key file is ever committed or mounted.
  * Locally, either point GOOGLE_APPLICATION_CREDENTIALS at a downloaded key or
  * set FIRESTORE_EMULATOR_HOST and run the emulator.
+ *
+ * The instance is cached on `globalThis`, not in a module-level variable.
+ * Next.js evaluates server modules more than once (the RSC bundle and the
+ * server-action bundle are separate instances), and `getFirestore()` returns the
+ * same underlying object each time, so a per-module cache would call
+ * `db.settings()` twice — which throws "Firestore has already been
+ * initialized" and, because it surfaces during session verification, logs the
+ * user out.
  */
 
-let cached: { app: App; db: Firestore; auth: Auth } | null = null;
+const CACHE_KEY = Symbol.for('smartwatch.firebaseAdmin');
+
+interface AdminCache {
+  app: App;
+  db: Firestore;
+  auth: Auth;
+}
+
+type GlobalWithCache = typeof globalThis & { [CACHE_KEY]?: AdminCache };
 
 function resolveProjectId(): string | undefined {
   return (
@@ -42,15 +58,20 @@ function createApp(): App {
   return initializeApp({ credential: applicationDefault(), projectId });
 }
 
-function init() {
+function init(): AdminCache {
+  const globalCache = globalThis as GlobalWithCache;
+  const cached = globalCache[CACHE_KEY];
   if (cached) return cached;
+
   const app = createApp();
   const db = getFirestore(app);
   // Undefined fields would otherwise throw; treating them as absent keeps
-  // optional document fields simple to write.
+  // optional document fields simple to write. Only ever called once per process.
   db.settings({ ignoreUndefinedProperties: true });
-  cached = { app, db, auth: getAuth(app) };
-  return cached;
+
+  const value: AdminCache = { app, db, auth: getAuth(app) };
+  globalCache[CACHE_KEY] = value;
+  return value;
 }
 
 export function getDb(): Firestore {

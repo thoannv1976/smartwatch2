@@ -2,6 +2,7 @@ import type {
   CompanyKey,
   CompetitorKey,
   DemandWeights,
+  IntelKey,
   Positioning,
   QuarterDecision,
 } from './types';
@@ -31,6 +32,13 @@ export interface StartingProfile {
 
 /** Base rule-based strategy of a benchmark competitor (spec 7.1). */
 export interface CompetitorBaseStrategy extends QuarterDecision {
+  /**
+   * The competitor's standing characteristic, shown when nothing notable
+   * changed this quarter. These are the five example lines of spec 7.3, so each
+   * archetype reads distinctly instead of two of them both reporting
+   * "premium pricing".
+   */
+  signatureIntel: IntelKey;
   /** Archetype flags that drive the event adjustments in spec 7.2. */
   fitnessOriented: boolean;
   technologyOriented: boolean;
@@ -253,7 +261,7 @@ const COMPETITORS: CompetitorConfig[] = [
       distributionPoints: 10,
       cxPoints: 15,
       priceIndex: 115,
-      fitnessOriented: false,
+      signatureIntel: 'premiumPricing',      fitnessOriented: false,
       technologyOriented: true,
       valueOriented: false,
       premiumOriented: true,
@@ -279,7 +287,7 @@ const COMPETITORS: CompetitorConfig[] = [
       distributionPoints: 10,
       cxPoints: 15,
       priceIndex: 110,
-      fitnessOriented: true,
+      signatureIntel: 'productInnovation',      fitnessOriented: true,
       technologyOriented: true,
       valueOriented: false,
       premiumOriented: true,
@@ -305,7 +313,7 @@ const COMPETITORS: CompetitorConfig[] = [
       distributionPoints: 15,
       cxPoints: 10,
       priceIndex: 100,
-      fitnessOriented: false,
+      signatureIntel: 'marketingPush',      fitnessOriented: false,
       technologyOriented: true,
       valueOriented: false,
       premiumOriented: false,
@@ -331,7 +339,7 @@ const COMPETITORS: CompetitorConfig[] = [
       distributionPoints: 20,
       cxPoints: 15,
       priceIndex: 90,
-      fitnessOriented: false,
+      signatureIntel: 'aggressivePricing',      fitnessOriented: false,
       technologyOriented: false,
       valueOriented: true,
       premiumOriented: false,
@@ -357,7 +365,7 @@ const COMPETITORS: CompetitorConfig[] = [
       distributionPoints: 10,
       cxPoints: 25,
       priceIndex: 105,
-      fitnessOriented: true,
+      signatureIntel: 'healthCxFocus',      fitnessOriented: true,
       technologyOriented: true,
       valueOriented: false,
       premiumOriented: false,

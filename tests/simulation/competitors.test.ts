@@ -285,6 +285,21 @@ describe('competitor intelligence never leaks exact allocations (spec 7.3)', () 
     }
   });
 
+  it('gives each archetype a distinct standing line when nothing moved', () => {
+    const keys = config.competitors.map((competitor) =>
+      competitorIntelKey(competitor, competitor.base, competitor.base),
+    );
+    // Spec 7.3 lists five different sentences, one per benchmark brand.
+    expect(new Set(keys).size).toBe(5);
+    expect(keys).toEqual([
+      'premiumPricing',
+      'productInnovation',
+      'marketingPush',
+      'aggressivePricing',
+      'healthCxFocus',
+    ]);
+  });
+
   it('reports an aggressive price cut', () => {
     const key = competitorIntelKey(
       huawei,

@@ -291,9 +291,6 @@ export function generateAllCompetitorDecisions(
 // 7.3 Competitor intelligence
 // ---------------------------------------------------------------------------
 
-/** A price index at or above this reads as "still holding a premium price" to students. */
-const PREMIUM_PRICE_INDEX_THRESHOLD = 108;
-
 /**
  * Turns a competitor's decision into ONE qualitative sentence key.
  *
@@ -327,16 +324,9 @@ export function competitorIntelKey(
   if (marketingDelta >= 4) return 'marketingPush';
   if (distributionDelta >= 4) return 'distributionPush';
 
-  // Otherwise fall back to the archetype's standing characteristic.
-  const { base } = competitor;
-  if (base.premiumOriented && decision.priceIndex >= PREMIUM_PRICE_INDEX_THRESHOLD) {
-    return 'premiumPricing';
-  }
-  if (base.valueOriented) return 'aggressivePricing';
-  if (base.fitnessOriented && decision.cxPoints >= 20) return 'healthCxFocus';
-  if (decision.cxPoints >= 22) return 'healthCxFocus';
-  if (base.technologyOriented) return 'technologyPush';
-  return 'steady';
+  // Nothing moved this quarter: report the archetype's standing characteristic,
+  // which is distinct per competitor (spec 7.3's five example lines).
+  return competitor.base.signatureIntel;
 }
 
 /** Builds the intelligence summary shown on the quarter result screen. */

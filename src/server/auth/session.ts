@@ -35,6 +35,16 @@ export async function createSessionCookie(idToken: string): Promise<{
 }
 
 /**
+ * True for the Admin SDK errors that genuinely mean "this cookie is no longer
+ * a valid session": expired, revoked, malformed, or the user is gone.
+ */
+function isAuthTokenError(error: unknown): boolean {
+  const code =
+    typeof error === 'object' && error && 'code' in error ? String(error.code) : '';
+  return code.startsWith('auth/');
+}
+
+/**
  * Resolves the signed-in user, or null.
  *
  * Wrapped in React's `cache` so a page that calls it in a layout and again in a
@@ -46,14 +56,44 @@ export const getCurrentUser = cache(async (): Promise<AuthenticatedUser | null> 
   const cookie = store.get(SESSION_COOKIE)?.value;
   if (!cookie) return null;
 
+  let uid: string;
   try {
     // checkRevoked: a disabled or signed-out account stops working immediately.
     const decoded = await getAdminAuth().verifySessionCookie(cookie, true);
-    const user = await getRepositories().users.get(decoded.uid);
-    return user;
-  } catch {
-    // An expired, revoked or malformed cookie is simply "not signed in".
+    uid = decoded.uid;
+  } catch (error) {
+    // An expired, revoked or malformed cookie is simply "not signed in" — but
+    // ONLY a token error means that. Anything else (a misconfigured Admin SDK,
+    // an unreachable Firestore) must surface instead of being disguised as a
+    // signed-out user, which sends people to a login page that cannot help them.
+    if (!isAuthTokenError(error)) {
+      console.error(
+        JSON.stringify({
+          severity: 'ERROR',
+          message: 'session verification failed for a non-token reason',
+          error: String(error),
+        }),
+      );
+      throw error;
+    }
     return null;
+  }
+
+  // A failure to READ the user is not the same as being signed out, and must not
+  // be silently reported as one: swallowing it would turn an outage into a
+  // confusing "please sign in" on a page the user is already signed in to.
+  try {
+    return await getRepositories().users.get(uid);
+  } catch (error) {
+    console.error(
+      JSON.stringify({
+        severity: 'ERROR',
+        message: 'failed to load the signed-in user',
+        uid,
+        error: String(error),
+      }),
+    );
+    throw error;
   }
 });
 
