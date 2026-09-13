@@ -1,5 +1,4 @@
 import { getGameConfig, type CompetitorConfig, type GameConfig } from './config';
-import { isPriceSensitiveEvent } from './events';
 import { clamp } from './formulas';
 import { deriveSeed, seededIntegerInRange } from './random';
 import { INVESTMENT_FIELDS } from './types';

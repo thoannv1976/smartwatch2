@@ -1,5 +1,5 @@
 import { getGameConfig, type GameConfig } from './config';
-import type { MarketEvent, MarketEventKey } from './types';
+import type { MarketEvent } from './types';
 
 /**
  * Market events (spec 6).
@@ -75,9 +75,4 @@ export function getMarketEvent(quarter: number, config: GameConfig = getGameConf
 /** Every event in quarter order — used by the internal simulation test page. */
 export function getAllMarketEvents(config: GameConfig = getGameConfig()): MarketEvent[] {
   return Array.from({ length: config.quarters }, (_, i) => getMarketEvent(i + 1, config));
-}
-
-/** True when the quarter's event makes the market price sensitive (spec 7.2 AI rules). */
-export function isPriceSensitiveEvent(key: MarketEventKey): boolean {
-  return key === 'PRICE_COMPETITION' || key === 'ECONOMIC_SLOWDOWN';
 }
