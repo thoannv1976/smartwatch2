@@ -23,3 +23,6 @@ serviceAccount*.json
 .vscode/
 *.tsbuildinfo
 next-env.d.ts
+
+# Written by scripts/gcp-setup.sh
+.deploy.env

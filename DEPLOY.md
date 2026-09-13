@@ -1,10 +1,58 @@
 # Deploying to Google Cloud
 
-Copy-paste guide to get Smartwatch CEO Challenge running on Cloud Run with
-Firestore and Firebase Authentication.
+## Fast path — two commands
 
-Everything below assumes you are signed in (`gcloud auth login`) and have a
-billing-enabled project.
+Do this in **[Cloud Shell](https://shell.cloud.google.com/)**. It is the
+quickest route by a wide margin: `gcloud` is already authenticated, `node`,
+`docker` and `git` are installed, and the network to Artifact Registry is
+Google-internal.
+
+```bash
+git clone <your-repo-url> && cd smartwatch2
+git checkout claude/inspiring-darwin-4xajv8
+
+./scripts/gcp-setup.sh YOUR_PROJECT_ID asia-southeast1 you@university.edu
+./scripts/deploy.sh
+```
+
+`gcp-setup.sh` is **idempotent** — it enables the APIs, creates Firestore, the
+runtime service account with its three roles, the Artifact Registry repository
+and the Firebase web app, deploys the rules and indexes, and writes
+`.deploy.env`. If it fails halfway, just run it again.
+
+After that, every redeploy is one command:
+
+```bash
+./scripts/deploy.sh      # ~2 minutes
+```
+
+Two things still need a human in a browser, once each. `gcp-setup.sh` and
+`deploy.sh` print the exact links:
+
+1. **Google sign-in** needs an OAuth client (Email/Password works without it).
+2. **Authorized domains** — `deploy.sh` tries to add the Cloud Run hostname over
+   the Identity Platform API and tells you if it could not.
+
+### How long it takes
+
+| | First deploy | Redeploy (lockfile unchanged) |
+|---|---|---|
+| `npm ci` | 37s | **skipped** — cached layer |
+| typecheck + 113 tests | 7s | 7s, in parallel with the build |
+| `next build` | ~55s | ~55s |
+| image push + Cloud Run rollout | ~60s | ~40s |
+| **total** | **~4 min** | **~2 min** |
+
+`scripts/gcp-setup.sh` adds about 3 minutes once, most of it waiting for the
+APIs to enable and Firestore to provision.
+
+---
+
+## Manual path, step by step
+
+Use this if you want to understand or adapt what the script does. Everything
+below assumes you are signed in (`gcloud auth login`) and have a billing-enabled
+project.
 
 ```bash
 export PROJECT_ID=your-project-id

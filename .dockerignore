@@ -3,13 +3,17 @@ node_modules
 .git
 .github
 coverage
-tests
-scripts
+
+# `tests/` and `scripts/` ARE part of the build context: the `tester` stage runs
+# the suite and typechecks the whole project. Neither reaches the final image,
+# which only copies .next/standalone and public/.
+
 *.md
 !README.md
 .env
 .env.local
 .env*.local
+.deploy.env
 firebase-debug.log
 .firebase
 Dockerfile

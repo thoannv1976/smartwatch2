@@ -5,17 +5,29 @@
 # its runtime dependencies (a few tens of MB), not the toolchain or the full
 # node_modules tree. A small image means fast cold starts, which matters on
 # Cloud Run where a class of students may all arrive at once.
+#
+# `deps` is a stage on its own so `npm ci` (37s) happens exactly once per build
+# and is skipped entirely on a rebuild whose package-lock.json has not changed —
+# see the --cache-from wiring in cloudbuild.yaml. `tester` and `builder` both
+# derive from it, so they share that one install and can run in parallel.
 # ---------------------------------------------------------------------------
 
 FROM node:22-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-# `npm ci` needs the dev dependencies to build; they are dropped after this stage.
-RUN npm ci
+# Dev dependencies are needed to typecheck, test and build; none reach `runner`.
+RUN npm ci --no-audit --no-fund
 
-FROM node:22-alpine AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# --- Correctness gate -------------------------------------------------------
+# Its own stage, built with `--target tester`, so a failure is reported as its
+# own Cloud Build step rather than buried in the image build. The engine's
+# reproducibility is the product: a red test must never reach students.
+FROM deps AS tester
+COPY . .
+RUN npx tsc --noEmit && npx vitest run
+
+# --- Application build ------------------------------------------------------
+FROM deps AS builder
 COPY . .
 
 # The NEXT_PUBLIC_* values are inlined into the client bundle at build time, so
@@ -32,6 +44,7 @@ ENV NEXT_PUBLIC_FIREBASE_API_KEY=$NEXT_PUBLIC_FIREBASE_API_KEY \
 
 RUN npm run build
 
+# --- Runtime ----------------------------------------------------------------
 FROM node:22-alpine AS runner
 WORKDIR /app
 
