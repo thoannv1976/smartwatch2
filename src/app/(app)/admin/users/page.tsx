@@ -4,7 +4,13 @@ import { getRepositories } from '@/db/repositories/firestore';
 import { isArchived, ROLES, type Role } from '@/db/models';
 import { getTranslations } from '@/i18n/server';
 import { RoleSelect } from '@/components/instructor/RoleSelect';
-import { InviteRoleForm, RevokeInviteButton, UserArchiveButton } from '@/components/instructor/AdminForms';
+import {
+  CreateUserForm,
+  InviteRoleForm,
+  PasswordControls,
+  RevokeInviteButton,
+  UserArchiveButton,
+} from '@/components/instructor/AdminForms';
 import {
   Badge,
   Card,
@@ -61,6 +67,11 @@ export default async function AdminUsersPage({
           </Link>
         }
       />
+
+      <Card>
+        <CardTitle hint={t.account.createHint}>{t.account.createTitle}</CardTitle>
+        <CreateUserForm />
+      </Card>
 
       <Card>
         <CardTitle hint={t.instructorAdmin.inviteHint}>{t.instructorAdmin.inviteTitle}</CardTitle>
@@ -165,11 +176,21 @@ export default async function AdminUsersPage({
                     <Td>
                       <RoleSelect uid={user.uid} role={user.role} isSelf={user.uid === admin.uid} />
                     </Td>
-                    <Td className="text-ink-400">{formatDate(user.createdAt, locale)}</Td>
+                    <Td className="text-ink-400">
+                      {formatDate(user.createdAt, locale)}
+                      {user.passwordSetAt ? (
+                        <span className="mt-0.5 block text-[11px] text-ink-500">
+                          {t.account.passwordSetAt}: {formatDate(user.passwordSetAt, locale)}
+                        </span>
+                      ) : null}
+                    </Td>
                     <Td align="right">
-                      {user.uid === admin.uid ? null : (
-                        <UserArchiveButton uid={user.uid} archived={isArchived(user)} />
-                      )}
+                      <div className="flex flex-col items-end gap-2">
+                        <PasswordControls uid={user.uid} />
+                        {user.uid === admin.uid ? null : (
+                          <UserArchiveButton uid={user.uid} archived={isArchived(user)} />
+                        )}
+                      </div>
                     </Td>
                   </tr>
                 ))}

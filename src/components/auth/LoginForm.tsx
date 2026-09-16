@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import {
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
+  sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
   updateProfile,
@@ -12,6 +13,7 @@ import {
 import { getFirebaseAuth, isFirebaseClientConfigured } from '@/lib/firebase-client';
 import { useI18n } from '@/i18n/client';
 import { safeNextPath } from '@/lib/safe-next-path';
+import { classifyResetFailure } from '@/lib/password-reset';
 import { Card, ErrorNote, WarningNote } from '@/components/ui/primitives';
 
 /**
@@ -27,7 +29,8 @@ export function LoginForm() {
   const nextPath = safeNextPath(params.get('next'));
   const forbidden = params.get('error') === 'forbidden';
 
-  const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn');
+  const [mode, setMode] = useState<'signIn' | 'signUp' | 'reset'>('signIn');
+  const [resetSent, setResetSent] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -55,6 +58,31 @@ export function LoginForm() {
       await exchangeToken(await credential.user.getIdToken());
     } catch (err) {
       setError(translateError(err));
+      setBusy(false);
+    }
+  };
+
+  /**
+   * Asks Firebase to email a reset link.
+   *
+   * The message shown is the SAME whether or not the address has an account.
+   * Firebase says which it is; passing that on would turn the login page into a
+   * way to discover who studies or teaches here. `classifyResetFailure` holds
+   * that rule, and is tested.
+   */
+  const handleReset = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      await sendPasswordResetEmail(getFirebaseAuth(), email.trim());
+      setResetSent(true);
+    } catch (err) {
+      const outcome = classifyResetFailure(err);
+      if (outcome === 'SENT') setResetSent(true);
+      else if (outcome === 'INVALID_EMAIL') setError(t.auth.resetInvalidEmail);
+      else setError(t.auth.resetFailed);
+    } finally {
       setBusy(false);
     }
   };
@@ -110,70 +138,135 @@ export function LoginForm() {
         </div>
       ) : null}
 
-      <button
-        type="button"
-        onClick={handleGoogle}
-        disabled={busy || !configured}
-        className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border border-ink-600 bg-ink-100 px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        <GoogleMark />
-        {t.auth.googleSignIn}
-      </button>
+      {mode === 'reset' ? (
+        <div className="mt-5 flex flex-col gap-3">
+          <h2 className="text-sm font-semibold text-ink-100">{t.auth.resetTitle}</h2>
+          <p className="text-xs text-ink-400">{t.auth.resetHint}</p>
 
-      <div className="my-5 flex items-center gap-3 text-xs text-ink-500">
-        <span className="h-px flex-1 bg-ink-700" />
-        <span>·</span>
-        <span className="h-px flex-1 bg-ink-700" />
-      </div>
+          {resetSent ? (
+            <>
+              {/* Deliberately the same message whether or not the address has an
+                  account — see handleReset. */}
+              <p className="rounded-lg border border-good-500/40 bg-good-500/10 px-4 py-3 text-sm text-good-400">
+                {t.auth.resetSent}
+              </p>
+              <p className="text-xs text-ink-500">{t.auth.googleHint}</p>
+            </>
+          ) : (
+            <form onSubmit={handleReset} className="flex flex-col gap-3">
+              <Field
+                label={t.auth.email}
+                value={email}
+                onChange={setEmail}
+                type="email"
+                autoComplete="email"
+                required
+              />
+              {error ? <ErrorNote>{error}</ErrorNote> : null}
+              <button
+                type="submit"
+                disabled={busy || !configured || !email.trim()}
+                className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {busy ? t.auth.resetSending : t.auth.resetSend}
+              </button>
+            </form>
+          )}
 
-      <form onSubmit={handleEmail} className="flex flex-col gap-3">
-        {mode === 'signUp' ? (
-          <Field
-            label={t.auth.displayName}
-            value={displayName}
-            onChange={setDisplayName}
-            type="text"
-            autoComplete="name"
-          />
-        ) : null}
-        <Field
-          label={t.auth.email}
-          value={email}
-          onChange={setEmail}
-          type="email"
-          autoComplete="email"
-          required
-        />
-        <Field
-          label={t.auth.password}
-          value={password}
-          onChange={setPassword}
-          type="password"
-          autoComplete={mode === 'signUp' ? 'new-password' : 'current-password'}
-          required
-        />
+          <button
+            type="button"
+            onClick={() => {
+              setMode('signIn');
+              setResetSent(false);
+              setError(null);
+            }}
+            className="w-full text-center text-xs text-ink-400 underline-offset-2 hover:text-ink-200 hover:underline"
+          >
+            {t.auth.backToSignIn}
+          </button>
+        </div>
+      ) : (
+        <>
+          <button
+            type="button"
+            onClick={handleGoogle}
+            disabled={busy || !configured}
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border border-ink-600 bg-ink-100 px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <GoogleMark />
+            {t.auth.googleSignIn}
+          </button>
 
-        {error ? <ErrorNote>{error}</ErrorNote> : null}
+          <div className="my-5 flex items-center gap-3 text-xs text-ink-500">
+            <span className="h-px flex-1 bg-ink-700" />
+            <span>·</span>
+            <span className="h-px flex-1 bg-ink-700" />
+          </div>
 
-        <button
-          type="submit"
-          disabled={busy || !configured}
-          className="mt-1 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50"
-        >
-          {mode === 'signUp' ? t.auth.signUp : t.auth.signIn}
-        </button>
-      </form>
+          <form onSubmit={handleEmail} className="flex flex-col gap-3">
+            {mode === 'signUp' ? (
+              <Field
+                label={t.auth.displayName}
+                value={displayName}
+                onChange={setDisplayName}
+                type="text"
+                autoComplete="name"
+              />
+            ) : null}
+            <Field
+              label={t.auth.email}
+              value={email}
+              onChange={setEmail}
+              type="email"
+              autoComplete="email"
+              required
+            />
+            <Field
+              label={t.auth.password}
+              value={password}
+              onChange={setPassword}
+              type="password"
+              autoComplete={mode === 'signUp' ? 'new-password' : 'current-password'}
+              required
+            />
 
-      <button
-        type="button"
-        onClick={() => {
-          setMode(mode === 'signIn' ? 'signUp' : 'signIn');
-          setError(null);
-        }}
-        className="mt-4 w-full text-center text-xs text-ink-400 underline-offset-2 hover:text-ink-200 hover:underline"
-      >
-        {mode === 'signIn' ? t.auth.switchToSignUp : t.auth.switchToSignIn}
-      </button>
+            {error ? <ErrorNote>{error}</ErrorNote> : null}
+
+            <button
+              type="submit"
+              disabled={busy || !configured}
+              className="mt-1 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {mode === 'signUp' ? t.auth.signUp : t.auth.signIn}
+            </button>
+          </form>
+
+          <div className="mt-4 flex flex-col gap-2">
+            <button
+              type="button"
+              onClick={() => {
+                setMode(mode === 'signIn' ? 'signUp' : 'signIn');
+                setError(null);
+              }}
+              className="w-full text-center text-xs text-ink-400 underline-offset-2 hover:text-ink-200 hover:underline"
+            >
+              {mode === 'signIn' ? t.auth.switchToSignUp : t.auth.switchToSignIn}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('reset');
+                setResetSent(false);
+                setError(null);
+              }}
+              className="w-full text-center text-xs text-ink-400 underline-offset-2 hover:text-ink-200 hover:underline"
+            >
+              {t.auth.forgotPassword}
+            </button>
+          </div>
+        </>
+      )}
+
     </Card>
   );
 }

@@ -66,7 +66,7 @@ Giảng viên làm được mọi việc của Sinh viên.
 |---|---|---|
 | **Sinh viên** (STUDENT) | Trang chủ | Chơi thử, làm bài tập chính thức, xem báo cáo của mình, xem bảng xếp hạng **lớp mình** |
 | **Giảng viên** (INSTRUCTOR) | + Bảng điều khiển giảng viên, Chế độ kiểm thử mô phỏng | Tạo và **sửa** lớp, mở/đóng ghi danh, sửa mã SV, gỡ sinh viên, tạo và sửa bài tập, lưu trữ, xem chi tiết 6 quý của từng SV, xuất CSV |
-| **Quản trị viên** (ADMIN) | + Quản trị hệ thống, Người dùng | Mời giảng viên theo email, đổi vai trò, vô hiệu hoá tài khoản, chuyển lớp sang giảng viên khác, xem **tất cả** lớp học, xem cấu hình engine |
+| **Quản trị viên** (ADMIN) | + Quản trị hệ thống, Người dùng | **Tạo tài khoản**, **đặt lại mật khẩu**, mời giảng viên theo email, đổi vai trò, vô hiệu hoá tài khoản, chuyển lớp sang giảng viên khác, xem **tất cả** lớp học, xem cấu hình engine |
 
 **Mọi tài khoản mới đăng nhập đều là Sinh viên**, trừ hai ngoại lệ: email đặt ở
 `BOOTSTRAP_ADMIN_EMAIL` (thành Quản trị viên, để lần deploy đầu tiên có người đủ
@@ -107,6 +107,16 @@ sinh viên của em."* Xong buổi đầu thì **tắt ghi danh** — từ đó 
    khẩu** — chưa có thì bấm *"Chưa có tài khoản? Tạo mới"* (mật khẩu tối thiểu
    6 ký tự).
 3. Vào **Trang chủ**.
+
+**Quên mật khẩu?** Bấm link ngay dưới form đăng nhập, nhập email, hệ thống gửi
+link đặt lại vào hộp thư của bạn. Nhớ xem cả thư rác.
+
+> Thông báo sau khi gửi **giống hệt nhau** dù email đó có tài khoản hay không.
+> Đây là chủ ý: nếu khác nhau, ai cũng có thể gõ email vào để dò xem người nào
+> có tài khoản trong trường.
+
+Nếu bạn đăng nhập bằng **Google** thì không có mật khẩu để đặt lại — cứ dùng nút
+**Đăng nhập với Google**. Nếu vẫn kẹt, nhờ quản trị viên đặt lại hộ.
 
 ### A2. Tham gia lớp của bạn
 
@@ -470,6 +480,34 @@ Vài quy tắc đáng biết, vì chúng được thiết kế có chủ ý:
 - **`BOOTSTRAP_ADMIN_EMAIL` luôn thắng.** Đây là đường vào cuối cùng nếu dữ liệu
   lời mời có sai, nên không gì ghi đè được nó.
 
+**Tạo tài khoản trực tiếp.** Nhập email, tên hiển thị, vai trò và mật khẩu ban
+đầu (tối thiểu 8 ký tự). Mật khẩu hiện **đúng một lần** trên màn hình để bạn đưa
+cho người dùng — hệ thống không lưu và không xem lại được.
+
+Việc này dành cho **trường hợp lẻ**: sinh viên không có email trường, giảng viên
+khách, tài khoản demo. Sinh viên bình thường tự đăng ký và tự vào lớp được.
+
+Nếu email đó **đã có tài khoản đăng nhập nhưng chưa có hồ sơ trong app** (dữ liệu
+cũ bị lạc), hệ thống tự **nối lại** thay vì báo lỗi cụt — mật khẩu cũ của họ giữ
+nguyên.
+
+**Đặt lại mật khẩu cho người dùng.** Mỗi dòng có hai nút:
+
+- **Đặt mật khẩu** — bạn gõ mật khẩu mới, hệ thống đặt và hiện lại để bạn đọc cho
+  người dùng.
+- **Tạo link đặt lại** — sinh một link dùng một lần, bạn copy gửi riêng. Cách này
+  bạn **không bao giờ biết** mật khẩu của họ.
+
+Với tài khoản đang dùng **Google**, hệ thống cảnh báo trước và chỉ đặt khi bạn xác
+nhận. Đặt xong họ đăng nhập được bằng **cả hai** cách.
+
+Cột ngày sẽ ghi **admin đặt mật khẩu lần cuối** khi nào.
+
+> **Điều cần biết khi chọn ai làm admin:** admin đặt được mật khẩu của **bất kỳ
+> ai, kể cả admin khác**, rồi đăng nhập thành người đó. Đây là hệ quả cố hữu của
+> quyền này, không thiết kế tránh được. Hệ thống ghi lại ai đổi và lúc nào; mật
+> khẩu thì không bao giờ lưu.
+
 **Tìm kiếm và lọc theo vai trò** — hữu ích khi danh sách đã dài.
 
 **Vô hiệu hoá tài khoản** (nút ở cuối mỗi dòng). Tài khoản bị vô hiệu hoá chỉ
@@ -555,6 +593,7 @@ khích: lập kế hoạch 6 quý chính là kỹ năng cần học.
 | *Mã sinh viên này đã có người dùng trong lớp* | Mã bị trùng trong cùng lớp | Kiểm tra lại mã của mình; nếu đúng là mã của bạn thì báo giảng viên |
 | *Hiện chưa có lớp nào mở ghi danh* | Giảng viên chưa bật, hoặc đã tắt ghi danh | Liên hệ giảng viên |
 | *Bạn đã bắt đầu bài tập chính thức của lớp này nên không tự rời được* | Đã có lượt chơi chính thức | Nhờ giảng viên gỡ |
+| Quên mật khẩu, không nhận được email | Email sai, hoặc thư vào hộp rác, hoặc bạn đăng nhập bằng Google | Kiểm tra thư rác; nếu dùng Google thì bấm **Đăng nhập với Google** |
 | *Bạn không thuộc lớp của bài tập này* | Chưa được ghi danh | Giảng viên thêm bằng email + mã SV |
 | *Chưa mở* | Chưa đến "Thời điểm mở" | Chờ |
 | *Đã hết hạn* | Quá hạn cuối | Liên hệ giảng viên |
@@ -580,6 +619,9 @@ khích: lập kế hoạch 6 quý chính là kỹ năng cần học.
 | Thông báo | Nghĩa là gì | Làm gì |
 |---|---|---|
 | *Bạn không thể tự thay đổi vai trò của chính mình* | Ràng buộc chống tự khoá quyền | Nhờ một quản trị viên khác, nếu thật sự cần |
+| *Mật khẩu cần ít nhất 8 ký tự* | Mật khẩu quá ngắn | Đặt mật khẩu dài hơn |
+| *Email này đã có tài khoản* | Người đó đã có trong danh sách | Sửa trực tiếp trên dòng của họ thay vì tạo mới |
+| *Tài khoản này đang đăng nhập bằng Google…* | Chưa có mật khẩu | Bấm **Tôi hiểu, vẫn đặt mật khẩu** nếu thật sự muốn |
 | Không đăng nhập được bằng email bootstrap | `BOOTSTRAP_ADMIN_EMAIL` chỉ áp dụng cho **tài khoản mới** — nó không đổi vai trò của tài khoản đã tồn tại | Xem [DEPLOY.md](./DEPLOY.md) |
 
 ### Lỗi kỹ thuật
@@ -597,6 +639,14 @@ khích: lập kế hoạch 6 quý chính là kỹ năng cần học.
 **Sinh viên chơi lại bài chính thức được không?**
 Chỉ khi giảng viên đặt "Số lần làm tối đa" lớn hơn 1. Khuyến nghị để **1**.
 Chơi thử thì không giới hạn.
+
+**Sinh viên quên mật khẩu thì làm sao?**
+Tự bấm **Quên mật khẩu?** ở trang đăng nhập là xong — không cần ai giúp. Nếu vẫn
+kẹt, admin đặt lại hộ hoặc tạo link đặt lại.
+
+**Admin có xem được mật khẩu của sinh viên không?**
+Không. Hệ thống không lưu mật khẩu ở dạng đọc được. Admin chỉ **đặt mật khẩu
+mới** (và thấy đúng cái mình vừa gõ), hoặc **tạo link** để người dùng tự đặt.
 
 **Sinh viên vào nhầm lớp thì sao?**
 Nếu chưa bắt đầu bài chính thức, họ tự bấm **Rời lớp** rồi vào lớp đúng. Nếu đã

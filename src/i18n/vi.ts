@@ -59,6 +59,18 @@ export const vi = {
     emailInUse: 'Email này đã được sử dụng',
     genericError: 'Không đăng nhập được. Vui lòng thử lại.',
     forbidden: 'Bạn không có quyền truy cập trang này',
+    forgotPassword: 'Quên mật khẩu?',
+    resetTitle: 'Đặt lại mật khẩu',
+    resetHint: 'Nhập email bạn dùng để đăng nhập. Chúng tôi sẽ gửi link đặt lại mật khẩu.',
+    resetSend: 'Gửi link đặt lại',
+    resetSending: 'Đang gửi…',
+    resetSent:
+      'Nếu email này có tài khoản, chúng tôi đã gửi link đặt lại. Kiểm tra cả hộp thư rác.',
+    resetFailed: 'Không gửi được lúc này. Vui lòng thử lại sau.',
+    resetInvalidEmail: 'Email không hợp lệ',
+    backToSignIn: 'Quay lại đăng nhập',
+    googleHint:
+      'Nếu bạn đăng nhập bằng Google thì không có mật khẩu để đặt lại — hãy dùng nút Đăng nhập với Google.',
   },
   home: {
     title: 'Trang chủ',
@@ -301,6 +313,30 @@ export const vi = {
     memberAdded: 'Đã thêm sinh viên',
     memberNotFound: 'Không tìm thấy người dùng với email này. Sinh viên cần đăng nhập ít nhất 1 lần.',
   },
+  account: {
+    createTitle: 'Tạo tài khoản mới',
+    createHint:
+      'Dùng cho trường hợp lẻ: sinh viên không có email trường, giảng viên khách, tài khoản demo. Sinh viên bình thường tự đăng ký và tự vào lớp được.',
+    displayName: 'Tên hiển thị',
+    initialPassword: 'Mật khẩu ban đầu',
+    passwordRule: 'Ít nhất 8 ký tự',
+    create: 'Tạo tài khoản',
+    creating: 'Đang tạo…',
+    created: 'Đã tạo tài khoản. Hãy đưa mật khẩu cho người dùng.',
+    adopted:
+      'Email này đã có tài khoản đăng nhập nhưng chưa có hồ sơ trong app. Đã nối lại — mật khẩu cũ của họ giữ nguyên.',
+    passwordOnce:
+      'Mật khẩu chỉ hiện một lần ở đây. Chép lại ngay — hệ thống không lưu và không xem lại được.',
+    setPassword: 'Đặt mật khẩu',
+    newPassword: 'Mật khẩu mới',
+    passwordSet: 'Đã đặt mật khẩu. Hãy đọc cho người dùng.',
+    confirmGoogle: 'Tôi hiểu, vẫn đặt mật khẩu',
+    resetLink: 'Tạo link đặt lại',
+    resetLinkReady: 'Gửi riêng link này cho người dùng. Link dùng một lần và có hạn.',
+    copy: 'Chép',
+    copied: 'Đã chép',
+    passwordSetAt: 'Admin đặt mật khẩu lần cuối',
+  },
   instructorAdmin: {
     archive: 'Lưu trữ',
     restore: 'Khôi phục',
@@ -453,6 +489,11 @@ export const vi = {
     steady: '{company} giữ nguyên chiến lược như quý trước.',
   },
   errors: {
+    weakPassword: 'Mật khẩu cần ít nhất 8 ký tự',
+    emailAlreadyExists: 'Email này đã có tài khoản. Hãy sửa trực tiếp trên dòng của họ trong danh sách.',
+    accountUsesGoogle:
+      'Tài khoản này đang đăng nhập bằng Google nên chưa có mật khẩu. Nếu bạn đặt mật khẩu, họ sẽ đăng nhập được bằng cả hai cách.',
+    authOperationFailed: 'Không thực hiện được thao tác tài khoản. Hãy thử lại.',
     courseNotFound: 'Không tìm thấy lớp học',
     enrollmentClosed: 'Lớp này hiện không mở ghi danh',
     alreadyEnrolled: 'Bạn đã ở trong lớp này rồi',

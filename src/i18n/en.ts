@@ -56,6 +56,17 @@ export const en: Dictionary = {
     emailInUse: 'That email is already in use',
     genericError: 'Could not sign in. Please try again.',
     forbidden: 'You do not have access to this page',
+    forgotPassword: 'Forgot your password?',
+    resetTitle: 'Reset your password',
+    resetHint: 'Enter the email you sign in with. We will send you a link to set a new password.',
+    resetSend: 'Send reset link',
+    resetSending: 'Sending…',
+    resetSent: 'If that email has an account, a reset link is on its way. Check your spam folder.',
+    resetFailed: 'That could not be sent right now. Please try again later.',
+    resetInvalidEmail: 'That email address is not valid',
+    backToSignIn: 'Back to sign in',
+    googleHint:
+      'If you sign in with Google there is no password to reset — use the Sign in with Google button.',
   },
   home: {
     title: 'Home',
@@ -301,6 +312,30 @@ export const en: Dictionary = {
     memberAdded: 'Student added',
     memberNotFound: 'No user found with that email. The student must sign in at least once first.',
   },
+  account: {
+    createTitle: 'Create an account',
+    createHint:
+      'For the odd case: a student with no university email, a guest lecturer, a demo account. Ordinary students register and join a class themselves.',
+    displayName: 'Display name',
+    initialPassword: 'Initial password',
+    passwordRule: 'At least 8 characters',
+    create: 'Create account',
+    creating: 'Creating…',
+    created: 'Account created. Pass the password on to them.',
+    adopted:
+      'That email already had a sign-in account but no profile in this app. The two are now linked — their existing password is unchanged.',
+    passwordOnce:
+      'The password is shown here once. Copy it now — it is not stored and cannot be shown again.',
+    setPassword: 'Set password',
+    newPassword: 'New password',
+    passwordSet: 'Password set. Read it out to them.',
+    confirmGoogle: 'I understand, set it anyway',
+    resetLink: 'Create reset link',
+    resetLinkReady: 'Send this link to them privately. It is single-use and expires.',
+    copy: 'Copy',
+    copied: 'Copied',
+    passwordSetAt: 'Password last set by an admin',
+  },
   instructorAdmin: {
     archive: 'Archive',
     restore: 'Restore',
@@ -454,6 +489,11 @@ export const en: Dictionary = {
     steady: '{company} kept the same strategy as last quarter.',
   },
   errors: {
+    weakPassword: 'Password must be at least 8 characters',
+    emailAlreadyExists: 'That email already has an account. Edit their row in the list instead.',
+    accountUsesGoogle:
+      'This account signs in with Google and has no password. Setting one lets them sign in either way.',
+    authOperationFailed: 'The account operation did not go through. Please try again.',
     courseNotFound: 'Course not found',
     enrollmentClosed: 'This class is not open for enrolment',
     alreadyEnrolled: 'You are already in this class',

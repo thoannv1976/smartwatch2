@@ -73,6 +73,12 @@ class MemoryUserRepository implements UserRepository {
     this.users.set(uid, { ...user, role });
   }
 
+  async recordPasswordSet(uid: string, at: number, by: string): Promise<void> {
+    const user = this.users.get(uid);
+    if (!user) throw new Error(`User ${uid} not found`);
+    this.users.set(uid, { ...user, passwordSetAt: at, passwordSetBy: by });
+  }
+
   async setArchived(uid: string, at: number | null): Promise<void> {
     const user = this.users.get(uid);
     if (!user) throw new Error(`User ${uid} not found`);

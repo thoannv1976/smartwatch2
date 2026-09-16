@@ -69,6 +69,15 @@ export interface UserDoc extends Archivable {
   role: Role;
   createdAt: number;
   lastSeenAt: number;
+  /**
+   * When an administrator last set this person's password, and who did it.
+   *
+   * An admin who can set a password can sign in as that person, including as
+   * another admin. That power cannot be designed away while admins have it, so
+   * it is at least recorded. The password itself is NEVER stored here.
+   */
+  passwordSetAt?: number | null;
+  passwordSetBy?: string | null;
 }
 
 export interface CourseDoc extends Archivable {

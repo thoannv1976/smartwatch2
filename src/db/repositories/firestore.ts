@@ -163,6 +163,13 @@ class FirestoreUserRepository implements UserRepository {
     await this.db.collection(COLLECTIONS.users).doc(uid).update({ role });
   }
 
+  async recordPasswordSet(uid: string, at: number, by: string): Promise<void> {
+    await this.db
+      .collection(COLLECTIONS.users)
+      .doc(uid)
+      .update({ passwordSetAt: at, passwordSetBy: by });
+  }
+
   async setArchived(uid: string, at: number | null): Promise<void> {
     // A literal null, never undefined: the Admin SDK is configured with
     // ignoreUndefinedProperties, so writing undefined would drop the field and

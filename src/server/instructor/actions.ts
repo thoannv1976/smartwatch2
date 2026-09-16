@@ -10,6 +10,8 @@ import {
 import { getRepositories, isUsableInviteId } from '@/db/repositories/firestore';
 import { ROLES, type Role } from '@/db/models';
 import { AuthorizationError, hasRole, requireRole } from '@/server/auth/session';
+import { getAuthAdmin } from '@/server/auth/admin-users';
+import { createAccountAdminService } from '@/server/auth/account-admin';
 import { patchKeepsWindowValid } from './validation';
 import type { GameErrorKey } from '@/server/game/errors';
 
@@ -525,5 +527,115 @@ export async function transferCourseAction(
     return { ok: true, data: {} };
   } catch (error) {
     return { ok: false, error: toError(error) };
+  }
+}
+
+// --- accounts and passwords -------------------------------------------------
+//
+// Thin wrappers. Everything that can be wrong lives in AccountAdminService,
+// where it is testable; these only authenticate, validate and delegate.
+//
+// They deliberately do NOT pass a caught error to `toError`. That helper logs
+// `String(error)`, and an Admin SDK error can carry the request that produced
+// it — which here would be a plaintext password. Failures are logged as a code
+// and nothing else.
+
+/** Logs a stable code. Never the error object, never the input. */
+function logAuthFailure(operation: string, error: unknown): void {
+  const code = (error as { code?: unknown } | null)?.code;
+  console.error(
+    JSON.stringify({
+      severity: 'ERROR',
+      message: 'auth admin operation failed',
+      operation,
+      code: typeof code === 'string' ? code : 'unknown',
+    }),
+  );
+}
+
+function accounts() {
+  return createAccountAdminService(getRepositories(), getAuthAdmin());
+}
+
+const createUserSchema = z.object({
+  email: z.string().trim().email().max(320),
+  displayName: z.string().trim().min(1).max(80),
+  role: z.enum(ROLES as unknown as [Role, ...Role[]]),
+  // Firebase accepts six characters. An administrator handing out a password
+  // should clear more than the floor.
+  password: z.string().min(8).max(128),
+});
+
+export async function createUserAction(
+  input: z.input<typeof createUserSchema>,
+): Promise<StaffActionResult<{ uid: string; adopted: boolean }>> {
+  let parsed;
+  try {
+    await requireRole('ADMIN');
+    parsed = createUserSchema.parse(input);
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+
+  try {
+    const result = await accounts().createAccount(parsed);
+    if (result.ok) {
+      revalidatePath('/admin');
+      revalidatePath('/admin/users');
+    }
+    return result;
+  } catch (error) {
+    logAuthFailure('createAccount', error);
+    return { ok: false, error: 'authOperationFailed' };
+  }
+}
+
+const setPasswordSchema = z.object({
+  uid: z.string().min(1),
+  password: z.string().min(8).max(128),
+  /** Set once the admin has acknowledged this account signs in with Google. */
+  confirmNoPassword: z.boolean().optional(),
+});
+
+export async function setUserPasswordAction(
+  input: z.input<typeof setPasswordSchema>,
+): Promise<StaffActionResult<Record<string, never>>> {
+  let admin;
+  let parsed;
+  try {
+    admin = await requireRole('ADMIN');
+    parsed = setPasswordSchema.parse(input);
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+
+  try {
+    const result = await accounts().setPassword({ ...parsed, byUid: admin.uid });
+    if (result.ok) revalidatePath('/admin/users');
+    return result;
+  } catch (error) {
+    logAuthFailure('setPassword', error);
+    return { ok: false, error: 'authOperationFailed' };
+  }
+}
+
+const resetLinkSchema = z.object({ uid: z.string().min(1) });
+
+export async function passwordResetLinkAction(
+  input: z.input<typeof resetLinkSchema>,
+): Promise<StaffActionResult<{ link: string }>> {
+  let parsed;
+  try {
+    await requireRole('ADMIN');
+    parsed = resetLinkSchema.parse(input);
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+
+  try {
+    return await accounts().resetLink(parsed.uid);
+  } catch (error) {
+    logAuthFailure('passwordResetLink', error);
+    return { ok: false, error: 'authOperationFailed' };
   }
 }

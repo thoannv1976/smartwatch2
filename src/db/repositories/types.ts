@@ -31,6 +31,8 @@ export interface UserRepository {
   /** Creates the user on first sign-in, or refreshes profile fields. */
   upsert(user: Omit<UserDoc, 'createdAt' | 'lastSeenAt'>): Promise<UserDoc>;
   setRole(uid: string, role: Role): Promise<void>;
+  /** Notes that an administrator set this account's password. Never the password. */
+  recordPasswordSet(uid: string, at: number, by: string): Promise<void>;
   list(limit?: number): Promise<UserDoc[]>;
 }
 
