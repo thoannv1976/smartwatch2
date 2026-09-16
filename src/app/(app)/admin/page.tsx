@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { requireRolePage } from '@/server/auth/guards';
 import { getRepositories } from '@/db/repositories/firestore';
 import { getTranslations } from '@/i18n/server';
+import { interpolate } from '@/i18n';
+import { STALLED_AFTER_DAYS, listStalledGroups } from '@/server/instructor/queries';
 import { isArchived } from '@/db/models';
 import { RoleSelect } from '@/components/instructor/RoleSelect';
 import {
@@ -26,11 +28,70 @@ export default async function AdminPage() {
   const { t, locale } = await getTranslations();
 
   const repos = getRepositories();
-  const [users, courses] = await Promise.all([repos.users.list(200), repos.courses.listAll()]);
+  const [users, courses, stalledGroups] = await Promise.all([
+    repos.users.list(200),
+    repos.courses.listAll(),
+    listStalledGroups(),
+  ]);
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6">
       <PageHeader title={t.admin.title} subtitle={admin.displayName} />
+
+      {/* Group mode waits for all six and has no automatic deadline, which is a
+          deliberate choice with exactly one failure mode: a group waiting
+          forever on somebody who stopped turning up. An instructor sees that on
+          their own assignment page; this is the system-wide view, so nothing
+          sits stuck in a class nobody is watching. */}
+      {stalledGroups.length > 0 ? (
+        <Card className="border-warn-500/40">
+          <CardTitle hint={interpolate(t.groupAdmin.stalledHint, { days: STALLED_AFTER_DAYS })}>
+            {t.groupAdmin.stalledTitle}
+          </CardTitle>
+          <TableScroll>
+            <table className="w-full border-collapse">
+              <thead>
+                <tr>
+                  <Th>{t.instructor.courseName}</Th>
+                  <Th>{t.groupAdmin.tab}</Th>
+                  <Th align="center">{t.common.quarter}</Th>
+                  <Th>{t.groupAdmin.waitingOn.replace('{names}', '').replace(':', '')}</Th>
+                  <Th align="right" />
+                </tr>
+              </thead>
+              <tbody>
+                {stalledGroups.map((row) => (
+                  <tr key={row.groupId}>
+                    <Td className="text-ink-200">
+                      {row.courseName}
+                      <span className="block text-xs text-ink-500">{row.assignmentTitle}</span>
+                    </Td>
+                    <Td className="text-ink-100">{row.groupName}</Td>
+                    <Td numeric align="center">
+                      {t.common.quarterShort}
+                      {row.quarter}
+                    </Td>
+                    <Td className="text-warn-500">
+                      {row.waitingOn.join(', ')}
+                      <span className="block text-xs text-ink-500">
+                        {interpolate(t.groupAdmin.stalledDays, { days: row.idleDays })}
+                      </span>
+                    </Td>
+                    <Td align="right">
+                      <Link
+                        href={`/instructor/assignments/${row.assignmentId}`}
+                        className="text-brand-400 underline-offset-2 hover:underline"
+                      >
+                        {t.instructor.viewDetail}
+                      </Link>
+                    </Td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableScroll>
+        </Card>
+      ) : null}
 
       <Card>
         <CardTitle

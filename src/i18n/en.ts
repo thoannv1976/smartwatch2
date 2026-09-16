@@ -770,6 +770,11 @@ export const en: Dictionary = {
     defaultFlag: 'default',
     exportGroups: 'Export CSV · Group decisions',
     standings: 'Final group standings',
+    stalledTitle: 'Stalled groups',
+    stalledHint:
+      'Groups that have not advanced for more than {days} days because a decision is missing. There is no automatic deadline — nudge the instructor, or use Run the quarter now.',
+    stalledNone: 'No groups are stalled.',
+    stalledDays: '{days} days',
   },
   rivals: {
     title: 'Reading the competition',

@@ -8,7 +8,7 @@ import {
   type CompanyKey,
 } from '@/domain/simulation';
 import { getRepositories } from '@/db/repositories/firestore';
-import { isRemoved } from '@/db/models';
+import { assignmentMode, isRemoved } from '@/db/models';
 import type {
   AssignmentDoc,
   CourseDoc,
@@ -303,4 +303,83 @@ export async function getGroupDetail(groupId: string) {
   }
 
   return { group, members, game, quarters, scores, defaults };
+}
+
+/** A group that has been waiting on the same people for too long. */
+export interface StalledGroup {
+  groupId: string;
+  groupName: string;
+  courseId: string;
+  courseName: string;
+  assignmentId: string;
+  assignmentTitle: string;
+  quarter: number;
+  waitingOn: string[];
+  /** Days since the match last advanced, or since it was created. */
+  idleDays: number;
+}
+
+/** A match idle this long is stuck rather than merely slow. */
+export const STALLED_AFTER_DAYS = 7;
+
+/**
+ * Every group across the whole system that appears to be stuck.
+ *
+ * There is no automatic per-quarter deadline, which is a deliberate choice —
+ * see `GroupService` — and its one failure mode is a group waiting forever on
+ * somebody who has stopped turning up. An instructor sees that on their own
+ * assignment page; this is the system-wide view, so an administrator can notice
+ * a class nobody is watching and go and prod the instructor.
+ *
+ * Reads the whole assignment set, so it is an admin screen rather than
+ * something on a hot path.
+ */
+export async function listStalledGroups(
+  now: number = Date.now(),
+  thresholdDays: number = STALLED_AFTER_DAYS,
+): Promise<StalledGroup[]> {
+  const repos = getRepositories();
+  const courses = await repos.courses.listAll();
+  if (courses.length === 0) return [];
+
+  const assignments = await repos.assignments.listByCourses(courses.map((c) => c.id));
+  const groupAssignments = assignments.filter((a) => assignmentMode(a) === 'GROUP');
+  if (groupAssignments.length === 0) return [];
+
+  const courseById = new Map(courses.map((c) => [c.id, c]));
+  const stalled: StalledGroup[] = [];
+
+  for (const assignment of groupAssignments) {
+    for (const row of await listGroupProgress(assignment.id)) {
+      if (row.completed || row.waitingOn.length === 0) continue;
+
+      // Idle since the last quarter actually landed. `GroupGameDoc` records no
+      // "last advanced" time, so the quarters are read — but only for groups
+      // that already look stuck, which keeps this off the common path.
+      const quarters = row.quartersPlayed > 0
+        ? await repos.groupGames.listQuarters(row.group.id)
+        : [];
+      const lastActivity =
+        quarters[quarters.length - 1]?.simulatedAt ??
+        row.game?.startedAt ??
+        row.group.createdAt;
+
+      const idleDays = Math.floor((now - lastActivity) / 86_400_000);
+      if (idleDays < thresholdDays) continue;
+
+      stalled.push({
+        groupId: row.group.id,
+        groupName: row.group.name,
+        courseId: assignment.courseId,
+        courseName: courseById.get(assignment.courseId)?.courseName ?? '',
+        assignmentId: assignment.id,
+        assignmentTitle: assignment.title,
+        quarter: row.currentQuarter ?? row.quartersPlayed,
+        waitingOn: row.waitingOn.map((student) => student.displayName),
+        idleDays,
+      });
+    }
+  }
+
+  return stalled.sort((a, b) => b.idleDays - a.idleDays);
 }

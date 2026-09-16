@@ -770,6 +770,11 @@ export const vi = {
     defaultFlag: 'mặc định',
     exportGroups: 'Xuất CSV · Bảng quyết định nhóm',
     standings: 'Xếp hạng cuối nhóm',
+    stalledTitle: 'Nhóm đang kẹt',
+    stalledHint:
+      'Nhóm chưa tiến triển quá {days} ngày vì còn chờ quyết định. Không có hạn giờ tự động — hãy nhắc giảng viên phụ trách, hoặc dùng nút Chạy vòng ngay.',
+    stalledNone: 'Không có nhóm nào đang kẹt.',
+    stalledDays: '{days} ngày',
   },
   rivals: {
     title: 'Đọc vị đối thủ',

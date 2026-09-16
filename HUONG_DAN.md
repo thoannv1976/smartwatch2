@@ -16,6 +16,7 @@ thanh trên cùng. Mặc định là tiếng Việt.
 - [A. Hướng dẫn cho SINH VIÊN](#a-hướng-dẫn-cho-sinh-viên)
 - [B. Hướng dẫn cho GIẢNG VIÊN](#b-hướng-dẫn-cho-giảng-viên)
 - [C. Hướng dẫn cho QUẢN TRỊ VIÊN](#c-hướng-dẫn-cho-quản-trị-viên-admin)
+- [D. CHẾ ĐỘ NHÓM — 6 sinh viên cạnh tranh nhau](#d-chế-độ-nhóm--6-sinh-viên-cạnh-tranh-nhau)
 - [Bảng tham chiếu](#bảng-tham-chiếu)
 - [Xử lý lỗi thường gặp](#xử-lý-lỗi-thường-gặp)
 
@@ -64,9 +65,9 @@ Giảng viên làm được mọi việc của Sinh viên.
 
 | Vai trò | Thấy menu | Làm được gì |
 |---|---|---|
-| **Sinh viên** (STUDENT) | Trang chủ | Chơi thử, làm bài tập chính thức, xem báo cáo của mình, xem bảng xếp hạng **lớp mình** |
-| **Giảng viên** (INSTRUCTOR) | + Bảng điều khiển giảng viên, Chế độ kiểm thử mô phỏng | Tạo và **sửa** lớp, mở/đóng ghi danh, sửa mã SV, gỡ sinh viên, tạo và sửa bài tập, lưu trữ, xem chi tiết 6 quý của từng SV, xuất CSV |
-| **Quản trị viên** (ADMIN) | + Quản trị hệ thống, Người dùng | **Tạo tài khoản**, **đặt lại mật khẩu**, mời giảng viên theo email, đổi vai trò, vô hiệu hoá tài khoản, chuyển lớp sang giảng viên khác, xem **tất cả** lớp học, xem cấu hình engine |
+| **Sinh viên** (STUDENT) | Trang chủ | Chơi thử, làm bài tập chính thức, **vào nhóm thi đấu**, xem báo cáo của mình, xem bảng xếp hạng **lớp mình** |
+| **Giảng viên** (INSTRUCTOR) | + Bảng điều khiển giảng viên, Chế độ kiểm thử mô phỏng | Tạo và **sửa** lớp, mở/đóng ghi danh, sửa mã SV, gỡ sinh viên, tạo và sửa bài tập **cá nhân hoặc nhóm**, **điều hành các nhóm** (phát mã, chạy ép vòng, gỡ sinh viên khỏi chỗ ngồi), lưu trữ, xem chi tiết 6 quý của từng SV **và của cả nhóm**, xuất CSV |
+| **Quản trị viên** (ADMIN) | + Quản trị hệ thống, Người dùng | **Tạo tài khoản**, **đặt lại mật khẩu**, mời giảng viên theo email, đổi vai trò, vô hiệu hoá tài khoản, chuyển lớp sang giảng viên khác, xem **tất cả** lớp học và **mọi nhóm đang kẹt**, xem cấu hình engine |
 
 **Mọi tài khoản mới đăng nhập đều là Sinh viên**, trừ hai ngoại lệ: email đặt ở
 `BOOTSTRAP_ADMIN_EMAIL` (thành Quản trị viên, để lần deploy đầu tiên có người đủ
@@ -638,6 +639,160 @@ nhập là có quyền, và sinh viên tự vào lớp.
 
 ---
 
+---
+
+## D. CHẾ ĐỘ NHÓM — 6 sinh viên cạnh tranh nhau
+
+Phần A–C ở trên nói về **chế độ cá nhân**: mỗi sinh viên điều hành 1 công ty, cạnh
+tranh với 5 đối thủ máy. Chế độ nhóm thay 5 đối thủ máy đó bằng **5 bạn cùng lớp**.
+
+Mọi thứ khác giữ nguyên: cùng engine, cùng 6 sự kiện thị trường, cùng công thức
+điểm, cùng màn hình quyết định.
+
+### D1. Vì sao phải có kịch bản riêng
+
+Đây là điều quan trọng nhất cần hiểu về chế độ nhóm.
+
+Trong kịch bản cá nhân, 6 chỗ ngồi **cố ý** khởi đầu rất khác nhau, vì 5 trong số
+đó là các thương hiệu benchmark mà sinh viên đang thách thức:
+
+| Chỗ ngồi | Thương hiệu | Sản phẩm | Phân phối |
+|---|---|---|---|
+| Người chơi | **30** | **50** | **40** |
+| Apple | 90 | 88 | 90 |
+
+Thả 6 người thật vào 6 chỗ đó thì ván đấu do **chỗ ngồi** quyết định, không phải do
+quyết định của các em. Đo thực tế: 6 chiến lược **giống hệt nhau** kết thúc chênh
+nhau **24,05 điểm**.
+
+Nên bài tập nhóm luôn dùng kịch bản **`smartwatch-v1-arena`**, nơi **cả 6 chỗ ngồi
+khởi đầu giống hệt nhau**. Cũng 6 chiến lược giống nhau ấy giờ chênh nhau
+**0,23–0,44 điểm** — phần dư là nhiễu cầu ±2%, giống nhau ở mọi nhóm.
+
+> Hệ thống **không cho chọn** kịch bản khi bạn tạo bài tập nhóm. Đây không phải sở
+> thích, nên không phải một ô chọn.
+
+### D2. Sinh viên — vào nhóm và thi đấu
+
+**Bước 1 — Nhận mã nhóm.** Giảng viên đưa cho nhóm bạn một mã 6 ký tự. Mã không
+chứa các ký tự dễ nhầm (không có 0/O/Q, 1/I/L/J, 2/Z, 5/S, 8/B, U/V).
+
+**Bước 2 — Vào nhóm.** Trang chủ → bài tập nhóm → **Vào nhóm**, hoặc mở thẳng
+`/group/join`. Nhập mã, đặt tên công ty, tên sản phẩm và định vị.
+
+> Bạn phải **đã ở trong lớp** mới vào được. Mã bị lộ ra ngoài lớp không phải là
+> đường vào — hệ thống kiểm tra danh sách lớp, không kiểm tra mã.
+
+**Bước 3 — Phòng chờ.** Bạn thấy đủ 6 chỗ ngồi, ai đã vào, ai đã nộp quyết định
+quý này, và **đang chờ đích danh ai**.
+
+**Bước 4 — Ra quyết định.** Giống hệt màn hình cá nhân, cộng ba công cụ mới ở D3.
+Nộp xong quay lại phòng chờ.
+
+**Bước 5 — Vòng chạy khi đủ 6 người nộp.** Không có hạn giờ tự động. Người **cuối
+cùng** nộp là người mà thao tác của họ chạy thị trường; 5 người kia bấm **Kiểm tra
+lại** để thấy kết quả.
+
+**Bước 6 — Đọc kết quả.** Như chế độ cá nhân, cộng bảng đối thủ trong nhóm.
+
+**Bước 7 — Sau quý 6**, bạn có báo cáo riêng: điểm 5 thành phần, **hạng trong
+nhóm**, khoảng cách với người dẫn đầu, vị trí trong lớp, Tổng kết nhiệm kỳ CEO,
+biểu đồ 6 công ty qua 6 quý, và nút In.
+
+#### Bạn thấy gì về 5 người kia
+
+| | Bạn thấy |
+|---|---|
+| Thị phần, sản lượng, doanh thu, lợi nhuận, mức hài lòng, thứ hạng | ✅ |
+| Giá bán trung bình (= doanh thu ÷ sản lượng) | ✅ suy ra được |
+| Nhận định định tính (*"X đã quyết liệt hơn về giá"*) | ✅ |
+| **5 mức phân bổ điểm của họ** | ❌ **không bao giờ** |
+
+Đúng như thị trường thật: giá và kết quả kinh doanh thì công khai, còn **họ đã đầu
+tư bao nhiêu vào đâu thì không**.
+
+### D3. Ba công cụ thay cho Chiến lược vàng
+
+> **Chế độ nhóm KHÔNG có nút Chiến lược vàng.** Ở chế độ cá nhân nút đó tìm được
+> phương án tối ưu vì nó biết trước quyết định của 5 đối thủ máy. Với 5 người thật,
+> quyết định của họ **chưa tồn tại** lúc bạn đang cân nhắc — không có phép tính nào
+> để chạy. Chúng tôi nói thẳng điều đó thay vì làm giả một đáp án.
+
+**Đọc vị đối thủ** — tối đa 4 nhận định rút từ quý trước, ví dụ *"3 đối thủ đã hạ
+giá; quý này giá chiếm 30% quyết định mua — hạ giá theo là cuộc đua xuống đáy"*.
+Toàn bộ dữ liệu là những gì bạn **đã nhìn thấy**, nên bạn tự kiểm chứng được.
+
+**Bản đồ vị thế** — 6 công ty xếp theo giá bán và mức hài lòng. Chỗ nào đông là
+chỗ đang chen chúc; chỗ nào trống là khoảng hở.
+
+**Bàn thử nghiệm** — thử một phân bổ và xem mô hình phản ứng thế nào.
+
+> Đối thủ trên bàn thử nghiệm là **5 bản sao của chính công ty bạn**, cùng chơi
+> 20/20/20/20/20. Cố ý như vậy: nếu dùng số liệu thật của bạn cùng nhóm, bạn có thể
+> thử đi thử lại để **dò ngược ra quyết định của họ**. Nó trả lời *"mô hình này
+> thưởng cho điều gì"*, **không phải** *"tôi sẽ thắng hay thua"*.
+
+### D4. Giảng viên — tạo và điều hành
+
+**Tạo bài tập nhóm.** Trang lớp → **Bài tập mới** → Hình thức: **Nhóm** → nhập số
+nhóm cần tạo. Hệ thống tạo sẵn các nhóm rỗng, mỗi nhóm một mã. Ô "số lần làm bài"
+biến mất: bài nhóm là **một ván đấu chung**, không phải một tập lượt thử.
+
+**Phát mã.** Trang chi tiết bài tập → tab **Nhóm**. Mỗi dòng có mã tham gia, số
+người, tiến độ, **đang chờ ai**.
+
+**Khi một nhóm bị kẹt.** Đây là mặt trái của việc không có hạn giờ tự động, nên
+công cụ nằm ngay trên dòng bị kẹt:
+
+| Nút | Làm gì |
+|---|---|
+| **Chạy vòng ngay** | Chạy vòng với quyết định mặc định cho ai chưa nộp. Mặc định **lặp lại quyết định quý trước của chính họ** (quý 1 thì dùng 20/20/20/20/20), và **được gắn cờ** trong báo cáo |
+| **Gỡ khỏi nhóm** | Chỗ ngồi đó chuyển cho máy, ván đấu chạy tiếp với 5 người |
+| **Đổi mã** | Cấp mã mới, mã cũ hết hiệu lực ngay |
+
+**Xem chi tiết nhóm** — đây là màn hình **duy nhất** trong cả hệ thống hiện **phân
+bổ điểm chính xác của cả 6 công ty**, cạnh nhau, theo từng quý. Đó là cách bạn trả
+lời *"vì sao công ty kia thắng?"* trước lớp. Bản nộp mặc định được đánh dấu — đừng
+thảo luận nó như thể sinh viên đó đã tự chọn.
+
+**Chấm điểm.** Không có gì mới phải học: nhóm kết thúc sẽ ghi **6 dòng điểm bình
+thường**, nên bảng xếp hạng lớp, phần trăm vị trí và cả hai file CSV cũ chạy y
+nguyên. `Hạng trong game` **chính là hạng 1–6 trong nhóm**.
+
+Có thêm file CSV thứ ba — **Bảng quyết định nhóm** — một dòng mỗi công ty mỗi quý,
+kèm phân bổ chính xác, tên nhóm, chỗ ngồi và cờ bản nộp mặc định.
+
+> Điểm là **tuyệt đối**, không chuẩn hoá theo nhóm, nên so sánh được toàn lớp bất kể
+> em đó ở nhóm nào. Mọi nhóm của cùng một bài tập dùng chung seed, nên gặp cùng sự
+> kiện và cùng nhiễu thị trường.
+
+### D5. Quản trị viên
+
+Admin đi vòng qua kiểm tra sở hữu ở mọi nơi nên thấy và sửa được mọi nhóm.
+
+Riêng trang `/admin` có thêm một mục: **Nhóm đang kẹt** — mọi nhóm trong toàn hệ
+thống chưa tiến triển quá 7 ngày vì còn chờ quyết định, kèm tên người đang thiếu.
+Giảng viên thấy nhóm kẹt của lớp mình; mục này để **không lớp nào kẹt mà không ai
+biết**.
+
+### D6. Lớp không chia hết cho 6
+
+Không cần xử lý gì. Nhóm thiếu người thì **chỗ trống do máy điều khiển** — luôn đủ
+6 công ty trên thị trường, giao diện ghi rõ công ty nào là máy, và **không ai bị
+chấm điểm cho chỗ ngồi đó**.
+
+Máy chơi theo một khuôn cố định, nên đó cũng là đối thủ duy nhất sinh viên đoán
+trước được — công cụ Đọc vị đối thủ nói thẳng điều này.
+
+### D7. Vài điều cần biết trước khi dùng thật
+
+- **Chỗ ngồi đóng băng ngay khi thị trường chạy lần đầu.** Trước đó sinh viên ra
+  vào tự do; sau đó thì không nhận thêm người. Hãy để cả nhóm vào đủ rồi mới bắt đầu.
+- **Nộp rồi không sửa được.** Năm người kia đang chờ đúng quyết định đó.
+- **Một sinh viên chỉ ở một nhóm của một bài tập.** Muốn đổi nhóm thì giảng viên
+  gỡ ra trước.
+
+---
 ## Bảng tham chiếu
 
 ### Sáu sự kiện thị trường (cố định, luôn theo thứ tự này)
