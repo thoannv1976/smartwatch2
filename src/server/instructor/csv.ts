@@ -1,6 +1,6 @@
 import { goldenUsedQuarters } from '@/db/models';
 import type { FinalResultDoc, QuarterDoc } from '@/db/models';
-import { PLAYER_COMPANY_KEY } from '@/domain/simulation';
+import { PLAYER_COMPANY_KEY, type CompanyKey } from '@/domain/simulation';
 
 /**
  * CSV export of official results (spec 9.3, 17 item 14).
@@ -147,7 +147,7 @@ const QUARTER_HEADERS = [
 ];
 
 /**
- * Per-quarter export of the PLAYER company's decisions and results.
+ * Per-quarter export of one student's own company: its decisions and results.
  *
  * This is the file that answers "why did this student win or lose?" — the
  * instructor gets every decision next to the KPI it produced.
@@ -160,14 +160,23 @@ export function quartersToCsv(
     quarters: QuarterDoc[];
     /** Quarters this student had coached; absent for rows written before the coach. */
     goldenUsedQuarters?: number[];
+    /**
+     * Which of the six companies is this student's.
+     *
+     * Always `player` in a solo session, which is why it defaults. In a group
+     * match the six companies are six students, so the row to export is the one
+     * for the seat they were given.
+     */
+    seatKey?: CompanyKey;
   }[],
 ): string {
   const rows: (string | number | null)[][] = [];
 
   for (const entry of entries) {
     for (const quarter of [...entry.quarters].sort((a, b) => a.quarter - b.quarter)) {
-      const decision = quarter.decisions[PLAYER_COMPANY_KEY];
-      const result = quarter.results.find((r) => r.companyKey === PLAYER_COMPANY_KEY);
+      const seatKey = entry.seatKey ?? PLAYER_COMPANY_KEY;
+      const decision = quarter.decisions[seatKey];
+      const result = quarter.results.find((r) => r.companyKey === seatKey);
       if (!decision || !result) continue;
 
       rows.push([

@@ -16,4 +16,5 @@ export * from './scoring';
 export * from './analysis';
 export * from './advice';
 export * from './optimizer';
+export * from './arena';
 export * from './game';

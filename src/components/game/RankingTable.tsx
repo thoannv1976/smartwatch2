@@ -1,4 +1,8 @@
-import { PLAYER_COMPANY_KEY, type CompanyQuarterResult } from '@/domain/simulation';
+import {
+  PLAYER_COMPANY_KEY,
+  type CompanyKey,
+  type CompanyQuarterResult,
+} from '@/domain/simulation';
 import { seriesColor } from '@/components/charts/series';
 import { TableScroll, Td, Th } from '@/components/ui/primitives';
 import { formatInteger, formatMoneyCompact, formatPercent, formatScore } from '@/lib/format';
@@ -7,17 +11,23 @@ import { getDictionary, type Locale } from '@/i18n';
 /**
  * The six-company ranking shown after every quarter (spec 8.1).
  *
- * The player's row is marked three ways — a highlighted background, a bold
+ * The viewer's row is marked three ways — a highlighted background, a bold
  * name and a "you" badge — so it is identifiable without relying on colour.
+ *
+ * `playerCompanyKey` exists because in a group match the six companies are six
+ * students and "you" is whichever seat the viewer holds, not always `player`.
+ * It defaults to `player` so every solo caller is unaffected.
  */
 export function RankingTable({
   results,
   locale,
   playerCompanyName,
+  playerCompanyKey = PLAYER_COMPANY_KEY,
 }: {
   results: CompanyQuarterResult[];
   locale: Locale;
   playerCompanyName: string;
+  playerCompanyKey?: CompanyKey;
 }) {
   const t = getDictionary(locale);
   const sorted = [...results].sort((a, b) => a.rank - b.rank);
@@ -38,7 +48,7 @@ export function RankingTable({
         </thead>
         <tbody>
           {sorted.map((result) => {
-            const isPlayer = result.companyKey === PLAYER_COMPANY_KEY;
+            const isPlayer = result.companyKey === playerCompanyKey;
             return (
               <tr key={result.companyKey} className={isPlayer ? 'bg-brand-500/10' : ''}>
                 <Td numeric align="center" className={isPlayer ? 'font-bold' : ''}>

@@ -172,6 +172,37 @@ async function playOfficialGameWithCoach(coachedQuarters: number[]) {
   return { session, assignment };
 }
 
+describe('seat selection', () => {
+  it('defaults to the player company, and exports another seat when asked', async () => {
+    // Solo sessions are always the `player` seat. A group match gives each of
+    // the six students a different seat, so the export has to be able to follow
+    // one of them.
+    const { session } = await playOfficialGame();
+    const quarters = await repos.sessions.listQuarters(session.id);
+
+    const base = {
+      studentCode: 'SV001',
+      displayName: STUDENT.displayName,
+      companyName: 'NovaTime',
+      quarters,
+    };
+
+    const defaulted = quartersToCsv([base]);
+    const explicit = quartersToCsv([{ ...base, seatKey: PLAYER_COMPANY_KEY }]);
+    expect(explicit).toBe(defaulted);
+
+    // A different seat exports that company's numbers, not the player's.
+    const rival = quartersToCsv([{ ...base, seatKey: 'apple' }]);
+    expect(rival).not.toBe(defaulted);
+    expect(rival.trim().split('\r\n')).toHaveLength(quarters.length + 1);
+
+    const firstQuarter = quarters[0]!;
+    const appleResult = firstQuarter.results.find((r) => r.companyKey === 'apple');
+    expect(appleResult).toBeDefined();
+    expect(rival).toContain(String(appleResult!.unitsSold));
+  });
+});
+
 describe('Golden Strategy columns', () => {
   it('appends the coach columns at the END, so existing column positions do not move', async () => {
     const { assignment } = await playOfficialGame();

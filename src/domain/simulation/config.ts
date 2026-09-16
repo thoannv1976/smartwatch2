@@ -529,17 +529,90 @@ export const smartwatchV1ChallengerConfig: GameConfig = {
   },
 };
 
+export const ARENA_SCENARIO_VERSION = 'smartwatch-v1-arena';
+
+/**
+ * Starting row shared by ALL SIX companies in the group-competition scenario.
+ *
+ * Deliberately the spec 2.4 startup profile rather than the challenger's. Six
+ * identical startups leave the most room for six quarters of investment to
+ * create a difference, which is the whole point of the exercise; six identical
+ * well-funded incumbents would all reach the capability ceiling by quarter four
+ * and the scores would bunch up.
+ */
+const ARENA_START: StartingProfile = {
+  brandAwareness: 30,
+  productQuality: 50,
+  technology: 50,
+  distribution: 40,
+  customerExperience: 50,
+  customerSatisfaction: 65,
+  cash: STARTING_CASH,
+};
+
+/**
+ * Group competition (Part 2): six HUMAN players, one per company.
+ *
+ * WHY THIS SCENARIO HAS TO EXIST. In `smartwatch-v1` the six seats start wildly
+ * apart — the player at brand 30 / product 50 / distribution 40, the `apple`
+ * seat at 90 / 88 / 90. That asymmetry is the point when five seats are
+ * rule-based benchmarks the student is challenging. Put six students in those
+ * seats and the match is decided by WHICH SEAT they were given: brand is 15% of
+ * the final score on its own, and a 60-point head start cannot be closed in six
+ * quarters. So every seat here starts from exactly the same row.
+ *
+ * Nothing else changes. Not one coefficient, not one formula, and NOT
+ * `engineVersion` — this is a new entry in the registry, exactly like the
+ * challenger scenario above. Sessions already graded carry their own
+ * `scenarioVersion` and are never recomputed, so adding this cannot move a
+ * single existing mark.
+ *
+ * The five `competitors` entries are kept, with their starting rows flattened
+ * to `ARENA_START`: a group of fewer than six students leaves seats empty, and
+ * an empty seat is driven by that seat's rule-based archetype so the market
+ * always has six companies in it. Their display names are neutral (`Bot 2` …)
+ * because a student's rival should never appear to be a real brand.
+ */
+export const smartwatchV1ArenaConfig: GameConfig = {
+  ...smartwatchV1Config,
+  scenarioVersion: ARENA_SCENARIO_VERSION,
+  playerStart: { ...ARENA_START },
+  competitors: COMPETITORS.map((competitor, index) => ({
+    ...competitor,
+    // `Bot 2` upwards: seat 1 is `player`, which is claimed first and is
+    // therefore the last seat that can ever be bot-driven.
+    displayName: `Bot ${index + 2}`,
+    start: { ...ARENA_START },
+  })),
+};
+
 /** Registry of scenario configurations, keyed by scenario version. */
 export const gameConfigs: Record<string, GameConfig> = {
   [SCENARIO_VERSION]: smartwatchV1Config,
   [CHALLENGER_SCENARIO_VERSION]: smartwatchV1ChallengerConfig,
+  [ARENA_SCENARIO_VERSION]: smartwatchV1ArenaConfig,
 };
 
-/** Scenario versions an instructor may pick when creating an assignment. */
+/**
+ * Scenario versions an instructor may pick for a SOLO assignment.
+ *
+ * The arena scenario is deliberately absent: it is balanced for six humans in
+ * six identical seats, and offering it for a solo game would mean one student
+ * against five rule-based startups — a match nothing in the balance suite
+ * covers.
+ */
 export const SELECTABLE_SCENARIO_VERSIONS: readonly string[] = [
   SCENARIO_VERSION,
   CHALLENGER_SCENARIO_VERSION,
 ] as const;
+
+/**
+ * Scenario versions available to a GROUP assignment.
+ *
+ * One entry today. Kept as a list, and kept separate from the solo list, so the
+ * two modes can never accidentally offer each other's scenarios.
+ */
+export const GROUP_SCENARIO_VERSIONS: readonly string[] = [ARENA_SCENARIO_VERSION] as const;
 
 export function getGameConfig(scenarioVersion: string = SCENARIO_VERSION): GameConfig {
   const config = gameConfigs[scenarioVersion];
