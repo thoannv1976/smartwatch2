@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { LEADERBOARD_SORTS, type LeaderboardSort } from '@/db/models';
+import { isArchived, LEADERBOARD_SORTS, type LeaderboardSort } from '@/db/models';
 import { requireRolePage } from '@/server/auth/guards';
 import { hasRole } from '@/server/auth/session';
 import {
@@ -9,7 +9,7 @@ import {
   listParticipation,
 } from '@/server/instructor/queries';
 import { getTranslations } from '@/i18n/server';
-import { AssignmentToggle } from '@/components/instructor/CourseForms';
+import { AssignmentArchiveButton, AssignmentToggle } from '@/components/instructor/CourseForms';
 import {
   Badge,
   Card,
@@ -86,6 +86,10 @@ export default async function AssignmentDetailPage({
               {assignment.scenarioVersion} · engine {assignment.engineVersion}
             </Badge>
             <AssignmentToggle assignmentId={assignment.id} isOpen={assignment.isOpen} />
+            <AssignmentArchiveButton
+              assignmentId={assignment.id}
+              archived={isArchived(assignment)}
+            />
             <Link
               href="/instructor"
               className="rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-700"
@@ -269,7 +273,12 @@ export default async function AssignmentDetailPage({
                 {participation.map((row) => (
                   <tr key={row.member.uid}>
                     <Td className="font-mono text-xs">{row.member.studentCode}</Td>
-                    <Td className="text-ink-100">{row.member.displayName}</Td>
+                    <Td className="text-ink-100">
+                      {row.member.displayName}{' '}
+                      {row.removed ? (
+                        <Badge tone="warn">{t.instructorAdmin.removedStudent}</Badge>
+                      ) : null}
+                    </Td>
                     <Td>
                       <Badge
                         tone={

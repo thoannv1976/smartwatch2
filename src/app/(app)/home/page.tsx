@@ -104,11 +104,13 @@ export default async function HomePage({
                       </Link>
                     ) : blockedReason ? (
                       <Badge tone="warn">
-                        {blockedReason === 'notOpenYet'
-                          ? t.home.officialNotOpen
-                          : blockedReason === 'deadlinePassed'
-                            ? t.home.officialClosed
-                            : t.home.officialUsedUp}
+                        {blockedReason === 'archived'
+                          ? t.instructorAdmin.archived
+                          : blockedReason === 'notOpenYet'
+                            ? t.home.officialNotOpen
+                            : blockedReason === 'deadlinePassed'
+                              ? t.home.officialClosed
+                              : t.home.officialUsedUp}
                       </Badge>
                     ) : (
                       <Link

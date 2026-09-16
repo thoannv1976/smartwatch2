@@ -1,5 +1,6 @@
 import 'server-only';
 import { getRepositories } from '@/db/repositories/firestore';
+import { isArchived } from '@/db/models';
 import type { AssignmentDoc, CourseDoc, FinalResultDoc, GameSessionDoc } from '@/db/models';
 
 /**
@@ -17,7 +18,7 @@ export interface AvailableAssignment {
   inProgressSession: GameSessionDoc | null;
   completedResult: FinalResultDoc | null;
   /** Why the student cannot start, or null when they can. */
-  blockedReason: 'notOpenYet' | 'deadlinePassed' | 'maxAttemptsReached' | null;
+  blockedReason: 'notOpenYet' | 'deadlinePassed' | 'maxAttemptsReached' | 'archived' | null;
 }
 
 /** Every assignment the student can see, with their own status for each. */
@@ -42,6 +43,13 @@ export async function listAssignmentsForStudent(userId: string): Promise<Availab
       if (!course) return null;
 
       const mine = sessions.filter((s) => s.assignmentId === assignment.id);
+
+      // An archived course or assignment disappears — UNLESS this student has
+      // something invested in it. Someone who already played keeps the row,
+      // because it carries the only links they have to their own report and to
+      // a leaderboard they earned a place on. They simply cannot start again.
+      const hidden = isArchived(course) || isArchived(assignment);
+      if (hidden && mine.length === 0) return null;
       const inProgressSession = mine.find((s) => s.status === 'IN_PROGRESS') ?? null;
       const completedSession = mine.find((s) => s.status === 'COMPLETED') ?? null;
       const completedResult = completedSession
@@ -49,7 +57,8 @@ export async function listAssignmentsForStudent(userId: string): Promise<Availab
         : null;
 
       let blockedReason: AvailableAssignment['blockedReason'] = null;
-      if (!assignment.isOpen || now < assignment.startAt) blockedReason = 'notOpenYet';
+      if (hidden) blockedReason = 'archived';
+      else if (!assignment.isOpen || now < assignment.startAt) blockedReason = 'notOpenYet';
       else if (now > assignment.deadline) blockedReason = 'deadlinePassed';
       else if (!inProgressSession && mine.length >= assignment.maxAttempts) {
         blockedReason = 'maxAttemptsReached';

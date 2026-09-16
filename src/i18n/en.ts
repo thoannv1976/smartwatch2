@@ -301,6 +301,33 @@ export const en: Dictionary = {
     memberAdded: 'Student added',
     memberNotFound: 'No user found with that email. The student must sign in at least once first.',
   },
+  instructorAdmin: {
+    archive: 'Archive',
+    restore: 'Restore',
+    archived: 'Archived',
+    archivedNote:
+      'This class is archived: it no longer appears in the join list or the instructor list. Grades, leaderboards and CSV exports are unchanged.',
+    enrollmentOpen: 'Let students join this class themselves',
+    enrollmentOpenHint:
+      'Turn this on at the start of term so students can join, then off once the roster is complete. While off, the class does not appear in the join list.',
+    removeStudent: 'Remove from class',
+    removedStudent: 'Removed from class',
+    enrolledActive: 'Currently enrolled',
+    showRemoved: 'Include removed',
+    inviteTitle: 'Invite an instructor by email',
+    inviteHint:
+      'Grant a role to an email in advance. That person has the role the first time they sign in — no need for them to sign in first and be promoted afterwards.',
+    inviteEmail: 'Email',
+    inviteRole: 'Role',
+    inviteAdd: 'Send invite',
+    invitePending: 'Unused',
+    inviteClaimed: 'Used',
+    inviteRevoke: 'Revoke',
+    noInvites: 'No invites yet.',
+    archiveUser: 'Disable',
+    restoreUser: 'Re-enable',
+    archivedUserNote: 'A disabled account keeps every graded result it already has.',
+  },
   admin: {
     title: 'System administration',
     users: 'Users',

@@ -4,8 +4,14 @@ import { requireRolePage } from '@/server/auth/guards';
 import { getRepositories } from '@/db/repositories/firestore';
 import { hasRole } from '@/server/auth/session';
 import { getTranslations } from '@/i18n/server';
-import { AddMemberForm, CreateAssignmentForm } from '@/components/instructor/CourseForms';
 import {
+  AddMemberForm,
+  CreateAssignmentForm,
+  EditCourseForm,
+  MemberRowActions,
+} from '@/components/instructor/CourseForms';
+import {
+  Badge,
   Card,
   CardTitle,
   EmptyState,
@@ -15,6 +21,7 @@ import {
   Th,
 } from '@/components/ui/primitives';
 import { formatDateOnly } from '@/lib/format';
+import { isArchived, isRemoved } from '@/db/models';
 
 export const metadata = { title: 'Lớp học — Smartwatch CEO Challenge' };
 
@@ -39,12 +46,19 @@ export default async function CoursePage({
     repos.courses.listMembers(courseId),
     repos.assignments.listByCourse(courseId),
   ]);
+  // Removed students stay in the table, marked, so the instructor can see who
+  // left and put them back — and so this page agrees with the leaderboard.
+  const activeMembers = members.filter((m) => !isRemoved(m));
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6">
       <PageHeader
         title={course.courseName}
-        subtitle={course.semester}
+        subtitle={
+          isArchived(course)
+            ? `${course.semester} · ${t.instructorAdmin.archived}`
+            : course.semester
+        }
         right={
           <Link
             href="/instructor"
@@ -55,9 +69,17 @@ export default async function CoursePage({
         }
       />
 
+      <EditCourseForm
+        courseId={course.id}
+        courseName={course.courseName}
+        semester={course.semester}
+        enrollmentOpen={course.enrollmentOpen === true}
+        archived={isArchived(course)}
+      />
+
       <Card>
         <CardTitle hint={t.instructor.memberNotFound}>
-          {t.instructor.members} ({members.length})
+          {t.instructor.members} ({activeMembers.length})
         </CardTitle>
         <AddMemberForm courseId={courseId} />
 
@@ -72,14 +94,28 @@ export default async function CoursePage({
                     <Th>{t.instructor.studentCode}</Th>
                     <Th>{t.common.student}</Th>
                     <Th>{t.auth.email}</Th>
+                    <Th align="right" />
                   </tr>
                 </thead>
                 <tbody>
                   {members.map((member) => (
                     <tr key={member.uid}>
                       <Td className="font-mono text-xs">{member.studentCode}</Td>
-                      <Td className="text-ink-100">{member.displayName}</Td>
+                      <Td className="text-ink-100">
+                        {member.displayName}{' '}
+                        {isRemoved(member) ? (
+                          <Badge tone="warn">{t.instructorAdmin.removedStudent}</Badge>
+                        ) : null}
+                      </Td>
                       <Td className="text-ink-400">{member.email}</Td>
+                      <Td align="right">
+                        <MemberRowActions
+                          courseId={courseId}
+                          uid={member.uid}
+                          studentCode={member.studentCode}
+                          removed={isRemoved(member)}
+                        />
+                      </Td>
                     </tr>
                   ))}
                 </tbody>

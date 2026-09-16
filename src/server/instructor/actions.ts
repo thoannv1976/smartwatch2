@@ -211,6 +211,159 @@ export async function updateAssignmentAction(
   }
 }
 
+const updateCourseSchema = z.object({
+  courseId: z.string().min(1),
+  courseName: z.string().trim().min(1).max(120).optional(),
+  semester: z.string().trim().min(1).max(40).optional(),
+  enrollmentOpen: z.boolean().optional(),
+});
+
+/** Renames a course, moves its semester, or opens/closes self-enrolment. */
+export async function updateCourseAction(
+  input: z.input<typeof updateCourseSchema>,
+): Promise<StaffActionResult<Record<string, never>>> {
+  try {
+    const parsed = updateCourseSchema.parse(input);
+    await requireCourseAccess(parsed.courseId);
+
+    const { courseId, ...patch } = parsed;
+    await getRepositories().courses.update(courseId, patch);
+
+    revalidatePath('/instructor');
+    revalidatePath(`/instructor/courses/${courseId}`);
+    revalidatePath('/join');
+    return { ok: true, data: {} };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+const archiveCourseSchema = z.object({
+  courseId: z.string().min(1),
+  archived: z.boolean(),
+});
+
+/**
+ * Archives or restores a course.
+ *
+ * Nothing is deleted. Grades, sessions and quarters are untouched, and the
+ * leaderboard and CSV export do not consult a course at all — they read graded
+ * results by assignment. Archiving only removes the course from the lists.
+ */
+export async function setCourseArchivedAction(
+  input: z.input<typeof archiveCourseSchema>,
+): Promise<StaffActionResult<Record<string, never>>> {
+  try {
+    const parsed = archiveCourseSchema.parse(input);
+    await requireCourseAccess(parsed.courseId);
+
+    await getRepositories().courses.setArchived(
+      parsed.courseId,
+      parsed.archived ? Date.now() : null,
+    );
+
+    revalidatePath('/instructor');
+    revalidatePath(`/instructor/courses/${parsed.courseId}`);
+    revalidatePath('/join');
+    return { ok: true, data: {} };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+const updateMemberSchema = z.object({
+  courseId: z.string().min(1),
+  uid: z.string().min(1),
+  studentCode: z.string().trim().min(1).max(40),
+});
+
+/** Corrects a student code a student typed for themselves. */
+export async function updateCourseMemberAction(
+  input: z.input<typeof updateMemberSchema>,
+): Promise<StaffActionResult<Record<string, never>>> {
+  try {
+    const parsed = updateMemberSchema.parse(input);
+    await requireCourseAccess(parsed.courseId);
+
+    const result = await getRepositories().courses.updateMember(parsed.courseId, parsed.uid, {
+      studentCode: parsed.studentCode,
+    });
+    if (!result.ok) {
+      return {
+        ok: false,
+        error: result.reason === 'CODE_TAKEN' ? 'studentCodeTaken' : 'memberNotFound',
+      };
+    }
+
+    revalidatePath(`/instructor/courses/${parsed.courseId}`);
+    return { ok: true, data: {} };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+const setMemberRemovedSchema = z.object({
+  courseId: z.string().min(1),
+  uid: z.string().min(1),
+  removed: z.boolean(),
+});
+
+/**
+ * Removes a student from a course roster, or puts them back.
+ *
+ * A mark, not a delete: a student who already played has to keep appearing in
+ * the participation view, or it would contradict the leaderboard, which reads
+ * graded results and never looks at a roster.
+ */
+export async function setCourseMemberRemovedAction(
+  input: z.input<typeof setMemberRemovedSchema>,
+): Promise<StaffActionResult<Record<string, never>>> {
+  try {
+    const parsed = setMemberRemovedSchema.parse(input);
+    await requireCourseAccess(parsed.courseId);
+
+    await getRepositories().courses.setMemberRemoved(
+      parsed.courseId,
+      parsed.uid,
+      parsed.removed ? Date.now() : null,
+    );
+
+    revalidatePath(`/instructor/courses/${parsed.courseId}`);
+    return { ok: true, data: {} };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+const archiveAssignmentSchema = z.object({
+  assignmentId: z.string().min(1),
+  archived: z.boolean(),
+});
+
+export async function setAssignmentArchivedAction(
+  input: z.input<typeof archiveAssignmentSchema>,
+): Promise<StaffActionResult<Record<string, never>>> {
+  try {
+    const parsed = archiveAssignmentSchema.parse(input);
+    const repos = getRepositories();
+    const assignment = await repos.assignments.get(parsed.assignmentId);
+    if (!assignment) return { ok: false, error: 'assignmentNotFound' };
+    await requireCourseAccess(assignment.courseId);
+
+    await repos.assignments.setArchived(
+      parsed.assignmentId,
+      parsed.archived ? Date.now() : null,
+    );
+
+    revalidatePath('/instructor');
+    revalidatePath(`/instructor/courses/${assignment.courseId}`);
+    revalidatePath(`/instructor/assignments/${parsed.assignmentId}`);
+    return { ok: true, data: {} };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
 // --- admin -----------------------------------------------------------------
 
 const setRoleSchema = z.object({

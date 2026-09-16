@@ -301,6 +301,33 @@ export const vi = {
     memberAdded: 'Đã thêm sinh viên',
     memberNotFound: 'Không tìm thấy người dùng với email này. Sinh viên cần đăng nhập ít nhất 1 lần.',
   },
+  instructorAdmin: {
+    archive: 'Lưu trữ',
+    restore: 'Khôi phục',
+    archived: 'Đã lưu trữ',
+    archivedNote:
+      'Lớp này đã lưu trữ: không hiện trong danh sách chọn lớp và danh sách lớp của giảng viên. Điểm, bảng xếp hạng và file CSV vẫn còn nguyên.',
+    enrollmentOpen: 'Cho sinh viên tự tham gia lớp này',
+    enrollmentOpenHint:
+      'Bật vào đầu kỳ để sinh viên tự vào lớp, rồi tắt khi lớp đã đủ. Khi tắt, lớp không còn hiện trong danh sách chọn lớp.',
+    removeStudent: 'Gỡ khỏi lớp',
+    removedStudent: 'Đã gỡ khỏi lớp',
+    enrolledActive: 'Đang trong lớp',
+    showRemoved: 'Kể cả đã gỡ',
+    inviteTitle: 'Mời giảng viên theo email',
+    inviteHint:
+      'Gán trước vai trò cho một email. Người đó đăng nhập lần đầu là đã có quyền ngay, không cần đăng nhập trước rồi mới nâng quyền.',
+    inviteEmail: 'Email',
+    inviteRole: 'Vai trò',
+    inviteAdd: 'Gửi lời mời',
+    invitePending: 'Chưa dùng',
+    inviteClaimed: 'Đã dùng',
+    inviteRevoke: 'Thu hồi',
+    noInvites: 'Chưa có lời mời nào.',
+    archiveUser: 'Vô hiệu hoá',
+    restoreUser: 'Kích hoạt lại',
+    archivedUserNote: 'Tài khoản đã vô hiệu hoá vẫn giữ nguyên mọi kết quả đã chấm.',
+  },
   admin: {
     title: 'Quản trị hệ thống',
     users: 'Người dùng',
