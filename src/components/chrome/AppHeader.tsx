@@ -23,6 +23,7 @@ export async function AppHeader({
   }
   if (role === 'ADMIN') {
     links.push({ href: '/admin', label: t.admin.title });
+    links.push({ href: '/admin/users', label: t.admin.users });
   }
 
   return (

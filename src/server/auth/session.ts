@@ -4,6 +4,7 @@ import { cache } from 'react';
 import { getAdminAuth } from '@/db/firestore';
 import { getRepositories } from '@/db/repositories/firestore';
 import type { Role, UserDoc } from '@/db/models';
+import type { Repositories } from '@/db/repositories/types';
 
 /**
  * Server-side authentication (spec 9.3, 13.1).
@@ -128,7 +129,7 @@ export async function requireRole(minimum: Role): Promise<AuthenticatedUser> {
 }
 
 /**
- * Role assigned to a brand-new account.
+ * Role assigned to a brand-new account, before invites are considered.
  *
  * Everyone starts as a STUDENT. The single exception is the bootstrap admin
  * email from the environment, which exists so the very first deployment has
@@ -137,5 +138,47 @@ export async function requireRole(minimum: Role): Promise<AuthenticatedUser> {
 export function initialRoleFor(email: string): Role {
   const bootstrap = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
   if (bootstrap && email.trim().toLowerCase() === bootstrap) return 'ADMIN';
+  return 'STUDENT';
+}
+
+/** True when this email is the configured bootstrap administrator. */
+export function isBootstrapAdmin(email: string): boolean {
+  const bootstrap = process.env.BOOTSTRAP_ADMIN_EMAIL?.trim().toLowerCase();
+  return Boolean(bootstrap) && email.trim().toLowerCase() === bootstrap;
+}
+
+/**
+ * Role for a brand-new account, consulting any invite an admin left.
+ *
+ * Order is deliberate and load-bearing:
+ *
+ *  1. BOOTSTRAP_ADMIN_EMAIL wins outright — it is the only way back in if the
+ *     invite collection is ever wrong, so nothing may override it.
+ *  2. An unclaimed invite grants its role, and is marked claimed in the same
+ *     operation.
+ *  3. Otherwise STUDENT.
+ *
+ * ONLY called for a brand-new account. Consulting invites on every sign-in
+ * would be a privilege bug: an admin demotes an instructor, and the next
+ * sign-in silently re-promotes them from the stale invite.
+ */
+export async function resolveInitialRole(
+  email: string,
+  uid: string,
+  repos: Pick<Repositories, 'roleInvites'>,
+): Promise<Role> {
+  if (isBootstrapAdmin(email)) return 'ADMIN';
+
+  try {
+    const granted = await repos.roleInvites.claim(email, uid);
+    if (granted) return granted;
+  } catch (error) {
+    // A failure here must not block sign-in; the person simply starts as a
+    // student and an admin can promote them by hand.
+    console.error(
+      JSON.stringify({ severity: 'ERROR', message: 'role invite claim failed', error: String(error) }),
+    );
+  }
+
   return 'STUDENT';
 }

@@ -2,8 +2,10 @@ import Link from 'next/link';
 import { requireRolePage } from '@/server/auth/guards';
 import { getRepositories } from '@/db/repositories/firestore';
 import { getTranslations } from '@/i18n/server';
+import { isArchived } from '@/db/models';
 import { RoleSelect } from '@/components/instructor/RoleSelect';
 import {
+  Badge,
   Card,
   CardTitle,
   EmptyState,
@@ -31,7 +33,16 @@ export default async function AdminPage() {
       <PageHeader title={t.admin.title} subtitle={admin.displayName} />
 
       <Card>
-        <CardTitle>
+        <CardTitle
+          right={
+            <Link
+              href="/admin/users"
+              className="rounded-md bg-brand-500 px-3 py-1.5 text-xs font-semibold text-ink-950 transition hover:bg-brand-400"
+            >
+              {t.common.edit}
+            </Link>
+          }
+        >
           {t.admin.users} ({users.length})
         </CardTitle>
         {users.length === 0 ? (
@@ -83,7 +94,12 @@ export default async function AdminPage() {
               <tbody>
                 {courses.map((course) => (
                   <tr key={course.id}>
-                    <Td className="text-ink-100">{course.courseName}</Td>
+                    <Td className="text-ink-100">
+                      {course.courseName}{' '}
+                      {isArchived(course) ? (
+                        <Badge tone="warn">{t.instructorAdmin.archived}</Badge>
+                      ) : null}
+                    </Td>
                     <Td className="text-ink-300">{course.semester}</Td>
                     <Td align="right">
                       <Link

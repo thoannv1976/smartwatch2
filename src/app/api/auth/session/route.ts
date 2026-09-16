@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getAdminAuth } from '@/db/firestore';
 import { getRepositories } from '@/db/repositories/firestore';
-import { SESSION_COOKIE, createSessionCookie, initialRoleFor } from '@/server/auth/session';
+import { SESSION_COOKIE, createSessionCookie, resolveInitialRole } from '@/server/auth/session';
 
 /**
  * Exchanges a Firebase ID token for an httpOnly session cookie, and creates the
@@ -29,16 +29,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'email_required' }, { status: 400 });
     }
 
-    const users = getRepositories().users;
-    const existing = await users.get(decoded.uid);
+    const repos = getRepositories();
+    const existing = await repos.users.get(decoded.uid);
 
-    const user = await users.upsert({
+    // An existing user keeps the role they were granted. Invites are consulted
+    // ONLY for a brand-new account: re-reading them on every sign-in would let
+    // a stale invite silently undo an admin's later demotion.
+    const role = existing?.role ?? (await resolveInitialRole(email, decoded.uid, repos));
+
+    const user = await repos.users.upsert({
       uid: decoded.uid,
       email,
       displayName: decoded.name ?? existing?.displayName ?? email.split('@')[0] ?? email,
-      // An existing user keeps the role they were granted; only a brand-new
-      // account gets the bootstrap treatment.
-      role: existing?.role ?? initialRoleFor(email),
+      role,
     });
 
     const { value, maxAgeSeconds } = await createSessionCookie(parsed.idToken);

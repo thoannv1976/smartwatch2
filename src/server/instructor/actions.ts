@@ -7,7 +7,7 @@ import {
   SCENARIO_VERSION,
   SELECTABLE_SCENARIO_VERSIONS,
 } from '@/domain/simulation';
-import { getRepositories } from '@/db/repositories/firestore';
+import { getRepositories, isUsableInviteId } from '@/db/repositories/firestore';
 import { ROLES, type Role } from '@/db/models';
 import { AuthorizationError, hasRole, requireRole } from '@/server/auth/session';
 import { patchKeepsWindowValid } from './validation';
@@ -383,8 +383,145 @@ export async function setUserRoleAction(
       return { ok: false, error: 'cannotDemoteSelf' };
     }
 
-    await getRepositories().users.setRole(parsed.uid, parsed.role);
+    const repos = getRepositories();
+    await repos.users.setRole(parsed.uid, parsed.role);
+
+    // Drop any invite for this address. An invite only applies to a brand-new
+    // account, so a leftover one cannot re-promote this person today — but it
+    // would if the account were ever deleted and recreated, and a revoked role
+    // that quietly returns is the kind of surprise worth designing out.
+    const target = await repos.users.get(parsed.uid);
+    if (target) await repos.roleInvites.remove(target.email);
+
+    revalidatePath('/admin');
     revalidatePath('/admin/users');
+    return { ok: true, data: {} };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+const archiveUserSchema = z.object({
+  uid: z.string().min(1),
+  archived: z.boolean(),
+});
+
+/**
+ * Disables or re-enables an account.
+ *
+ * Deliberately does NOT block sign-in: someone disabled by mistake in the
+ * middle of an exam would otherwise lose access to a game already in progress.
+ * It removes them from the user list, and nothing else — every graded result
+ * they hold is untouched.
+ */
+export async function setUserArchivedAction(
+  input: z.input<typeof archiveUserSchema>,
+): Promise<StaffActionResult<Record<string, never>>> {
+  try {
+    const admin = await requireRole('ADMIN');
+    const parsed = archiveUserSchema.parse(input);
+
+    if (parsed.uid === admin.uid && parsed.archived) {
+      return { ok: false, error: 'cannotDemoteSelf' };
+    }
+
+    await getRepositories().users.setArchived(parsed.uid, parsed.archived ? Date.now() : null);
+    revalidatePath('/admin');
+    revalidatePath('/admin/users');
+    return { ok: true, data: {} };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+const inviteSchema = z.object({
+  email: z.string().trim().email().max(320),
+  role: z.enum(ROLES as unknown as [Role, ...Role[]]),
+});
+
+/**
+ * Grants a role to an email before that person has ever signed in.
+ *
+ * This removes the trap that made setup awkward: an instructor previously had
+ * to sign in once so an admin could find them and promote them, and until then
+ * nobody could tell them apart from a student.
+ */
+export async function inviteRoleAction(
+  input: z.input<typeof inviteSchema>,
+): Promise<StaffActionResult<Record<string, never>>> {
+  try {
+    const admin = await requireRole('ADMIN');
+    const parsed = inviteSchema.parse(input);
+    const email = parsed.email.toLowerCase();
+
+    // The email is the document id, so reject anything Firestore cannot store
+    // here rather than discovering it at the person's first sign-in.
+    if (!isUsableInviteId(email)) return { ok: false, error: 'invalidInput' };
+
+    const repos = getRepositories();
+
+    // An account that already exists is changed through setUserRoleAction, not
+    // by an invite that would never be read.
+    const existing = await repos.users.getByEmail(email);
+    if (existing) {
+      await repos.users.setRole(existing.uid, parsed.role);
+    } else {
+      await repos.roleInvites.put({
+        email,
+        role: parsed.role,
+        createdBy: admin.uid,
+        createdAt: Date.now(),
+      });
+    }
+
+    revalidatePath('/admin');
+    revalidatePath('/admin/users');
+    return { ok: true, data: {} };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+const revokeInviteSchema = z.object({ email: z.string().trim().email() });
+
+export async function revokeRoleInviteAction(
+  input: z.input<typeof revokeInviteSchema>,
+): Promise<StaffActionResult<Record<string, never>>> {
+  try {
+    await requireRole('ADMIN');
+    const parsed = revokeInviteSchema.parse(input);
+    await getRepositories().roleInvites.remove(parsed.email.toLowerCase());
+    revalidatePath('/admin');
+    revalidatePath('/admin/users');
+    return { ok: true, data: {} };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+const transferCourseSchema = z.object({
+  courseId: z.string().min(1),
+  instructorId: z.string().min(1),
+});
+
+/** Moves a course to another instructor. Admin only. */
+export async function transferCourseAction(
+  input: z.input<typeof transferCourseSchema>,
+): Promise<StaffActionResult<Record<string, never>>> {
+  try {
+    await requireRole('ADMIN');
+    const parsed = transferCourseSchema.parse(input);
+
+    const repos = getRepositories();
+    const target = await repos.users.get(parsed.instructorId);
+    if (!target) return { ok: false, error: 'memberNotFound' };
+    // Handing a course to a student would leave it unreachable by its owner.
+    if (!hasRole(target.role, 'INSTRUCTOR')) return { ok: false, error: 'invalidInput' };
+
+    await repos.courses.update(parsed.courseId, { instructorId: parsed.instructorId });
+    revalidatePath('/admin');
+    revalidatePath('/instructor');
+    revalidatePath(`/instructor/courses/${parsed.courseId}`);
     return { ok: true, data: {} };
   } catch (error) {
     return { ok: false, error: toError(error) };
