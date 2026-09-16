@@ -12,7 +12,7 @@ thanh trên cùng. Mặc định là tiếng Việt.
 
 - [Hiểu game trong 2 phút](#hiểu-game-trong-2-phút)
 - [Ba vai trò và quyền hạn](#ba-vai-trò-và-quyền-hạn)
-- [Thứ tự triển khai lần đầu](#thứ-tự-triển-khai-lần-đầu-quan-trọng)
+- [Thứ tự triển khai lần đầu](#thứ-tự-triển-khai-lần-đầu)
 - [A. Hướng dẫn cho SINH VIÊN](#a-hướng-dẫn-cho-sinh-viên)
 - [B. Hướng dẫn cho GIẢNG VIÊN](#b-hướng-dẫn-cho-giảng-viên)
 - [C. Hướng dẫn cho QUẢN TRỊ VIÊN](#c-hướng-dẫn-cho-quản-trị-viên-admin)
@@ -65,39 +65,38 @@ Giảng viên làm được mọi việc của Sinh viên.
 | Vai trò | Thấy menu | Làm được gì |
 |---|---|---|
 | **Sinh viên** (STUDENT) | Trang chủ | Chơi thử, làm bài tập chính thức, xem báo cáo của mình, xem bảng xếp hạng **lớp mình** |
-| **Giảng viên** (INSTRUCTOR) | + Bảng điều khiển giảng viên, Chế độ kiểm thử mô phỏng | Tạo lớp, thêm sinh viên, tạo bài tập, xem tiến độ và chi tiết 6 quý của từng SV, xuất CSV |
-| **Quản trị viên** (ADMIN) | + Quản trị hệ thống | Đổi vai trò người dùng, xem **tất cả** lớp học, xem cấu hình engine |
+| **Giảng viên** (INSTRUCTOR) | + Bảng điều khiển giảng viên, Chế độ kiểm thử mô phỏng | Tạo và **sửa** lớp, mở/đóng ghi danh, sửa mã SV, gỡ sinh viên, tạo và sửa bài tập, lưu trữ, xem chi tiết 6 quý của từng SV, xuất CSV |
+| **Quản trị viên** (ADMIN) | + Quản trị hệ thống, Người dùng | Mời giảng viên theo email, đổi vai trò, vô hiệu hoá tài khoản, chuyển lớp sang giảng viên khác, xem **tất cả** lớp học, xem cấu hình engine |
 
-**Mọi tài khoản mới đăng nhập đều là Sinh viên.** Ngoại lệ duy nhất: email được
-đặt trong biến `BOOTSTRAP_ADMIN_EMAIL` khi triển khai — tài khoản đó được tạo
-với vai trò Quản trị viên, để lần deploy đầu tiên có người đủ quyền phong
-giảng viên.
+**Mọi tài khoản mới đăng nhập đều là Sinh viên**, trừ hai ngoại lệ: email đặt ở
+`BOOTSTRAP_ADMIN_EMAIL` (thành Quản trị viên, để lần deploy đầu tiên có người đủ
+quyền), và email đã được quản trị viên **mời trước** (nhận đúng vai trò được mời
+ngay lần đăng nhập đầu).
 
 ---
 
-## Thứ tự triển khai lần đầu (quan trọng)
-
-Có một ràng buộc dễ vướng: **giảng viên không thể thêm sinh viên vào lớp nếu
-sinh viên đó chưa đăng nhập lần nào** — vì việc ghi danh gắn với tài khoản
-Firebase, tài khoản chỉ tồn tại sau lần đăng nhập đầu.
-
-Nên thứ tự đúng là:
+## Thứ tự triển khai lần đầu
 
 | # | Ai làm | Việc |
 |---|---|---|
 | 1 | Quản trị viên | Đăng nhập bằng email đã đặt ở `BOOTSTRAP_ADMIN_EMAIL` |
-| 2 | Quản trị viên | Vào **Quản trị hệ thống** → phong các đồng nghiệp thành **Giảng viên** |
-| 3 | Giảng viên | Tạo lớp học |
-| 4 | **Sinh viên** | **Đăng nhập app một lần** (chỉ cần đăng nhập rồi đóng) |
-| 5 | Giảng viên | Thêm sinh viên vào lớp bằng email + mã sinh viên |
-| 6 | Giảng viên | Tạo bài tập (seed, hạn cuối, số lần làm) |
-| 7 | Sinh viên | Chơi thử để làm quen, rồi làm bài tập chính thức |
+| 2 | Quản trị viên | **Người dùng** → nhập email đồng nghiệp, chọn **Giảng viên**, bấm **Gửi lời mời** |
+| 3 | Giảng viên | Đăng nhập lần đầu — **đã có quyền Giảng viên ngay** |
+| 4 | Giảng viên | Tạo lớp, rồi bật **Cho sinh viên tự tham gia lớp này** |
+| 5 | **Sinh viên** | Tự đăng ký, vào **Tham gia lớp học**, chọn lớp, nhập mã sinh viên |
+| 6 | Giảng viên | Kiểm danh sách, sửa mã sinh viên nhập sai, rồi **tắt ghi danh** |
+| 7 | Giảng viên | Tạo bài tập (seed, hạn cuối, số lần làm) |
 
-Cách làm thực tế ở bước 4: gửi link app cho cả lớp kèm câu *"đăng nhập một lần
-trước buổi học sau"*. Ai chưa đăng nhập thì bước 5 sẽ báo
-*"Không tìm thấy người dùng với email này"*.
+> **Đã bỏ được cái bẫy cũ.** Trước đây giảng viên phải chờ sinh viên đăng nhập
+> một lần rồi mới thêm được vào lớp, và quản trị viên cũng phải chờ giảng viên
+> đăng nhập rồi mới nâng quyền được. Giờ **không phải chờ ai cả**: lời mời gán
+> vai trò trước, và sinh viên tự vào lớp.
 
----
+### Thực tế nên làm thế nào
+
+Gửi cả lớp một câu: *"Vào link này, tự đăng ký, chọn đúng lớp [tên lớp], nhập mã
+sinh viên của em."* Xong buổi đầu thì **tắt ghi danh** — từ đó không ai vào thêm
+được nữa.
 
 ## A. Hướng dẫn cho SINH VIÊN
 
@@ -109,7 +108,27 @@ trước buổi học sau"*. Ai chưa đăng nhập thì bước 5 sẽ báo
    6 ký tự).
 3. Vào **Trang chủ**.
 
-### A2. Chơi thử trước (khuyến nghị mạnh)
+### A2. Tham gia lớp của bạn
+
+Đăng nhập xong, nếu chưa ở lớp nào bạn sẽ thấy nút **Tìm lớp để tham gia**.
+
+1. Mở **Tham gia lớp học**.
+2. Trong **Các lớp đang mở ghi danh**, tìm đúng lớp của bạn — mỗi dòng có tên
+   lớp, học kỳ và **tên giảng viên**, dùng để phân biệt các lớp trùng tên.
+3. Nhập **mã sinh viên** của bạn rồi bấm **Tham gia lớp**.
+
+Vài điều cần biết:
+
+- **Nhập đúng mã sinh viên.** Đây là thứ dùng để ghép điểm của bạn với danh sách
+  lớp. Nhập sai thì báo giảng viên sửa giúp — giảng viên sửa được.
+- **Mỗi mã chỉ một người trong một lớp.** Nếu báo *"Mã sinh viên này đã có người
+  dùng trong lớp"* thì kiểm tra lại mã của mình.
+- **Không thấy lớp?** Giảng viên chưa bật ghi danh, hoặc đã tắt sau khi lớp đủ
+  người. Liên hệ giảng viên.
+- **Rời lớp** được, nhưng chỉ khi bạn **chưa bắt đầu bài tập chính thức** nào của
+  lớp đó. Bắt đầu rồi thì phải nhờ giảng viên gỡ.
+
+### A3. Chơi thử trước (khuyến nghị mạnh)
 
 Trang chủ có mục **Chơi thử (Practice)**:
 
@@ -127,7 +146,7 @@ Trang chủ có mục **Chơi thử (Practice)**:
 Hãy chơi thử **trọn 6 quý ít nhất một lần** trước khi làm bài chính thức. Bài
 chính thức thường chỉ cho **1 lần làm** và **không thể hoàn tác**.
 
-### A3. Thành lập công ty
+### A4. Thành lập công ty
 
 Bấm **Bắt đầu chơi thử** (hoặc **Bắt đầu bài tập**), rồi điền:
 
@@ -144,7 +163,7 @@ thật sự định theo.
 
 Bấm **Thành lập và bắt đầu Q1**.
 
-### A4. Bảng điều khiển CEO
+### A5. Bảng điều khiển CEO
 
 Đây là màn hình trung tâm, mỗi quý bạn quay về đây. Nó cho bạn:
 
@@ -161,7 +180,7 @@ Bấm **Thành lập và bắt đầu Q1**.
 Các nút: **Ra quyết định quý này**, **Xem kết quả quý trước**, **Xem lịch sử
 chiến lược**.
 
-### A5. Ra quyết định (màn hình quan trọng nhất)
+### A6. Ra quyết định (màn hình quan trọng nhất)
 
 Bấm **Ra quyết định quý này**.
 
@@ -202,7 +221,7 @@ phân bổ thế nào.
 > Quyết định **bị khoá sau khi gửi và không thể sửa lại**. Hệ thống cố tình
 > không cho xem trước lợi nhuận.
 
-### A6. Đọc kết quả quý
+### A7. Đọc kết quả quý
 
 Sau khi mô phỏng, bạn thấy **Kết quả quý**:
 
@@ -216,9 +235,9 @@ Sau khi mô phỏng, bạn thấy **Kết quả quý**:
   đối thủ (server lọc trước khi gửi về), đúng như thực tế cạnh tranh.
 - **Quyết định của bạn quý này**, để đối chiếu.
 
-Bấm **Sang quý tiếp theo** và lặp lại từ A5 cho tới Q6.
+Bấm **Sang quý tiếp theo** và lặp lại từ A6 cho tới Q6.
 
-### A7. Lịch sử chiến lược
+### A8. Lịch sử chiến lược
 
 Vào bất cứ lúc nào từ Bảng điều khiển. Gồm:
 
@@ -228,7 +247,7 @@ Vào bất cứ lúc nào từ Bảng điều khiển. Gồm:
 
 Dùng trang này trước mỗi quyết định để thấy xu hướng, đừng chỉ nhìn quý gần nhất.
 
-### A8. Báo cáo tổng kết
+### A9. Báo cáo tổng kết
 
 Nộp quyết định Q6 xong, game **tự động kết thúc và tính điểm**. Báo cáo gồm:
 
@@ -255,7 +274,7 @@ Lưu ý: **lợi nhuận + thị phần = 55%**, nhưng **thương hiệu + CSAT
 quyết định trung bình 6 quý, **ba bài học** rút từ chính số liệu của bạn, và
 phần **đối chiếu với định vị ban đầu**.
 
-### A9. Bảng xếp hạng lớp
+### A10. Bảng xếp hạng lớp
 
 Vào từ Trang chủ (sau khi hoàn thành bài tập) hoặc từ Báo cáo.
 
@@ -266,7 +285,7 @@ Vào từ Trang chủ (sau khi hoàn thành bài tập) hoặc từ Báo cáo.
 - Đồng điểm xét theo thứ tự: **lợi nhuận luỹ kế → thị phần → nhận biết thương
   hiệu**.
 
-### A10. Vài lời khuyên chiến lược
+### A11. Vài lời khuyên chiến lược
 
 Không phải mẹo phá game, mà là những gì mô hình thật sự thưởng:
 
@@ -300,17 +319,31 @@ Sau khi được Quản trị viên phong vai trò, thanh menu của bạn có t
 
 Bấm **Tạo**. Lớp hiện ngay bên dưới.
 
-### B2. Thêm sinh viên vào lớp
+### B2. Cho sinh viên vào lớp
 
-Mở lớp (bấm **Thành viên · Tạo bài tập mới**), rồi ở khung **Thành viên**:
+Mở lớp bằng nút **Thành viên · Tạo bài tập mới**.
 
-1. Nhập **Email sinh viên** (đúng email họ dùng để đăng nhập app).
-2. Nhập **Mã sinh viên**.
-3. Bấm **Thêm sinh viên**.
+**Cách thường dùng — để sinh viên tự vào:**
 
-> **Sinh viên phải đăng nhập app ít nhất một lần trước khi được thêm.** Nếu
-> chưa, bạn sẽ nhận thông báo *"Không tìm thấy người dùng với email này"*. Đây
-> không phải lỗi — hãy nhắc sinh viên đăng nhập rồi thêm lại.
+1. Ở khung **Sửa**, bật **Cho sinh viên tự tham gia lớp này**.
+2. Gửi link app cho cả lớp và nói rõ tên lớp cần chọn.
+3. Sinh viên tự đăng ký, chọn lớp, nhập mã sinh viên của họ.
+4. Xong buổi đầu, **tắt lại công tắc đó**. Từ đó không ai vào thêm được.
+
+> **Nên tắt sau khi lớp đã đủ.** Khi đang bật, bất kỳ ai đăng nhập được cũng vào
+> được lớp này. Bật đầu kỳ, tắt sau tuần đầu là đủ an toàn cho thực tế lớp học.
+
+**Cách thêm tay** (dùng cho một vài trường hợp lẻ): ở khung **Thành viên**, nhập
+email và mã sinh viên rồi bấm **Thêm sinh viên**. Cách này vẫn yêu cầu sinh viên
+**đã đăng nhập ít nhất một lần**, vì nó tìm theo tài khoản đã có.
+
+**Sửa và gỡ.** Mỗi dòng trong bảng có nút **Sửa** (đổi mã sinh viên nhập sai) và
+**Gỡ khỏi lớp**. Gỡ không xoá dữ liệu: sinh viên đã chơi vẫn còn nguyên trong
+bảng theo dõi và trên bảng xếp hạng, chỉ được đánh dấu **Đã gỡ khỏi lớp**. Bấm
+**Khôi phục** để cho vào lại.
+
+**Đổi tên lớp, đổi học kỳ, lưu trữ lớp** — đều ở khung **Sửa** trên cùng trang.
+Lưu trữ chỉ ẩn lớp khỏi các danh sách; điểm, bảng xếp hạng và CSV không đổi gì.
 
 ### B3. Tạo bài tập chính thức
 
@@ -420,21 +453,39 @@ Hai cách dùng thực tế:
 
 Menu **Quản trị hệ thống** có 3 khung.
 
-### C1. Người dùng — phân vai trò
+### C1. Người dùng — mời, phân vai trò, vô hiệu hoá
 
-Danh sách 200 người dùng gần nhất, kèm ô chọn vai trò trên mỗi dòng. Đổi vai
-trò có hiệu lực ngay.
+Menu **Người dùng** là nơi làm gần hết việc quản trị.
 
-- **Không thể tự hạ quyền của chính mình.** Ràng buộc này để hệ thống không bao
-  giờ rơi vào trạng thái không còn quản trị viên nào.
-- Trước khi hạ một giảng viên xuống sinh viên, hãy nhớ: lớp học gắn với
-  `instructorId` của họ. Họ sẽ mất quyền vào lớp của mình. Quản trị viên vẫn
-  thấy mọi lớp.
+**Mời giảng viên theo email — không cần họ đăng nhập trước.** Nhập email, chọn
+**Giảng viên**, bấm **Gửi lời mời**. Khi người đó đăng nhập lần đầu là đã có
+quyền ngay. Lời mời chưa dùng hiện trong bảng và **thu hồi** được.
+
+Vài quy tắc đáng biết, vì chúng được thiết kế có chủ ý:
+
+- **Lời mời chỉ dùng được một lần**, và chỉ áp cho **tài khoản mới**. Nếu email
+  đó đã có tài khoản, hệ thống đổi vai trò luôn thay vì tạo lời mời.
+- **Hạ quyền ai đó sẽ thu hồi lời mời của họ**, để quyền đã gỡ không âm thầm
+  quay lại.
+- **`BOOTSTRAP_ADMIN_EMAIL` luôn thắng.** Đây là đường vào cuối cùng nếu dữ liệu
+  lời mời có sai, nên không gì ghi đè được nó.
+
+**Tìm kiếm và lọc theo vai trò** — hữu ích khi danh sách đã dài.
+
+**Vô hiệu hoá tài khoản** (nút ở cuối mỗi dòng). Tài khoản bị vô hiệu hoá chỉ
+biến mất khỏi danh sách; **mọi điểm đã chấm giữ nguyên**, và người đó **vẫn đăng
+nhập được** — chủ ý, để nếu vô hiệu hoá nhầm giữa kỳ thi thì họ không mất lượt
+chơi đang dở. Bạn **không tự vô hiệu hoá chính mình** được.
 
 ### C2. Lớp học — toàn hệ thống
 
-Danh sách **tất cả** lớp của mọi giảng viên, có link vào chi tiết. Dùng để hỗ
-trợ giảng viên hoặc kiểm tra khi có sự cố.
+Danh sách **tất cả** lớp của mọi giảng viên, có link vào chi tiết; lớp đã lưu trữ
+được đánh dấu rõ. Quản trị viên mở được mọi lớp qua chính trang của giảng viên,
+nên làm được mọi thao tác sửa / gỡ / lưu trữ ở đó.
+
+**Chuyển lớp cho giảng viên khác** cũng làm ở đây. Chỉ chuyển được cho người đã
+có vai trò Giảng viên trở lên — giao lớp cho một sinh viên sẽ khiến chính chủ
+lớp không vào được nữa.
 
 ### C3. Cấu hình engine — chỉ đọc
 
@@ -456,7 +507,8 @@ kèm tăng `engineVersion`, rồi triển khai lại — không phải việc l�
 
 ### C4. Việc thường làm nhất
 
-Đầu mỗi học kỳ: vào **Người dùng**, phong giảng viên. Hết.
+Đầu mỗi học kỳ: vào **Người dùng**, mời giảng viên theo email. Hết — họ tự đăng
+nhập là có quyền, và sinh viên tự vào lớp.
 
 ---
 
@@ -498,7 +550,11 @@ khích: lập kế hoạch 6 quý chính là kỹ năng cần học.
 
 | Thông báo | Nghĩa là gì | Làm gì |
 |---|---|---|
-| *Hiện chưa có bài tập nào được giao cho bạn* | Bạn chưa có trong lớp nào, hoặc lớp chưa có bài tập | Nhắc giảng viên thêm bạn vào lớp |
+| *Bạn chưa tham gia lớp nào* | Chưa vào lớp | Bấm **Tìm lớp để tham gia**, chọn lớp, nhập mã SV |
+| *Hiện chưa có bài tập nào được giao cho bạn* | Đã ở trong lớp nhưng lớp chưa có bài tập | Chờ giảng viên tạo bài tập |
+| *Mã sinh viên này đã có người dùng trong lớp* | Mã bị trùng trong cùng lớp | Kiểm tra lại mã của mình; nếu đúng là mã của bạn thì báo giảng viên |
+| *Hiện chưa có lớp nào mở ghi danh* | Giảng viên chưa bật, hoặc đã tắt ghi danh | Liên hệ giảng viên |
+| *Bạn đã bắt đầu bài tập chính thức của lớp này nên không tự rời được* | Đã có lượt chơi chính thức | Nhờ giảng viên gỡ |
 | *Bạn không thuộc lớp của bài tập này* | Chưa được ghi danh | Giảng viên thêm bằng email + mã SV |
 | *Chưa mở* | Chưa đến "Thời điểm mở" | Chờ |
 | *Đã hết hạn* | Quá hạn cuối | Liên hệ giảng viên |
@@ -512,7 +568,9 @@ khích: lập kế hoạch 6 quý chính là kỹ năng cần học.
 
 | Thông báo | Nghĩa là gì | Làm gì |
 |---|---|---|
-| *Không tìm thấy người dùng với email này. Sinh viên cần đăng nhập ít nhất 1 lần.* | Tài khoản chưa tồn tại | Nhắc sinh viên đăng nhập một lần, rồi thêm lại. Kiểm tra cả lỗi chính tả email |
+| *Không tìm thấy người dùng với email này. Sinh viên cần đăng nhập ít nhất 1 lần.* | Chỉ xảy ra khi **thêm tay**. Tài khoản chưa tồn tại | Dùng cách để sinh viên tự vào lớp (bật ghi danh), hoặc nhắc họ đăng nhập một lần rồi thêm lại |
+| Sinh viên báo không thấy lớp | Chưa bật **Cho sinh viên tự tham gia lớp này**, hoặc đã tắt | Bật lại ở khung **Sửa** của trang lớp |
+| Trong bảng theo dõi, *Đã hoàn thành* nhiều hơn *Đang trong lớp* | Có sinh viên đã chơi rồi bị gỡ khỏi lớp | Đúng như thiết kế. Người đã chơi luôn được giữ lại trong bảng, đánh dấu **Đã gỡ khỏi lớp** |
 | *Bạn không có quyền truy cập trang này* | Chưa được phong Giảng viên, hoặc đang mở lớp của người khác | Nhờ Quản trị viên phong vai trò. Giảng viên chỉ thấy lớp của mình |
 | Bảng xếp hạng trống | Chưa ai hoàn thành đủ **6 quý** | Xem ô **Đã hoàn thành**. Sinh viên đang chơi chưa lên bảng |
 | Ô điểm hiện "—" | Chưa có ai hoàn thành để tính trung bình | Chờ |
@@ -539,6 +597,19 @@ khích: lập kế hoạch 6 quý chính là kỹ năng cần học.
 **Sinh viên chơi lại bài chính thức được không?**
 Chỉ khi giảng viên đặt "Số lần làm tối đa" lớn hơn 1. Khuyến nghị để **1**.
 Chơi thử thì không giới hạn.
+
+**Sinh viên vào nhầm lớp thì sao?**
+Nếu chưa bắt đầu bài chính thức, họ tự bấm **Rời lớp** rồi vào lớp đúng. Nếu đã
+bắt đầu rồi, giảng viên gỡ giúp ở bảng thành viên.
+
+**Lỡ lưu trữ nhầm một lớp thì có mất điểm không?**
+Không. Lưu trữ chỉ ẩn lớp khỏi danh sách. Bảng xếp hạng, file CSV và báo cáo của
+sinh viên không đổi một chữ. Bấm **Khôi phục** là lớp trở lại.
+
+**Xoá hẳn được không?**
+Không, và đó là chủ ý. Với app dùng để chấm điểm, một thao tác xoá không hoàn tác
+được là rủi ro lớn hơn giá trị nó mang lại. Mọi thứ đều là lưu trữ, khôi phục
+được.
 
 **Tại sao em luôn xếp thứ 6 dù điểm cao?**
 Nếu bài tập dùng `smartwatch-v1` thì đó là đặc tính của kịch bản, không phải
