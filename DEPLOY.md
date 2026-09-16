@@ -36,6 +36,35 @@ After that, every redeploy is one command:
 ./scripts/deploy.sh      # ~2 minutes
 ```
 
+### Or stop typing it: deploy on push
+
+Once the first deploy has succeeded, turn the manual step off entirely:
+
+```bash
+./scripts/setup-cd.sh            # deploy on every push to main
+./scripts/setup-cd.sh '^dev$'    # …or to some other branch
+```
+
+This creates a **Cloud Build trigger** on the repository. From then on
+`git push` *is* the deploy: GCP checks out the commit and runs the same
+`cloudbuild.yaml` — typecheck, the full test suite, build, push, deploy — so a
+failing test still stops the release. Nothing has to be run in Cloud Shell
+again, and no credential leaves Google Cloud: the substitutions live in the
+trigger, there is no key file and no secret stored in GitHub.
+
+`setup-cd.sh` is idempotent and re-runnable. It needs **one browser step, once**:
+Cloud Build can only read the repository after the Cloud Build GitHub App has
+been authorised on it, which is an OAuth grant and so cannot come from a
+script. If that has not been done, the script prints the exact link and stops
+without changing anything — run it again afterwards.
+
+Set CD up **after** a successful `./scripts/deploy.sh`, not before. Automating a
+pipeline that has never gone green just makes it fail automatically, with one
+more layer between you and the error.
+
+To deploy without waiting for a push, or to turn CD off again, the script
+prints both commands when it finishes.
+
 The build is submitted with `--async` and then polled, so **Ctrl+C only stops
 watching** — the build keeps running, and the script tells you where to follow
 it. (A plain `gcloud builds submit` does the opposite: interrupting it, or

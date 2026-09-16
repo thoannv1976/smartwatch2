@@ -99,6 +99,7 @@ deployment to an AI agent.
 | `npm run seed:demo` | Seed a demo course, assignment and played games (emulators or a throwaway project) |
 | `./scripts/gcp-setup.sh <project>` | One-time, idempotent GCP provisioning (no `firebase login`) |
 | `./scripts/deploy.sh` | Build, test, deploy to Cloud Run (~2 min) |
+| `./scripts/setup-cd.sh` | One-time: make `git push` deploy, via a Cloud Build trigger |
 
 ### Internal simulation test mode
 
