@@ -94,6 +94,12 @@ import type {
  * all addressed BY DOCUMENT ID, which needs no index at all. If you add an
  * orderBy, a second filter, or a collectionGroup() query here, it needs an
  * entry in firestore.indexes.json — and the emulator will not tell you.
+ *
+ * They must also not REUSE a collection id. A collection group is selected by
+ * id alone, at any depth, so naming a subcollection `members` silently enrols
+ * its documents in the course roster's collection group and in the index that
+ * serves it. That is not hypothetical: it broke the student home page. The
+ * names are asserted to be distinct in tests/integration/collection-ids.test.ts.
  * ---------------------------------------------------------------------------
  */
 
@@ -118,7 +124,18 @@ export const COLLECTIONS = {
   // --- group competition (Part 2) ---
   groups: 'groups',
   // Subcollection of a group: one document per student, id = uid.
-  groupMembers: 'members',
+  //
+  // NOT `members`, however natural that reads. A collectionGroup() query
+  // matches on the collection ID ALONE, anywhere in the database: naming this
+  // `members` put group members into the same collection group as course
+  // rosters, and `listCoursesForStudent` — the first query the student home
+  // page runs — swept them up. A `GroupMemberDoc` carries `uid` and `joinedAt`,
+  // so it matched the filter and the index exactly, but has no `courseId`, so
+  // the very next line asked Firestore for the document at path `courses/
+  // undefined` and the page threw. See `collectionGroupIdIsUnique` in
+  // tests/db/collections.test.ts, which now fails if any subcollection id
+  // repeats.
+  groupMembers: 'groupMembers',
   // One document per join code, id = the CODE itself. Two groups sharing a code
   // would send a student into someone else's match, so uniqueness is a
   // datastore constraint. Read and written by id only, so it needs no index.
@@ -427,13 +444,29 @@ class FirestoreCourseRepository implements CourseRepository {
      * Removing it does not fail any test — the Firestore emulator does not
      * enforce indexes — it fails in production with FAILED_PRECONDITION, on the
      * student home page.
+     *
+     * A collection group is selected by collection ID alone, ANYWHERE in the
+     * database, so this query reaches every subcollection called `members` no
+     * matter whose child it is. That is why `COLLECTIONS.groupMembers` is not
+     * called `members`, and why the `courseId` guard below exists: a document
+     * from some future subcollection of the same name would otherwise arrive
+     * here without one and send `courses/undefined` to Firestore, which throws
+     * rather than returning nothing. Dropping a stranger is the correct
+     * reading of "courses this student is enrolled in"; crashing the home page
+     * is not.
      */
     const snap = await this.db
       .collectionGroup(COLLECTIONS.courseMembers)
       .where('uid', '==', uid)
       .orderBy('joinedAt', 'asc')
       .get();
-    const courseIds = [...new Set(snap.docs.map((d) => (d.data() as CourseMemberDoc).courseId))];
+    const courseIds = [
+      ...new Set(
+        snap.docs
+          .map((d) => (d.data() as CourseMemberDoc).courseId)
+          .filter((id): id is string => typeof id === 'string' && id.length > 0),
+      ),
+    ];
     if (courseIds.length === 0) return [];
 
     const courses = await Promise.all(courseIds.map((id) => this.get(id)));
@@ -975,9 +1008,35 @@ class FirestoreGroupRepository implements GroupRepository {
     });
   }
 
+  /**
+   * MIGRATION SHIM, and nothing more.
+   *
+   * Group members briefly lived in a subcollection called `members`, which
+   * collided with the course roster's collection group and broke the student
+   * home page (see `COLLECTIONS.groupMembers`). Renaming the collection fixes
+   * the page but strands any row written during that window: the seat claim and
+   * `group.seats` still say the student holds a seat, while the row describing
+   * them has become unreadable — so they cannot play, cannot re-join, and an
+   * instructor cannot even release the seat, because releasing it needs the
+   * row to know which seat it is.
+   *
+   * Reading the old path by DOCUMENT ID keeps those students working. It is
+   * safe precisely because it is a direct path read: no collectionGroup query
+   * ever touches it, which was the whole defect.
+   *
+   * Safe to delete once no group predates the fix — writes only ever go to the
+   * new path, so the old one cannot grow.
+   */
+  private legacyMemberRef(groupId: string, uid: string) {
+    return this.groupRef(groupId).collection('members').doc(uid);
+  }
+
   async releaseSeat(groupId: string, uid: string): Promise<void> {
     const groupRef = this.groupRef(groupId);
-    const memberRef = this.memberRef(groupId, uid);
+    const current = this.memberRef(groupId, uid);
+    // Resolved before the transaction opens: a transaction may not choose its
+    // reads based on an earlier read inside itself.
+    const memberRef = (await current.get()).exists ? current : this.legacyMemberRef(groupId, uid);
 
     await this.db.runTransaction(async (tx) => {
       const [groupSnap, memberSnap] = await Promise.all([tx.get(groupRef), tx.get(memberRef)]);
@@ -994,14 +1053,23 @@ class FirestoreGroupRepository implements GroupRepository {
 
   async listMembers(groupId: string): Promise<GroupMemberDoc[]> {
     const snap = await this.groupRef(groupId).collection(COLLECTIONS.groupMembers).get();
-    return snap.docs
+    // See `legacyMemberRef`. A group is either wholly before the rename or
+    // wholly after it — writes only go to the new path — so an empty new
+    // subcollection is the signal to look once at the old one.
+    const docs = snap.empty
+      ? (await this.groupRef(groupId).collection('members').get()).docs
+      : snap.docs;
+    return docs
       .map((d) => d.data() as GroupMemberDoc)
       .sort((a, b) => ARENA_SEATS.indexOf(a.seatKey) - ARENA_SEATS.indexOf(b.seatKey));
   }
 
   async getMember(groupId: string, uid: string): Promise<GroupMemberDoc | null> {
     const snap = await this.memberRef(groupId, uid).get();
-    return snap.exists ? (snap.data() as GroupMemberDoc) : null;
+    if (snap.exists) return snap.data() as GroupMemberDoc;
+
+    const legacy = await this.legacyMemberRef(groupId, uid).get(); // see legacyMemberRef
+    return legacy.exists ? (legacy.data() as GroupMemberDoc) : null;
   }
 
   async findMembership(assignmentId: string, uid: string): Promise<GroupMemberDoc | null> {
