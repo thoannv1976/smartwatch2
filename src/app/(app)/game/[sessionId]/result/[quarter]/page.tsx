@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { PLAYER_COMPANY_KEY, getGameConfig } from '@/domain/simulation';
+import { PLAYER_COMPANY_KEY, getGameConfig, reviewQuarter } from '@/domain/simulation';
 import { requireUserPage } from '@/server/auth/guards';
 import { getRepositories } from '@/db/repositories/firestore';
 import { createGameService } from '@/server/game/service';
@@ -8,6 +8,7 @@ import { isGameError } from '@/server/game/errors';
 import { getTranslations } from '@/i18n/server';
 import { interpolate } from '@/i18n';
 import { RankingTable } from '@/components/game/RankingTable';
+import { QuarterReviewCard } from '@/components/game/QuarterReview';
 import {
   Badge,
   Card,
@@ -71,6 +72,15 @@ export default async function QuarterResultPage({
     ? relativeChange(result.netProfit, previousResult.netProfit)
     : null;
   const shareChange = previousResult ? result.marketShare - previousResult.marketShare : null;
+
+  // The review reads the demand weights STORED on this quarter, so a session
+  // played under an older scenario is judged against the market it faced.
+  const reviewNotes = decision
+    ? reviewQuarter(
+        { quarter: quarterNumber, weights: current.weights, decision, result },
+        previousResult,
+      )
+    : [];
 
   const isLastQuarter = quarterNumber >= config.quarters;
   const hasNextQuarter = session.currentRound < config.quarters;
@@ -217,6 +227,10 @@ export default async function QuarterResultPage({
           ))}
         </ul>
       </Card>
+
+      {/* The rule-based review of this quarter's decision, directly below the
+          competitor intelligence. */}
+      <QuarterReviewCard t={t} notes={reviewNotes} />
 
       <div className="flex flex-wrap gap-3">
         {isLastQuarter || !hasNextQuarter ? (

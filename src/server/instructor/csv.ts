@@ -1,3 +1,4 @@
+import { goldenUsedQuarters } from '@/db/models';
 import type { FinalResultDoc, QuarterDoc } from '@/db/models';
 import { PLAYER_COMPANY_KEY } from '@/domain/simulation';
 
@@ -70,6 +71,10 @@ const RESULT_HEADERS = [
   'final_net_profit_margin',
   'game_rank',
   'completed_at',
+  // Appended, never inserted: an instructor's spreadsheet may address these
+  // columns by position, so a new column at the end shifts nothing.
+  'golden_strategy_uses',
+  'golden_strategy_quarters',
 ];
 
 /** One row per completed official session, ranked best first. */
@@ -100,6 +105,10 @@ export function resultsToCsv(results: FinalResultDoc[]): string {
     r.finalNetProfitMargin,
     r.gameRank,
     new Date(r.completedAt).toISOString(),
+    goldenUsedQuarters(r).length,
+    // Semicolons, not commas: a comma here would need quoting and reads as a
+    // second column to anyone scanning the raw file.
+    goldenUsedQuarters(r).join(';'),
   ]);
   return toCsv(RESULT_HEADERS, rows);
 }
@@ -133,6 +142,8 @@ const QUARTER_HEADERS = [
   'distribution',
   'customer_experience',
   'customer_satisfaction',
+  // 1 when the Golden Strategy was used for THIS quarter, 0 otherwise.
+  'golden_strategy',
 ];
 
 /**
@@ -147,6 +158,8 @@ export function quartersToCsv(
     displayName: string;
     companyName: string;
     quarters: QuarterDoc[];
+    /** Quarters this student had coached; absent for rows written before the coach. */
+    goldenUsedQuarters?: number[];
   }[],
 ): string {
   const rows: (string | number | null)[][] = [];
@@ -186,6 +199,7 @@ export function quartersToCsv(
         result.distribution,
         result.customerExperience,
         result.customerSatisfaction,
+        goldenUsedQuarters(entry).includes(quarter.quarter) ? 1 : 0,
       ]);
     }
   }

@@ -139,6 +139,17 @@ export type SaveQuarterOutcome =
   | { status: 'SAVED'; quarter: QuarterDoc; session: GameSessionDoc }
   | { status: 'ALREADY_EXISTS'; quarter: QuarterDoc; session: GameSessionDoc };
 
+/**
+ * Result of an attempt to spend one Golden Strategy use.
+ *
+ * `ALREADY_USED` is a SUCCESS: the quarter was already coached, so the answer
+ * is handed back without spending anything.
+ */
+export type ClaimGoldenUseOutcome =
+  | { status: 'CLAIMED'; used: number[] }
+  | { status: 'ALREADY_USED'; used: number[] }
+  | { status: 'LIMIT_REACHED'; used: number[] };
+
 export interface SessionRepository {
   get(sessionId: string): Promise<GameSessionDoc | null>;
   create(session: Omit<GameSessionDoc, 'id'>): Promise<GameSessionDoc>;
@@ -179,6 +190,24 @@ export interface SessionRepository {
     quarter: QuarterDoc,
     nextCompanies: GameSessionDoc['companies'],
   ): Promise<SaveQuarterOutcome>;
+
+  /**
+   * Records that the Golden Strategy was used for one quarter, within a limit.
+   *
+   * MUST be enforced by the datastore inside a transaction, exactly like
+   * `createOfficialAttempt` and `saveQuarter`. Reading the list and then
+   * writing it back in the service would let two requests arriving together
+   * both see "one use left" and both spend it — on an official attempt that is
+   * a student getting more coaching than the assignment allows, on a graded
+   * run.
+   *
+   * Re-claiming a quarter that is already in the list spends nothing.
+   */
+  claimGoldenUse(
+    sessionId: string,
+    quarter: number,
+    maxQuarters: number,
+  ): Promise<ClaimGoldenUseOutcome>;
 
   complete(sessionId: string, completedAt: number): Promise<void>;
 }

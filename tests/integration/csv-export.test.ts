@@ -123,6 +123,100 @@ describe('results export', () => {
   });
 });
 
+/** Plays a full official game, using the Golden Strategy in the given quarters. */
+async function playOfficialGameWithCoach(coachedQuarters: number[]) {
+  const course = await repos.courses.create({
+    courseName: 'Digital Business',
+    semester: '2026A',
+    instructorId: INSTRUCTOR.uid,
+  });
+  await repos.courses.addMember({
+    uid: STUDENT.uid,
+    courseId: course.id,
+    studentCode: 'SV001',
+    displayName: STUDENT.displayName,
+    email: STUDENT.email,
+  });
+  const assignment = await repos.assignments.create({
+    courseId: course.id,
+    title: 'Official run 1',
+    startAt: Date.now() - 1000,
+    deadline: Date.now() + 86_400_000,
+    maxAttempts: 1,
+    scenarioVersion: getGameConfig().scenarioVersion,
+    engineVersion: getGameConfig().engineVersion,
+    officialSeed: 'smartwatch-v1-2026',
+    isOpen: true,
+    createdBy: INSTRUCTOR.uid,
+  });
+  const session = await service.createSession({
+    userId: STUDENT.uid,
+    displayName: STUDENT.displayName,
+    email: STUDENT.email,
+    mode: 'OFFICIAL',
+    assignmentId: assignment.id,
+    companyName: 'NovaTime',
+    productName: 'Nova Watch One',
+    positioning: 'BALANCED',
+  });
+
+  for (let quarter = 1; quarter <= getGameConfig().quarters; quarter += 1) {
+    if (coachedQuarters.includes(quarter)) {
+      // Claimed directly: the search itself is tested elsewhere and takes a
+      // third of a second per call.
+      await repos.sessions.claimGoldenUse(session.id, quarter, coachedQuarters.length);
+    }
+    await service.submitQuarter(session.id, STUDENT.uid, quarter, decision);
+  }
+
+  return { session, assignment };
+}
+
+describe('Golden Strategy columns', () => {
+  it('appends the coach columns at the END, so existing column positions do not move', async () => {
+    const { assignment } = await playOfficialGame();
+    const results = await repos.finalResults.listByAssignment(assignment.id, 'finalScore');
+    const header = resultsToCsv(results).trim().split('\r\n')[0]!.split(',');
+
+    expect(header.slice(-2)).toEqual(['golden_strategy_uses', 'golden_strategy_quarters']);
+    // The columns every existing gradebook addresses are still where they were.
+    // (`trim()` above has already eaten the leading UTF-8 BOM.)
+    expect(header[0]).toBe('student_code');
+    expect(header[8]).toBe('final_score');
+    expect(header[23]).toBe('game_rank');
+  });
+
+  it('reports no uses for a game played without the coach', async () => {
+    const { assignment } = await playOfficialGame();
+    const results = await repos.finalResults.listByAssignment(assignment.id, 'finalScore');
+    const cells = resultsToCsv(results).trim().split('\r\n')[1]!.split(',');
+
+    expect(cells.slice(-2)).toEqual(['0', '']);
+  });
+
+  it('records which quarters were coached, on the graded row and per quarter', async () => {
+    const { session, assignment } = await playOfficialGameWithCoach([2, 4]);
+
+    const results = await repos.finalResults.listByAssignment(assignment.id, 'finalScore');
+    const cells = resultsToCsv(results).trim().split('\r\n')[1]!.split(',');
+    expect(cells.slice(-2)).toEqual(['2', '2;4']);
+
+    const quarters = await repos.sessions.listQuarters(session.id);
+    const quarterCsv = quartersToCsv([
+      {
+        studentCode: 'SV001',
+        displayName: STUDENT.displayName,
+        companyName: 'NovaTime',
+        quarters,
+        goldenUsedQuarters: [2, 4],
+      },
+    ]);
+    const rows = quarterCsv.trim().split('\r\n').slice(1);
+    // One flag per quarter row, in quarter order: only Q2 and Q4 are marked.
+    expect(rows.map((row) => row.split(',').at(-1))).toEqual(['0', '1', '0', '1', '0', '0']);
+  });
+});
+
 describe('per-quarter export — the audit trail', () => {
   it('writes one row per quarter with the decision beside the result it produced', async () => {
     const { session } = await playOfficialGame();

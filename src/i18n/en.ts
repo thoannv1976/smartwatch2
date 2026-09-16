@@ -488,6 +488,203 @@ export const en: Dictionary = {
     technologyPush: '{company} is pushing hard on technology capability.',
     steady: '{company} kept the same strategy as last quarter.',
   },
+  areaNames: {
+    productPoints: 'Product',
+    technologyPoints: 'Technology',
+    marketingPoints: 'Marketing',
+    distributionPoints: 'Distribution',
+    cxPoints: 'Customer experience',
+    product: 'Product',
+    marketing: 'Marketing',
+    distribution: 'Distribution',
+    cx: 'Customer experience',
+  },
+  coach: {
+    title: 'Strategy suggestions',
+    subtitle: 'Three ways to play this quarter. Tap one to fill the inputs above; you can still edit.',
+    heuristicNote:
+      'These are experience-based starting points, not the optimal answer. They are here to give you something to think about, not something to copy.',
+    apply: 'Use this plan',
+    applied: 'Filled in above',
+    goldenTitle: 'Golden Strategy',
+    goldenHint:
+      'The plan with the highest profit FOR THIS QUARTER, found by trying thousands of combinations against the same simulation engine you are playing.',
+    goldenButton: 'Find the Golden Strategy',
+    goldenSearching: 'Trying thousands of combinations…',
+    goldenUsesLeft: '{left} of {max} uses left in this game',
+    goldenAlreadyThisQuarter: 'Already used for this quarter — looking again costs nothing',
+    goldenNoUses: 'You have used every Golden Strategy use in this game',
+    goldenResult: 'Best plan for {quarterShort}{quarter}',
+    goldenProfit: "This quarter's profit",
+    goldenBaseline: 'Balanced 20/20/20/20/20',
+    goldenAdvantage: 'Ahead of balanced by',
+    goldenCombos: '{count} combinations tried',
+    goldenWeights:
+      'This quarter customers weigh: product {product}%, price {price}%, brand {brand}%, marketing {marketing}%, distribution {distribution}%, CX {cx}%.',
+    goldenTradeoffTitle: 'What this plan costs you',
+    goldenTradeoff:
+      'This optimises profit IN THIS QUARTER, not your final score. Product and technology investment mostly pays off in later quarters, so this plan usually buys less of them than the long game needs. Below is the capability it gives up against a balanced allocation.',
+    goldenNoTradeoff: 'This plan gives up no capability against a balanced allocation.',
+    riskTitle: 'Risks worth weighing before you commit',
+    riskHint: 'These are warnings, not rules. You can still submit exactly what you have set.',
+  },
+  coachTitle: {
+    eventRide: 'Ride the event',
+    fixWeakness: 'Patch the weak spot',
+    fulfilFirst: 'Deliver first',
+    valuePlay: 'Play on price',
+    defendMargin: 'Defend the margin',
+    holdCourse: 'Hold the course',
+    balancedStart: 'Balanced',
+  },
+  coachWhy: {
+    eventRide:
+      'This quarter demand leans on product {product}%, price {price}%, distribution {distribution}%. This plan splits the points along those weights.',
+    fixWeakness:
+      'Your weakest capability is {area}, at {value}/100. Capability compounds quarter after quarter, so one left behind early is hard to catch up by the end.',
+    fulfilFirst:
+      'Last quarter you lost {units} units, {share}% of your potential demand, because distribution is only {distribution}/100. That is customers who wanted to buy and could not be served.',
+    valuePlay:
+      'Price carries {price}% of the buying decision this quarter. Cutting the price index while pushing distribution is the most direct way to take share.',
+    defendMargin:
+      'Last quarter lost {profit} and cash is at {cash}. Lift the price, and raise product quality and CX to pull the return rate down.',
+    holdCourse:
+      'Last quarter you earned {profit} and finished rank {rank}. Keeping the same allocation shows you exactly what this quarter event does.',
+    balancedStart:
+      'An even 20 points across all five areas at the reference price. A safe baseline to compare against.',
+  },
+  risks: {
+    marketingAheadOfDistribution:
+      'Marketing is {marketing} points but distribution only {distribution}. Marketing creates demand; distribution is what delivers it — a large gap usually creates demand you cannot serve.',
+    distributionCapacityLow:
+      'Distribution is at {value}/100 and you are adding only {points} points this quarter. Below 60, part of your demand will not get delivered.',
+    premiumWithoutBrand:
+      'A price index of {price} is premium, but your brand is only {brand}/100. A high price needs a brand behind it, or customers pick a competitor.',
+    starvedField:
+      'You are leaving {area} empty for {quarters} quarters running. Capability accumulates, and this gap gets very hard to close in the final quarters.',
+    discountWithNegativeCash:
+      'You are cutting the price to {price} while cash is already at {cash}. Selling more at a thinner margin can make the cash position worse.',
+    cxNeglectedWeakCsat:
+      'CX is only {points} points while satisfaction sits at {csat}/100. Low CSAT drags both your brand and your return rate.',
+    allInOneArea:
+      'You are putting {points} points into {area}. Investment has diminishing returns: the 50th point is worth far less than the 10th.',
+  },
+  review: {
+    title: 'Review of this quarter decision',
+    hint: 'Generated from this quarter own numbers by fixed rules, so an instructor can reproduce it.',
+    alignedWithDemand:
+      'Your allocation matched {value}% of this quarter real demand weights. You read the market correctly.',
+    misalignedWithDemand:
+      'Your allocation matched only {value}% of this quarter demand weights; the biggest shortfall was {area}.',
+    unfulfilledDemand:
+      'Lost {units} units, {share}% of potential demand, because distribution is only {distribution}/100 while marketing was {marketing} points. That is demand you created and could not deliver.',
+    profitPositive: 'Profit {value}, net margin {margin}%.',
+    profitNegative:
+      'Loss {value}, net margin {margin}%. Revenue did not cover cost of goods plus fixed costs.',
+    marginThin:
+      'Profitable, but the net margin is only {value}% at price index {price}. One bad quarter is enough to turn that negative.',
+    shareUp: 'Market share rose {value} percentage points, to {share}%.',
+    shareDown: 'Market share fell {value} percentage points, to {share}%.',
+    rankUp: 'Rank improved from {from} to {to}.',
+    rankDown: 'Rank slipped from {from} to {to}.',
+    csatUp: 'Satisfaction rose {value} points, to {csat}/100.',
+    csatDown: 'Satisfaction fell {value} points, to {csat}/100.',
+    cashNegative: 'Cash is negative at {value}. This is the most serious signal of the quarter.',
+    priceAheadOfBrand:
+      'You sold at price index {price} with a brand of {brand}/100 — price ran ahead of brand, and share reacted.',
+    returnsHigh:
+      'Return rate {value}%, costing {cost}. Product quality and CX are the two levers that pull this down directly.',
+    steadyQuarter: 'A flat quarter at {share}% share. No signal strong enough to draw a lesson from.',
+  },
+  tenure: {
+    title: 'CEO tenure review',
+    subtitle: 'Six quarters in charge, on the three axes a real CEO is judged on.',
+    consistency: 'Consistency',
+    adaptation: 'Adaptation',
+    trajectory: 'Trajectory',
+    bestQuarter: 'Best quarter',
+    worstQuarter: 'Worst quarter',
+    shareChange: 'Market share change Q1 → Q6',
+    quarterByQuarter: 'Quarter by quarter',
+    swing: 'Average move of {value} points per area, per quarter',
+    overlap: 'Average {value}% match with market demand',
+  },
+  tenureVerdict: {
+    strongTenure:
+      'A strong tenure. You held profit and built capability at the same time — most CEOs in this simulation manage only one.',
+    solidTenure:
+      'A solid tenure. The company moved in the right direction, but there were quarters where you missed an opening the market gave you.',
+    mixedTenure:
+      'A mixed tenure. Some quarters you read the market, some you did not, and the final result reflects that unevenness honestly.',
+    difficultTenure:
+      'A difficult tenure. The score is not the valuable part — reading the quarter notes below to find the decision that turned it is.',
+  },
+  consistencyLabel: {
+    STEADY: 'Steady',
+    SHIFTING: 'Adjusting',
+    ERRATIC: 'Erratic',
+  },
+  consistencyDesc: {
+    STEADY:
+      'You held almost one allocation for six quarters. Easy to evaluate, but it also means the market events never changed your mind.',
+    SHIFTING:
+      'You adjusted in measured steps between quarters — usually the mark of deliberate management.',
+    ERRATIC:
+      'Your allocation swung hard every quarter. Capability needs several quarters to accumulate, so constant switching leaves nothing time to grow.',
+  },
+  adaptationLabel: {
+    TRACKED: 'Tracked the market',
+    PARTIAL: 'Partly tracked',
+    IGNORED: 'Ignored the market',
+  },
+  adaptationDesc: {
+    TRACKED:
+      'Your allocation moved with each quarter demand weights. That is exactly what the six market events exist to test.',
+    PARTIAL: 'You followed the market in some quarters and missed it in others.',
+    IGNORED:
+      'Your allocation barely responded to the events. Each quarter the market values something different — that is free information you did not use.',
+  },
+  trajectoryLabel: {
+    RISING: 'Rising',
+    FLAT: 'Flat',
+    FALLING: 'Falling',
+  },
+  trajectoryDesc: {
+    RISING: 'Profit and share rose across the tenure. You hand over a better company than you took on.',
+    FLAT: 'The company ends roughly where it started. Stable, but six quarters is long enough to make a difference.',
+    FALLING:
+      'Profit or share fell across the tenure. Look closely at quarter {worstQuarter} — that is where it turned.',
+  },
+  hindsight: {
+    title: 'What you should have done',
+    hint: 'For each quarter, the plan with the highest profit for that quarter, found against the exact market you faced. It optimises each quarter on its own, not your final score.',
+    run: 'Compare all six quarters',
+    running: 'Re-running six quarters…',
+    yours: 'What you did',
+    best: 'Best for that quarter',
+    gap: 'Profit left behind',
+    totalGap: 'Total profit left behind',
+    allocation: 'Allocation',
+    onlyWhenFinished: 'Only available once all six quarters are finished.',
+  },
+  percentile: {
+    title: 'Where you stand in the class',
+    youBeat: 'You finished ahead of {value}% of the submissions in your class',
+    rankOf: 'Rank {rank} of {total}',
+    tooSmall: 'The class has too few submissions to show a position without identifying people.',
+    top10: 'Top 10%',
+    top25: 'Top 25%',
+    upperHalf: 'Upper half',
+    lowerHalf: 'Lower half',
+    bottom25: 'Bottom 25%',
+  },
+  printing: {
+    print: 'Print / Save as PDF',
+    player: 'Player',
+    printedAt: 'Printed',
+    goldenUsed: 'Golden Strategy used in quarter',
+    goldenNone: 'Golden Strategy not used',
+  },
   errors: {
     weakPassword: 'Password must be at least 8 characters',
     emailAlreadyExists: 'That email already has an account. Edit their row in the list instead.',
@@ -508,6 +705,8 @@ export const en: Dictionary = {
     notYourSession: 'This is not your game session',
     quarterOutOfRange: 'Invalid quarter',
     gameAlreadyCompleted: 'This game is already completed',
+    gameNotCompleted: 'The comparison is only available after all six quarters are finished.',
+    goldenLimitReached: 'You have used all the Golden Strategy uses for this game.',
     pointsNotHundred: 'The five investments must total exactly 100 points',
     pointsRange: 'Each investment must be between 0 and 100',
     priceRange: 'Price index must be between 80 and 120',

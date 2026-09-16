@@ -2,7 +2,12 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { POSITIONINGS, getGameConfig } from '@/domain/simulation';
+import {
+  POSITIONINGS,
+  getGameConfig,
+  type GoldenStrategy,
+  type HindsightQuarter,
+} from '@/domain/simulation';
 import { getRepositories } from '@/db/repositories/firestore';
 import { AuthorizationError, requireUser } from '@/server/auth/session';
 import { GameError, type GameErrorKey } from './errors';
@@ -110,6 +115,56 @@ export async function submitQuarterAction(
         completed: result.quarter.quarter >= config.quarters,
       },
     };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+// --- the coach -------------------------------------------------------------
+
+const coachSchema = z.object({ sessionId: z.string().min(1) });
+
+/**
+ * Runs the Golden Strategy search for the quarter the student is about to play.
+ *
+ * Costs one of a strictly limited set of uses, claimed in the datastore before
+ * the search runs. The quarter is taken from the SESSION, never from the
+ * browser: letting the client name a quarter would let it ask for the answer to
+ * a quarter it has not reached.
+ */
+export async function goldenStrategyAction(
+  input: z.input<typeof coachSchema>,
+): Promise<ActionResult<{ golden: GoldenStrategy; usedQuarters: number[]; maxQuarters: number }>> {
+  try {
+    const user = await requireUser();
+    const parsed = coachSchema.parse(input);
+    const service = createGameService(getRepositories());
+
+    // Deliberately NO revalidatePath: refreshing this route would re-render the
+    // decision screen and throw away the allocation the student is part-way
+    // through typing. The action already returns the updated use list, which is
+    // the only thing that changed.
+    const result = await service.goldenStrategy(parsed.sessionId, user.uid);
+    return { ok: true, data: result };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+/**
+ * The post-game per-quarter comparison. Refused unless the session is finished
+ * — see `GameService.hindsight`.
+ */
+export async function hindsightAction(
+  input: z.input<typeof coachSchema>,
+): Promise<ActionResult<{ quarters: HindsightQuarter[] }>> {
+  try {
+    const user = await requireUser();
+    const parsed = coachSchema.parse(input);
+    const service = createGameService(getRepositories());
+
+    const quarters = await service.hindsight(parsed.sessionId, user.uid);
+    return { ok: true, data: { quarters } };
   } catch (error) {
     return { ok: false, error: toError(error) };
   }

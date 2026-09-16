@@ -173,6 +173,27 @@ export interface GameSessionDoc {
   companies: SessionCompany[];
   startedAt: number;
   completedAt: number | null;
+  /**
+   * Quarters in which the student asked for the Golden Strategy.
+   *
+   * A LIST of quarters, not a count, so that re-asking for a quarter already
+   * coached is free: a double-click, a refresh or a back-button must not burn
+   * one of a strictly limited set of uses. The cap is on how many DISTINCT
+   * quarters were coached.
+   *
+   * Optional because sessions created before the coach existed do not have the
+   * field at all, and Firestore drops `undefined` on write. Read it through
+   * `goldenUsedQuarters(session)`, never directly.
+   */
+  goldenUsedQuarters?: number[];
+}
+
+/**
+ * Golden Strategy uses of a session or of a graded row, tolerating documents
+ * written before the coach existed.
+ */
+export function goldenUsedQuarters(doc: { goldenUsedQuarters?: number[] }): number[] {
+  return doc.goldenUsedQuarters ?? [];
 }
 
 /**
@@ -233,6 +254,17 @@ export interface FinalResultDoc {
   /** Rank among the six companies of this session. */
   gameRank: number;
   completedAt: number;
+
+  /**
+   * Quarters in which this student used the Golden Strategy coach.
+   *
+   * Denormalised onto the graded row on purpose: the leaderboard and the CSV
+   * export read this one collection, and an instructor comparing two scores has
+   * to be able to see that one of them was coached without opening sessions one
+   * by one. Optional, because rows written before the coach existed do not have
+   * it — read it through `goldenUsedQuarters`.
+   */
+  goldenUsedQuarters?: number[];
 }
 
 /** Sortable columns of the class leaderboard and the instructor table. */

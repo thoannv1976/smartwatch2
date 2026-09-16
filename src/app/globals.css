@@ -109,3 +109,109 @@ input[type='range']:disabled {
   background: var(--color-brand-500);
   color: var(--color-ink-950);
 }
+
+/*
+ * Print / "Save as PDF".
+ *
+ * The app is a dark console; printing it as-is produces an unreadable, ink-
+ * flooding page. Everything below forces a light document for paper only — the
+ * screen is untouched.
+ *
+ * `!important` is used throughout on purpose: Tailwind utility classes are
+ * already applied on the elements being overridden, and a print sheet has to
+ * win against all of them without rewriting every component.
+ */
+
+/* Hidden on screen, shown only on paper: the block that identifies a printout. */
+.print-only {
+  display: none;
+}
+
+@media print {
+  /* Site chrome and anything interactive: a printed nav bar or button is noise
+     that pushes the actual report onto a second page. */
+  .no-print,
+  header,
+  nav,
+  footer,
+  button,
+  [role='button'] {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+    margin-bottom: 1rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #999;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #111 !important;
+  }
+
+  /* Cards become plain framed blocks, and are never split across a page. */
+  section,
+  article {
+    background: transparent !important;
+    border-color: #bbb !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* The palette collapses to black-on-white, keeping only the three signal
+     colours that carry meaning (good / bad / warning). */
+  h1,
+  h2,
+  h3,
+  h4,
+  p,
+  li,
+  dt,
+  dd,
+  td,
+  th,
+  span {
+    color: #111 !important;
+  }
+
+  .text-good-400,
+  .text-good-500 {
+    color: #12683f !important;
+  }
+
+  .text-bad-400,
+  .text-bad-500 {
+    color: #a3123a !important;
+  }
+
+  .text-warn-500 {
+    color: #8a5a00 !important;
+  }
+
+  table {
+    border-collapse: collapse !important;
+  }
+
+  td,
+  th {
+    border: 1px solid #ccc !important;
+  }
+
+  /* A chart drawn with light-on-dark strokes is unreadable on paper, and the
+     numbers behind it are always on the page as well. */
+  svg {
+    filter: invert(1) hue-rotate(180deg);
+  }
+
+  a[href]::after {
+    content: '';
+  }
+
+  @page {
+    margin: 1.5cm;
+  }
+}

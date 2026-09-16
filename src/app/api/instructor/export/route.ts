@@ -52,6 +52,7 @@ export async function GET(request: Request) {
         displayName: result.displayName,
         companyName: result.companyName,
         quarters: await repos.sessions.listQuarters(result.sessionId),
+        goldenUsedQuarters: result.goldenUsedQuarters,
       })),
     );
     csv = quartersToCsv(entries);

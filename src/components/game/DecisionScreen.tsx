@@ -5,11 +5,15 @@ import { useRouter } from 'next/navigation';
 import {
   INVESTMENT_FIELDS,
   getGameConfig,
+  riskWarnings,
+  type CompanyState,
   type QuarterDecision,
+  type StrategySuggestion,
 } from '@/domain/simulation';
 import { submitQuarterAction } from '@/server/game/actions';
 import { useI18n } from '@/i18n/client';
 import { DecisionInputs, type CapabilitySnapshot } from './DecisionInputs';
+import { RiskWarningList, StrategyCoach } from './StrategyCoach';
 import { Card, CardTitle, ErrorNote, InfoNote, WarningNote } from '@/components/ui/primitives';
 import { formatMoney } from '@/lib/format';
 
@@ -19,6 +23,10 @@ import { formatMoney } from '@/lib/format';
  * The browser sends the five investments and the price index and nothing else.
  * It deliberately shows no profit forecast: the point of the exercise is to
  * commit to a strategy and then face the market.
+ *
+ * The coach sits between the inputs and the submit button. Its suggestions are
+ * computed on the server; its risk warnings are computed here as you type,
+ * because they are a pure function of the decision in front of you.
  */
 export function DecisionScreen({
   sessionId,
@@ -26,12 +34,22 @@ export function DecisionScreen({
   scenarioVersion,
   capabilities,
   isOfficial,
+  playerState,
+  suggestions,
+  goldenUsedQuarters,
+  previousDecisions,
 }: {
   sessionId: string;
   quarter: number;
   scenarioVersion: string;
   capabilities: CapabilitySnapshot;
   isOfficial: boolean;
+  /** The player company at the start of this quarter, for the risk rules. */
+  playerState: CompanyState;
+  suggestions: StrategySuggestion[];
+  goldenUsedQuarters: number[];
+  /** The player's own decisions so far, oldest first. */
+  previousDecisions: QuarterDecision[];
 }) {
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -50,6 +68,9 @@ export function DecisionScreen({
 
   const total = INVESTMENT_FIELDS.reduce((sum, field) => sum + decision[field], 0);
   const canSubmit = total === config.strategyPoints && !pending;
+
+  // Recomputed on every keystroke. Advisory only — it never touches canSubmit.
+  const risks = riskWarnings(decision, playerState, previousDecisions, config);
 
   const submit = () => {
     if (!canSubmit) return;
@@ -101,6 +122,17 @@ export function DecisionScreen({
           <InfoNote>{t.decision.noProfitPreview}</InfoNote>
         </div>
       </Card>
+
+      <StrategyCoach
+        sessionId={sessionId}
+        quarter={quarter}
+        suggestions={suggestions}
+        usedQuarters={goldenUsedQuarters}
+        onApply={setDecision}
+        disabled={pending}
+      />
+
+      <RiskWarningList warnings={risks} />
 
       {isOfficial ? <WarningNote>{t.decision.lockedWarning}</WarningNote> : null}
       {error ? <ErrorNote>{error}</ErrorNote> : null}

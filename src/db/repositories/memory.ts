@@ -17,6 +17,7 @@ import type {
   FinalResultRepository,
   Repositories,
   RoleInviteRepository,
+  ClaimGoldenUseOutcome,
   SaveQuarterOutcome,
   SessionRepository,
   UserRepository,
@@ -401,6 +402,32 @@ class MemorySessionRepository implements SessionRepository {
     this.sessions.set(sessionId, updated);
 
     return { status: 'SAVED', quarter: clone(quarter), session: clone(updated) };
+  }
+
+  /**
+   * NO `await` BETWEEN THE CHECK AND THE WRITE.
+   *
+   * Same rule as `createOfficialAttempt`: an await here would yield to the
+   * event loop and let a second request read the same list before this one
+   * writes it, so both would spend the last use. The in-memory repository
+   * exists to test that race, and it can only do that if it is at least as
+   * strict as the Firestore transaction.
+   */
+  async claimGoldenUse(
+    sessionId: string,
+    quarter: number,
+    maxQuarters: number,
+  ): Promise<ClaimGoldenUseOutcome> {
+    const session = this.sessions.get(sessionId);
+    if (!session) throw new Error(`Session ${sessionId} not found`);
+
+    const used = session.goldenUsedQuarters ?? [];
+    if (used.includes(quarter)) return { status: 'ALREADY_USED', used: [...used] };
+    if (used.length >= maxQuarters) return { status: 'LIMIT_REACHED', used: [...used] };
+
+    const next = [...used, quarter].sort((a, b) => a - b);
+    this.sessions.set(sessionId, { ...session, goldenUsedQuarters: next });
+    return { status: 'CLAIMED', used: next };
   }
 
   async complete(sessionId: string, completedAt: number): Promise<void> {

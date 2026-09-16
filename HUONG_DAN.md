@@ -226,7 +226,36 @@ bên cạnh.
 vận hành cố định **$2.000.000**. Hai khoản này cố định, không phụ thuộc bạn
 phân bổ thế nào.
 
-**Bước 4 — Bấm "Chốt quyết định và mô phỏng thị trường".**
+**Bước 4 — Đọc gợi ý chiến lược.** Ngay dưới ô nhập, app đưa **ba hướng đi**
+cho quý này, kèm lý do: bắt sóng sự kiện, vá điểm yếu, giao được hàng đã, đánh
+vào giá, giữ biên lợi nhuận hoặc giữ nguyên đà — tuỳ tình hình công ty bạn.
+Bấm một phương án là điền thẳng vào 5 ô, bạn vẫn sửa lại được.
+
+> Đây là gợi ý **theo kinh nghiệm**, không phải đáp án. Chúng cho bạn một điểm
+> xuất phát để suy nghĩ.
+
+**Bước 5 — Chiến lược vàng (2 lần cho cả lượt chơi).** Nút này thử **hàng
+nghìn tổ hợp** trên chính engine mô phỏng và trả về phương án cho **lợi nhuận
+cao nhất ngay trong quý đó**, kèm giải thích và so sánh với phân bổ cân bằng.
+
+Ba điều cần biết trước khi bấm:
+
+1. **Chỉ có 2 lượt cho cả 6 quý** — dùng cho quý bạn thực sự bí. Hỏi lại **cùng
+   một quý** (bấm nhầm, tải lại trang) thì **không tốn thêm lượt**.
+2. Nó tối ưu cho **quý trước mắt**, **không** tối ưu điểm cuối kỳ. Đầu tư vào
+   sản phẩm và công nghệ chủ yếu sinh lợi ở các quý sau, nên nó thường mua ít
+   hơn mức bạn cần cho đường dài. App hiện rõ phần **năng lực bị đánh đổi** —
+   hãy đọc phần đó, đừng chỉ chép con số.
+3. **Giảng viên nhìn thấy** bạn đã dùng ở quý nào — trên màn hình chi tiết sinh
+   viên, trong báo cáo và trong file CSV xuất ra.
+
+**Bước 6 — Xem cảnh báo rủi ro.** Nếu phân bổ của bạn có rủi ro đã biết
+(marketing chạy trước phân phối, giá cao khi thương hiệu còn thấp, bỏ trống một
+lĩnh vực nhiều quý liền…), app nêu **cơ chế** dẫn tới rủi ro đó ngay phía trên
+nút gửi. Đây là **cảnh báo, không phải chặn** — nút gửi vẫn bật, quyết định vẫn
+là của bạn.
+
+**Bước 7 — Bấm "Chốt quyết định và mô phỏng thị trường".**
 
 > Quyết định **bị khoá sau khi gửi và không thể sửa lại**. Hệ thống cố tình
 > không cho xem trước lợi nhuận.
@@ -244,6 +273,14 @@ Sau khi mô phỏng, bạn thấy **Kết quả quý**:
   quyết liệt hơn về giá"*. Bạn **không bao giờ thấy điểm đầu tư chính xác** của
   đối thủ (server lọc trước khi gửi về), đúng như thực tế cạnh tranh.
 - **Quyết định của bạn quý này**, để đối chiếu.
+- **Nhận xét quyết định quý này** — ngay dưới phần tin tình báo. Đây là phần
+  đáng đọc nhất: app đối chiếu phân bổ của bạn với **trọng số nhu cầu thật** của
+  quý đó và nói thẳng bạn lệch ở đâu, mất bao nhiêu và vì sao. Ví dụ: *"Phân bổ
+  của bạn chỉ khớp 58% với trọng số nhu cầu quý này; thiếu nhiều nhất là phân
+  phối."* Tin xấu được xếp lên đầu.
+
+Toàn bộ nhận xét sinh ra bằng **luật cố định từ chính số liệu của bạn** — không
+dùng AI, và giảng viên tái lập được từng câu.
 
 Bấm **Sang quý tiếp theo** và lặp lại từ A6 cho tới Q6.
 
@@ -283,6 +320,34 @@ Lưu ý: **lợi nhuận + thị phần = 55%**, nhưng **thương hiệu + CSAT
 **Phân tích chiến lược** — hệ thống nêu hành vi chiến lược nổi bật của bạn,
 quyết định trung bình 6 quý, **ba bài học** rút từ chính số liệu của bạn, và
 phần **đối chiếu với định vị ban đầu**.
+
+**Tổng kết nhiệm kỳ CEO** — đánh giá cả 6 quý trên ba trục mà một CEO thật sự
+bị đánh giá:
+
+| Trục | Trả lời câu hỏi |
+|---|---|
+| **Tính nhất quán** | Bạn giữ một đường lối, hay đổi hướng mỗi quý? |
+| **Khả năng thích ứng** | Phân bổ của bạn có dịch chuyển theo sự kiện từng quý không? |
+| **Quỹ đạo** | Công ty lúc bàn giao tốt hơn hay kém hơn lúc nhận? |
+
+Kèm **một dòng nhận xét cho từng quý**, quý tốt nhất và quý kém nhất.
+
+**Vị trí trong lớp** — ngoài thứ hạng, báo cáo cho biết bạn xếp trên bao nhiêu
+phần trăm số bài đã nộp (*Nhóm 10% dẫn đầu*, *Nửa trên của lớp*…). Phần này chỉ
+hiện khi lớp có **từ 4 bài nộp trở lên**, để không lộ danh tính ai trong lớp quá
+nhỏ.
+
+**Lẽ ra nên làm gì** — bấm nút để app tính lại cả 6 quý: quyết định của bạn đặt
+cạnh phương án tốt nhất cho **chính quý đó**, trên **đúng thị trường bạn đã
+gặp**, kèm khoảng cách lợi nhuận từng quý và tổng cả nhiệm kỳ.
+
+> Mục này **chỉ mở sau khi bạn đã hoàn thành đủ 6 quý**. Đang chơi dở thì không
+> truy cập được — nếu không, đây sẽ là đường vòng để lấy đáp án giữa bài.
+
+**In / Lưu PDF** — nút ở cuối báo cáo mở hộp thoại in của trình duyệt. Bản in
+tự chuyển sang **nền trắng chữ đen**, bỏ hết nút bấm, không ngắt trang giữa một
+khối, và thêm dòng đầu trang ghi họ tên, công ty, mã phiên, phiên bản kịch bản /
+engine và các quý đã dùng Chiến lược vàng — đủ để nộp bản giấy.
 
 ### A10. Bảng xếp hạng lớp
 
@@ -426,16 +491,39 @@ thành.
 định, từng kết quả, từng năng lực. Dùng khi cần nhận xét cá nhân hoặc khi sinh
 viên thắc mắc về điểm.
 
+**Chiến lược vàng — điều bạn cần biết khi chấm.** Sinh viên có **2 lượt mỗi
+lượt chơi** để yêu cầu app tìm phương án tối ưu cho một quý, và điều này áp
+dụng cho **cả bài luyện tập lẫn bài chính thức**.
+
+> Nói thẳng: hai sinh viên cùng 78 điểm **không còn so sánh trực tiếp được
+> nữa** nếu một người dùng huấn luyện viên 2 quý và người kia không dùng lần
+> nào. Hãy nhìn cột này trước khi xếp hạng.
+
+App ghi lại và hiển thị điều đó ở ba nơi:
+
+- **Nhãn ngay cạnh tên** trên trang chi tiết sinh viên — ví dụ *"Đã dùng Chiến
+  lược vàng ở quý 2, 4"*.
+- **Đầu trang bản in** báo cáo tổng kết của sinh viên.
+- **Hai cột trong file CSV** điểm đánh giá, và **một cột đánh dấu từng quý**
+  trong file CSV bảng quyết định.
+
+Gợi ý cách dùng trên lớp: cho phép dùng thoải mái ở **bài luyện tập**, và coi
+số lượt đã dùng ở **bài chính thức** như một dữ kiện để đối thoại — *"quý 4 em
+dùng gợi ý, vậy em rút ra điều gì từ nó?"* — thay vì như một hình phạt.
+
 ### B6. Xuất CSV
 
 Hai nút ở trang chi tiết bài tập:
 
 | Nút | Nội dung | Dùng để |
 |---|---|---|
-| **Xuất CSV · Điểm đánh giá** | Một dòng mỗi sinh viên hoàn thành: mã SV, tên, email, công ty, 5 điểm thành phần, Điểm tổng kết, doanh thu/lợi nhuận luỹ kế, thị phần, thương hiệu, CSAT, tiền mặt, hạng game, thời điểm hoàn thành | **Nhập vào bảng điểm** |
-| **Xuất CSV · Bảng quyết định Q1–Q6** | Một dòng mỗi sinh viên mỗi quý: 5 điểm đầu tư, chỉ số giá, và toàn bộ KPI kết quả | Phân tích sâu, nghiên cứu, thảo luận trên lớp |
+| **Xuất CSV · Điểm đánh giá** | Một dòng mỗi sinh viên hoàn thành: mã SV, tên, email, công ty, 5 điểm thành phần, Điểm tổng kết, doanh thu/lợi nhuận luỹ kế, thị phần, thương hiệu, CSAT, tiền mặt, hạng game, thời điểm hoàn thành, **số lượt Chiến lược vàng đã dùng** và **các quý đã dùng** | **Nhập vào bảng điểm** |
+| **Xuất CSV · Bảng quyết định Q1–Q6** | Một dòng mỗi sinh viên mỗi quý: 5 điểm đầu tư, chỉ số giá, toàn bộ KPI kết quả, và **cờ đánh dấu quý đó có dùng Chiến lược vàng hay không** | Phân tích sâu, nghiên cứu, thảo luận trên lớp |
 
 File CSV mở trực tiếp bằng Excel hoặc Google Sheets.
+
+> Hai cột Chiến lược vàng được thêm vào **cuối** file, sau `completed_at`. Bảng
+> tính cũ của bạn khoá theo vị trí cột vẫn chạy đúng — không có cột nào bị dịch.
 
 ### B7. Chế độ kiểm thử mô phỏng (/sim-test)
 

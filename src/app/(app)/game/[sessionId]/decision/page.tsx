@@ -1,5 +1,10 @@
 import { notFound, redirect } from 'next/navigation';
-import { PLAYER_COMPANY_KEY, getGameConfig, getMarketEvent } from '@/domain/simulation';
+import {
+  PLAYER_COMPANY_KEY,
+  getGameConfig,
+  getMarketEvent,
+  type QuarterDecision,
+} from '@/domain/simulation';
 import { requireUserPage } from '@/server/auth/guards';
 import { getRepositories } from '@/db/repositories/firestore';
 import { createGameService } from '@/server/game/service';
@@ -39,6 +44,15 @@ export default async function DecisionPage({
   const player = session.companies.find((c) => c.companyKey === PLAYER_COMPANY_KEY);
   if (!player) notFound();
 
+  // The coach reads the same stored quarters the result screens read, so its
+  // advice is about the game that actually happened, not a re-simulation.
+  const quarters = await service.listQuarters(sessionId);
+  const suggestions = service.suggestionsFor(session, quarters);
+  const previousDecisions = quarters
+    .sort((a, b) => a.quarter - b.quarter)
+    .map((q) => q.decisions[PLAYER_COMPANY_KEY])
+    .filter((d): d is QuarterDecision => Boolean(d));
+
   return (
     <main className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6">
       <PageHeader
@@ -67,6 +81,10 @@ export default async function DecisionPage({
           customerExperience: player.customerExperience,
         }}
         isOfficial={session.mode === 'OFFICIAL'}
+        playerState={player}
+        suggestions={suggestions}
+        goldenUsedQuarters={service.goldenUses(session)}
+        previousDecisions={previousDecisions}
       />
     </main>
   );

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { PLAYER_COMPANY_KEY } from '@/domain/simulation';
 import { requireRolePage } from '@/server/auth/guards';
 import { getRepositories } from '@/db/repositories/firestore';
+import { goldenUsedQuarters } from '@/db/models';
 import { hasRole } from '@/server/auth/session';
 import { createGameService } from '@/server/game/service';
 import { getStudentDetail } from '@/server/instructor/queries';
@@ -64,6 +65,7 @@ export default async function StudentDetailPage({
   const scores = quarters.length > 0 ? createGameService(repos).scoreSession(session, quarters) : [];
   const analysis = quarters.length > 0 ? createGameService(repos).analyse(session, quarters) : null;
   const playerScore = scores.find((s) => s.companyKey === PLAYER_COMPANY_KEY) ?? null;
+  const coachedQuarters = goldenUsedQuarters(session);
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
@@ -77,6 +79,13 @@ export default async function StudentDetailPage({
             </Badge>
             <Badge tone="neutral">
               {session.scenarioVersion} · {session.engineVersion}
+            </Badge>
+            {/* Two scores are not directly comparable if one of them was
+                coached, so this is shown next to the identity, not buried. */}
+            <Badge tone={coachedQuarters.length > 0 ? 'warn' : 'neutral'}>
+              {coachedQuarters.length > 0
+                ? `${t.printing.goldenUsed} ${coachedQuarters.join(', ')}`
+                : t.printing.goldenNone}
             </Badge>
             {session.assignmentId ? (
               <Link

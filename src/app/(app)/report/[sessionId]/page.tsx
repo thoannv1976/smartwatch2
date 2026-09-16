@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { PLAYER_COMPANY_KEY, getGameConfig } from '@/domain/simulation';
+import { PLAYER_COMPANY_KEY, classPercentile, getGameConfig } from '@/domain/simulation';
 import { requireUserPage } from '@/server/auth/guards';
 import { getRepositories } from '@/db/repositories/firestore';
 import { createGameService } from '@/server/game/service';
@@ -9,6 +9,9 @@ import { getClassRank } from '@/server/game/queries';
 import { getTranslations } from '@/i18n/server';
 import { interpolate } from '@/i18n';
 import { BarChart } from '@/components/charts/BarChart';
+import { HindsightPanel } from '@/components/game/HindsightPanel';
+import { TenureReviewCard } from '@/components/game/TenureReview';
+import { PrintButton } from '@/components/ui/PrintButton';
 import { seriesColor } from '@/components/charts/series';
 import {
   Badge,
@@ -76,13 +79,34 @@ export default async function ReportPage({
   if (!playerScore) notFound();
 
   const analysis = service.analyse(session, quarters);
+  const tenure = service.tenure(session, quarters, playerScore.finalScore);
+  const goldenQuarters = service.goldenUses(session);
   const storedResult = await repos.finalResults.get(sessionId);
   const classRank = storedResult ? await getClassRank(storedResult) : null;
+  // Null in a class too small to say anything without identifying people.
+  const percentile = classRank ? classPercentile(classRank.rank, classRank.total) : null;
 
   const lastQuarter = quarters[quarters.length - 1]!;
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6">
+      {/* Identifies a printed copy as a submission. Hidden on screen. */}
+      <div className="print-only text-xs">
+        <p className="text-base font-bold">{t.report.title}</p>
+        <p>
+          {t.printing.player}: {user.displayName || user.email} · {session.companyName} ·{' '}
+          {session.productName}
+        </p>
+        <p>
+          {session.scenarioVersion} · {session.engineVersion} · {sessionId}
+        </p>
+        <p>
+          {goldenQuarters.length > 0
+            ? `${t.printing.goldenUsed} ${goldenQuarters.join(', ')}`
+            : t.printing.goldenNone}
+        </p>
+      </div>
+
       <PageHeader
         title={t.report.title}
         subtitle={`${session.companyName} · ${session.productName} · ${t.report.subtitle}`}
@@ -127,7 +151,27 @@ export default async function ReportPage({
             ) : null}
           </div>
         </div>
+
+        {classRank ? (
+          <div className="mt-4 border-t border-brand-600/20 pt-4">
+            <p className="text-xs font-semibold tracking-wide text-brand-400 uppercase">
+              {t.percentile.title}
+            </p>
+            {percentile ? (
+              <p className="mt-1 text-sm text-ink-200">
+                <span className="font-semibold">{t.percentile[percentile.band]}</span> ·{' '}
+                {interpolate(t.percentile.youBeat, { value: percentile.percentile })}
+              </p>
+            ) : (
+              <p className="mt-1 text-sm text-ink-400">{t.percentile.tooSmall}</p>
+            )}
+          </div>
+        ) : null}
       </Card>
+
+      {/* The verdict on all six quarters, above the three spec lessons — which
+          stay exactly as they were. */}
+      <TenureReviewCard t={t} locale={locale} review={tenure} />
 
       {/* Score breakdown: the weights are shown so a student can see what drove it */}
       <Card>
@@ -328,7 +372,10 @@ export default async function ReportPage({
         </ol>
       </Card>
 
-      <div className="flex flex-wrap gap-3">
+      <HindsightPanel sessionId={sessionId} />
+
+      <div className="no-print flex flex-wrap gap-3">
+        <PrintButton />
         <Link
           href={`/game/${sessionId}/history`}
           className="rounded-md border border-ink-600 bg-ink-800 px-5 py-2.5 text-sm text-ink-100 transition hover:bg-ink-700"

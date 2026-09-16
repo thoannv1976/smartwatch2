@@ -1,21 +1,33 @@
 import 'server-only';
 import {
+  GOLDEN_STRATEGY_MAX_QUARTERS,
   PLAYER_COMPANY_KEY,
   SCENARIO_VERSION,
   analyseStrategy,
   computeFinalScoreBreakdown,
   computeGameFinalScores,
   createInitialCompanies,
+  findGoldenStrategy,
+  findHindsight,
   getGameConfig,
+  getMarketEvent,
   groupResultsByCompany,
   playQuarter,
+  suggestStrategies,
+  tenureReview,
   validateDecision,
   type CompanyFinalScore,
   type CompanyQuarterResult,
+  type GoldenStrategy,
+  type HindsightQuarter,
+  type OptimizerInput,
   type Positioning,
   type QuarterDecision,
+  type QuarterFacts,
   type QuarterSimulationResult,
   type StrategyAnalysis,
+  type StrategySuggestion,
+  type TenureReview,
 } from '@/domain/simulation';
 import type {
   AssignmentDoc,
@@ -25,6 +37,7 @@ import type {
   QuarterDoc,
   SessionCompany,
 } from '@/db/models';
+import { goldenUsedQuarters } from '@/db/models';
 import type { Repositories } from '@/db/repositories/types';
 import { GameError } from './errors';
 
@@ -429,6 +442,7 @@ export class GameService {
 
       gameRank: playerScore.gameRank,
       completedAt,
+      goldenUsedQuarters: goldenUsedQuarters(session),
     };
 
     await this.repos.finalResults.save(finalResult);
@@ -441,6 +455,162 @@ export class GameService {
     const config = getGameConfig(session.scenarioVersion);
     const results: CompanyQuarterResult[] = quarters.flatMap((q) => q.results);
     return computeGameFinalScores(groupResultsByCompany(results), config);
+  }
+
+  // -- the coach ------------------------------------------------------------
+
+  /**
+   * Turns stored quarters into the shape the coach reads. Pure.
+   *
+   * Uses the demand weights stored ON THE QUARTER, not the ones the event
+   * config would produce today: a session played under an older scenario must
+   * be reviewed against the market it actually faced.
+   */
+  quarterFacts(quarters: QuarterDoc[]): QuarterFacts[] {
+    const facts: QuarterFacts[] = [];
+    for (const quarter of [...quarters].sort((a, b) => a.quarter - b.quarter)) {
+      const decision = quarter.decisions[PLAYER_COMPANY_KEY];
+      const result = quarter.results.find((r) => r.companyKey === PLAYER_COMPANY_KEY);
+      if (!decision || !result) continue;
+      facts.push({ quarter: quarter.quarter, weights: quarter.weights, decision, result });
+    }
+    return facts;
+  }
+
+  /** Heuristic suggestions for the quarter about to be played. Pure. */
+  suggestionsFor(session: GameSessionDoc, quarters: QuarterDoc[]): StrategySuggestion[] {
+    const config = getGameConfig(session.scenarioVersion);
+    const quarter = session.currentRound + 1;
+    if (quarter > config.quarters) return [];
+
+    const player = session.companies.find((c) => c.companyKey === PLAYER_COMPANY_KEY);
+    if (!player) return [];
+
+    const facts = this.quarterFacts(quarters);
+    return suggestStrategies(
+      getMarketEvent(quarter, config),
+      player,
+      facts.map((f) => f.result),
+      facts[facts.length - 1]?.decision ?? null,
+      config,
+    );
+  }
+
+  /** The six-quarter verdict shown on the final report. Pure. */
+  tenure(session: GameSessionDoc, quarters: QuarterDoc[], finalScore: number): TenureReview {
+    return tenureReview(this.quarterFacts(quarters), finalScore);
+  }
+
+  /**
+   * Builds the optimizer's view of the quarter about to be played.
+   *
+   * `session.companies` is already the state AFTER the last stored quarter,
+   * which is exactly the state the next quarter starts from.
+   */
+  private optimizerInputFor(session: GameSessionDoc, quarters: QuarterDoc[]): OptimizerInput {
+    return {
+      quarter: session.currentRound + 1,
+      states: session.companies,
+      previousQuarters: quarters.map((q) => this.toSimulationResult(q, session)),
+      seed: session.randomSeed,
+    };
+  }
+
+  /**
+   * The Golden Strategy for the quarter the student is about to play.
+   *
+   * Available in BOTH practice and official games, capped at
+   * `GOLDEN_STRATEGY_MAX_QUARTERS` distinct quarters per session. The cap is
+   * claimed in the datastore, not checked here, so two requests arriving
+   * together cannot both spend the last use.
+   *
+   * Asking again for a quarter already coached costs nothing: the search is
+   * deterministic, so a refresh returns the same answer for free.
+   */
+  async goldenStrategy(
+    sessionId: string,
+    userId: string,
+  ): Promise<{ golden: GoldenStrategy; usedQuarters: number[]; maxQuarters: number }> {
+    const session = await this.loadOwnedSession(sessionId, userId);
+    const config = getGameConfig(session.scenarioVersion);
+    const quarter = session.currentRound + 1;
+
+    if (session.status === 'COMPLETED' || quarter > config.quarters) {
+      throw new GameError('gameAlreadyCompleted');
+    }
+
+    // Coaching a graded attempt after the deadline would be coaching a quarter
+    // that can no longer be submitted — and would spend a use for nothing.
+    if (session.mode === 'OFFICIAL' && session.assignmentId) {
+      const assignment = await this.repos.assignments.get(session.assignmentId);
+      if (!assignment) throw new GameError('assignmentNotFound');
+      this.assertWindowOpen(assignment);
+    }
+
+    const claim = await this.repos.sessions.claimGoldenUse(
+      sessionId,
+      quarter,
+      GOLDEN_STRATEGY_MAX_QUARTERS,
+    );
+    if (claim.status === 'LIMIT_REACHED') throw new GameError('goldenLimitReached');
+
+    const quarters = await this.repos.sessions.listQuarters(sessionId);
+    const golden = findGoldenStrategy(this.optimizerInputFor(session, quarters), config);
+
+    return {
+      golden,
+      usedQuarters: claim.used,
+      maxQuarters: GOLDEN_STRATEGY_MAX_QUARTERS,
+    };
+  }
+
+  /**
+   * The post-game "what you should have done" comparison.
+   *
+   * ONLY for a session that is already finished. While a game is in progress
+   * this would be a way to read the answer to the quarter you are about to
+   * play, bypassing the Golden Strategy limit entirely — so the status check
+   * is a security boundary, not a convenience.
+   */
+  async hindsight(sessionId: string, userId: string): Promise<HindsightQuarter[]> {
+    const session = await this.getOwnedSession(sessionId, userId);
+    const config = getGameConfig(session.scenarioVersion);
+
+    if (session.status !== 'COMPLETED') throw new GameError('gameNotCompleted');
+
+    const quarters = await this.repos.sessions.listQuarters(sessionId);
+    const simulations = quarters.map((q) => this.toSimulationResult(q, session));
+
+    // Replay forward from the original starting states: `session.companies` is
+    // the state at the END of the game, not the start of each quarter.
+    let states = createInitialCompanies(session.companyName, config);
+    const inputs: { input: OptimizerInput; played: QuarterDecision }[] = [];
+
+    for (let i = 0; i < quarters.length; i += 1) {
+      const quarter = quarters[i];
+      const simulation = simulations[i];
+      if (!quarter || !simulation) break;
+      const played = quarter.decisions[PLAYER_COMPANY_KEY];
+      if (!played) break;
+
+      inputs.push({
+        input: {
+          quarter: quarter.quarter,
+          states,
+          previousQuarters: simulations.slice(0, i),
+          seed: session.randomSeed,
+        },
+        played,
+      });
+      states = simulation.nextStates;
+    }
+
+    return findHindsight(inputs, config);
+  }
+
+  /** Quarters of this session that were coached by the Golden Strategy. */
+  goldenUses(session: GameSessionDoc): number[] {
+    return goldenUsedQuarters(session);
   }
 
   /** The rule-based analysis shown in the final report (spec 8.4). Pure. */

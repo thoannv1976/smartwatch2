@@ -20,6 +20,7 @@ import type {
   FinalResultRepository,
   Repositories,
   RoleInviteRepository,
+  ClaimGoldenUseOutcome,
   SaveQuarterOutcome,
   SessionRepository,
   UserRepository,
@@ -609,6 +610,29 @@ class FirestoreSessionRepository implements SessionRepository {
       tx.set(sessionRef, updated);
 
       return { status: 'SAVED', quarter, session: updated };
+    });
+  }
+
+  /** See the contract in `types.ts`: the limit is enforced here, in a transaction. */
+  async claimGoldenUse(
+    sessionId: string,
+    quarter: number,
+    maxQuarters: number,
+  ): Promise<ClaimGoldenUseOutcome> {
+    const sessionRef = this.sessionRef(sessionId);
+
+    return this.db.runTransaction<ClaimGoldenUseOutcome>(async (tx) => {
+      const snap = await tx.get(sessionRef);
+      if (!snap.exists) throw new Error(`Session ${sessionId} not found`);
+      const session = snap.data() as GameSessionDoc;
+
+      const used = session.goldenUsedQuarters ?? [];
+      if (used.includes(quarter)) return { status: 'ALREADY_USED', used: [...used] };
+      if (used.length >= maxQuarters) return { status: 'LIMIT_REACHED', used: [...used] };
+
+      const next = [...used, quarter].sort((a, b) => a - b);
+      tx.update(sessionRef, { goldenUsedQuarters: next });
+      return { status: 'CLAIMED', used: next };
     });
   }
 

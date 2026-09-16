@@ -488,6 +488,203 @@ export const vi = {
     technologyPush: '{company} dồn lực vào năng lực công nghệ.',
     steady: '{company} giữ nguyên chiến lược như quý trước.',
   },
+  areaNames: {
+    productPoints: 'Sản phẩm',
+    technologyPoints: 'Công nghệ',
+    marketingPoints: 'Marketing',
+    distributionPoints: 'Phân phối',
+    cxPoints: 'Trải nghiệm khách hàng',
+    product: 'Sản phẩm',
+    marketing: 'Marketing',
+    distribution: 'Phân phối',
+    cx: 'Trải nghiệm khách hàng',
+  },
+  coach: {
+    title: 'Gợi ý chiến lược',
+    subtitle: 'Ba hướng đi cho quý này. Bấm để điền vào ô bên trên, bạn vẫn sửa lại được.',
+    heuristicNote:
+      'Đây là gợi ý theo kinh nghiệm điều hành, không phải phương án tối ưu. Chúng cho bạn một điểm xuất phát để suy nghĩ, không phải một đáp án để chép.',
+    apply: 'Dùng phương án này',
+    applied: 'Đã điền vào ô',
+    goldenTitle: 'Chiến lược vàng',
+    goldenHint:
+      'Phương án cho lợi nhuận cao nhất NGAY TRONG QUÝ NÀY, tìm bằng cách thử hàng nghìn tổ hợp trên chính engine mô phỏng mà bạn đang chơi.',
+    goldenButton: 'Tìm Chiến lược vàng',
+    goldenSearching: 'Đang thử hàng nghìn tổ hợp…',
+    goldenUsesLeft: 'Còn {left}/{max} lượt trong phiên chơi này',
+    goldenAlreadyThisQuarter: 'Đã dùng cho quý này — xem lại không tốn thêm lượt',
+    goldenNoUses: 'Bạn đã dùng hết lượt Chiến lược vàng của phiên chơi này',
+    goldenResult: 'Phương án tối ưu cho {quarterShort}{quarter}',
+    goldenProfit: 'Lợi nhuận quý này',
+    goldenBaseline: 'Phân bổ cân bằng 20/20/20/20/20',
+    goldenAdvantage: 'Hơn phân bổ cân bằng',
+    goldenCombos: 'Đã thử {count} tổ hợp',
+    goldenWeights:
+      'Quý này khách hàng cân nhắc: sản phẩm {product}%, giá {price}%, thương hiệu {brand}%, marketing {marketing}%, phân phối {distribution}%, CSKH {cx}%.',
+    goldenTradeoffTitle: 'Cái giá của phương án này',
+    goldenTradeoff:
+      'Mục tiêu tối ưu ở đây là lợi nhuận NGAY QUÝ NÀY, không phải điểm cuối kỳ. Đầu tư vào sản phẩm và công nghệ chủ yếu sinh lợi ở các quý sau, nên phương án này thường mua ít hơn mức bạn cần cho đường dài. Dưới đây là phần năng lực bạn đánh đổi so với phân bổ cân bằng.',
+    goldenNoTradeoff: 'Phương án này không hy sinh năng lực nào so với phân bổ cân bằng.',
+    riskTitle: 'Rủi ro nên cân nhắc trước khi chốt',
+    riskHint: 'Cảnh báo để bạn cân nhắc. Bạn vẫn gửi được quyết định như đang đặt.',
+  },
+  coachTitle: {
+    eventRide: 'Bắt sóng sự kiện',
+    fixWeakness: 'Vá điểm yếu',
+    fulfilFirst: 'Giao được hàng đã',
+    valuePlay: 'Đánh vào giá',
+    defendMargin: 'Giữ biên lợi nhuận',
+    holdCourse: 'Giữ nguyên đà',
+    balancedStart: 'Cân bằng',
+  },
+  coachWhy: {
+    eventRide:
+      'Quý này nhu cầu nghiêng về sản phẩm {product}%, giá {price}%, phân phối {distribution}%. Phương án này chia điểm theo đúng tỷ trọng đó.',
+    fixWeakness:
+      'Năng lực yếu nhất của bạn là {area}, đang ở {value}/100. Năng lực tích luỹ qua từng quý, bỏ quên sớm thì cuối kỳ khó đuổi kịp.',
+    fulfilFirst:
+      'Quý trước bạn mất {units} chiếc, tức {share}% nhu cầu tiềm năng, vì phân phối mới ở {distribution}/100. Đó là khách muốn mua mà bạn không giao được hàng.',
+    valuePlay:
+      'Quý này giá chiếm {price}% trong quyết định mua của khách. Hạ chỉ số giá kèm đẩy phân phối là cách trực tiếp nhất để giành thị phần.',
+    defendMargin:
+      'Quý trước lỗ {profit} và tiền mặt còn {cash}. Nâng giá, đồng thời tăng chất lượng sản phẩm và CSKH để kéo tỷ lệ trả hàng xuống.',
+    holdCourse:
+      'Quý trước bạn lãi {profit} và đứng hạng {rank}. Giữ nguyên phân bổ để thấy rõ sự kiện quý này tác động thế nào.',
+    balancedStart:
+      'Chia đều 20 điểm cho cả năm lĩnh vực, giá bằng giá tham chiếu. Một điểm xuất phát an toàn để đối chiếu.',
+  },
+  risks: {
+    marketingAheadOfDistribution:
+      'Marketing {marketing} điểm nhưng phân phối chỉ {distribution}. Marketing tạo ra nhu cầu, phân phối mới giao được hàng — chênh lệch lớn thường dẫn tới cầu không đáp ứng được.',
+    distributionCapacityLow:
+      'Phân phối đang ở {value}/100 và quý này bạn chỉ thêm {points} điểm. Dưới 60 thì một phần nhu cầu sẽ không giao được.',
+    premiumWithoutBrand:
+      'Chỉ số giá {price} là mức cao cấp, nhưng thương hiệu mới ở {brand}/100. Giá cao cần thương hiệu đỡ, nếu không khách sẽ chọn đối thủ.',
+    starvedField:
+      'Bạn bỏ trống {area} {quarters} quý liên tiếp. Năng lực cộng dồn, khoảng cách này sẽ rất khó lấp ở các quý cuối.',
+    discountWithNegativeCash:
+      'Bạn hạ giá xuống {price} trong khi tiền mặt đã âm {cash}. Bán nhiều hơn với biên mỏng hơn có thể làm dòng tiền xấu thêm.',
+    cxNeglectedWeakCsat:
+      'CSKH chỉ {points} điểm trong khi mức hài lòng đang là {csat}/100. CSAT thấp kéo theo cả thương hiệu lẫn tỷ lệ trả hàng.',
+    allInOneArea:
+      'Bạn dồn {points} điểm vào {area}. Đầu tư có hiệu suất giảm dần: điểm thứ 50 mang lại ít hơn hẳn điểm thứ 10.',
+  },
+  review: {
+    title: 'Nhận xét quyết định quý này',
+    hint: 'Sinh ra từ chính số liệu của quý, theo các luật cố định — giảng viên tái lập được.',
+    alignedWithDemand:
+      'Phân bổ của bạn khớp {value}% với trọng số nhu cầu thật của quý này. Bạn đã đọc đúng thị trường.',
+    misalignedWithDemand:
+      'Phân bổ của bạn chỉ khớp {value}% với trọng số nhu cầu quý này; thiếu nhiều nhất là {area}.',
+    unfulfilledDemand:
+      'Mất {units} chiếc, tức {share}% nhu cầu tiềm năng, vì phân phối mới ở {distribution}/100 trong khi marketing là {marketing} điểm. Đây là phần khách muốn mua mà bạn không giao được.',
+    profitPositive: 'Lãi {value}, biên lợi nhuận ròng {margin}%.',
+    profitNegative:
+      'Lỗ {value}, biên lợi nhuận ròng {margin}%. Doanh thu chưa bù nổi giá vốn cộng chi phí cố định.',
+    marginThin:
+      'Có lãi nhưng biên lợi nhuận ròng chỉ {value}% ở chỉ số giá {price}. Một quý xấu là đủ để lật sang lỗ.',
+    shareUp: 'Thị phần tăng {value} điểm phần trăm, lên {share}%.',
+    shareDown: 'Thị phần giảm {value} điểm phần trăm, còn {share}%.',
+    rankUp: 'Thứ hạng cải thiện từ {from} lên {to}.',
+    rankDown: 'Thứ hạng tụt từ {from} xuống {to}.',
+    csatUp: 'Mức hài lòng tăng {value} điểm, lên {csat}/100.',
+    csatDown: 'Mức hài lòng giảm {value} điểm, còn {csat}/100.',
+    cashNegative: 'Tiền mặt âm {value}. Đây là tín hiệu nghiêm trọng nhất của quý.',
+    priceAheadOfBrand:
+      'Bạn bán ở chỉ số giá {price} với thương hiệu {brand}/100 — giá đi trước thương hiệu, và thị phần đã phản ứng.',
+    returnsHigh:
+      'Tỷ lệ trả hàng {value}%, tốn {cost}. Chất lượng sản phẩm và CSKH là hai đòn bẩy trực tiếp kéo con số này xuống.',
+    steadyQuarter: 'Quý đi ngang, thị phần {share}%. Không có tín hiệu nào đủ mạnh để rút bài học.',
+  },
+  tenure: {
+    title: 'Tổng kết nhiệm kỳ CEO',
+    subtitle: 'Đánh giá 6 quý điều hành, theo ba trục mà một CEO thật sự bị đánh giá.',
+    consistency: 'Tính nhất quán',
+    adaptation: 'Khả năng thích ứng',
+    trajectory: 'Quỹ đạo',
+    bestQuarter: 'Quý tốt nhất',
+    worstQuarter: 'Quý kém nhất',
+    shareChange: 'Thay đổi thị phần Q1 → Q6',
+    quarterByQuarter: 'Nhận xét từng quý',
+    swing: 'Biến động trung bình {value} điểm mỗi lĩnh vực, mỗi quý',
+    overlap: 'Khớp trung bình {value}% với nhu cầu thị trường',
+  },
+  tenureVerdict: {
+    strongTenure:
+      'Một nhiệm kỳ mạnh. Bạn vừa giữ được lợi nhuận vừa xây được năng lực — phần lớn CEO trong mô phỏng này không làm được cả hai.',
+    solidTenure:
+      'Một nhiệm kỳ vững. Công ty đi đúng hướng, nhưng vẫn có những quý bạn để lỡ cơ hội mà thị trường đang mở ra.',
+    mixedTenure:
+      'Một nhiệm kỳ pha trộn. Có quý bạn đọc đúng thị trường, có quý không, và kết quả cuối phản ánh đúng sự thiếu ổn định đó.',
+    difficultTenure:
+      'Một nhiệm kỳ khó khăn. Điều đáng giá nhất không phải điểm số, mà là đọc lại nhận xét từng quý bên dưới để thấy quyết định nào đã tạo ra bước ngoặt.',
+  },
+  consistencyLabel: {
+    STEADY: 'Kiên định',
+    SHIFTING: 'Có điều chỉnh',
+    ERRATIC: 'Thất thường',
+  },
+  consistencyDesc: {
+    STEADY:
+      'Bạn giữ gần như một phân bổ suốt 6 quý. Dễ đánh giá, nhưng cũng có nghĩa là các sự kiện thị trường không làm bạn đổi hướng.',
+    SHIFTING:
+      'Bạn điều chỉnh có chừng mực giữa các quý — thường là dấu hiệu của điều hành có chủ đích.',
+    ERRATIC:
+      'Phân bổ của bạn đổi mạnh mỗi quý. Năng lực cần vài quý mới tích luỹ được, đổi hướng liên tục khiến không thứ gì kịp lớn.',
+  },
+  adaptationLabel: {
+    TRACKED: 'Bám thị trường',
+    PARTIAL: 'Bám một phần',
+    IGNORED: 'Không theo thị trường',
+  },
+  adaptationDesc: {
+    TRACKED:
+      'Phân bổ của bạn dịch chuyển theo trọng số nhu cầu của từng quý. Đây đúng là điều mà 6 sự kiện thị trường được dựng lên để kiểm tra.',
+    PARTIAL: 'Bạn theo thị trường ở một số quý và bỏ lỡ ở những quý khác.',
+    IGNORED:
+      'Phân bổ của bạn gần như không đổi theo sự kiện. Mỗi quý thị trường coi trọng một thứ khác nhau — đó là thông tin cho không mà bạn chưa dùng.',
+  },
+  trajectoryLabel: {
+    RISING: 'Đi lên',
+    FLAT: 'Đi ngang',
+    FALLING: 'Đi xuống',
+  },
+  trajectoryDesc: {
+    RISING: 'Lợi nhuận và thị phần đi lên trong nhiệm kỳ. Công ty bạn bàn giao tốt hơn lúc nhận.',
+    FLAT: 'Công ty kết thúc gần như lúc bắt đầu. Ổn định, nhưng 6 quý là đủ dài để tạo ra khác biệt.',
+    FALLING:
+      'Lợi nhuận hoặc thị phần đi xuống trong nhiệm kỳ. Hãy xem kỹ quý {worstQuarter} — bước ngoặt nằm ở đó.',
+  },
+  hindsight: {
+    title: 'Lẽ ra nên làm gì',
+    hint: 'Với mỗi quý, đây là phương án cho lợi nhuận cao nhất của chính quý đó, tìm trên đúng thị trường bạn đã gặp. Nó tối ưu từng quý riêng lẻ, không tối ưu điểm cuối kỳ.',
+    run: 'Xem đối chiếu 6 quý',
+    running: 'Đang tính lại 6 quý…',
+    yours: 'Bạn đã làm',
+    best: 'Tốt nhất quý đó',
+    gap: 'Lợi nhuận bỏ lỡ',
+    totalGap: 'Tổng lợi nhuận bỏ lỡ cả nhiệm kỳ',
+    allocation: 'Phân bổ',
+    onlyWhenFinished: 'Chỉ xem được sau khi hoàn thành đủ 6 quý.',
+  },
+  percentile: {
+    title: 'Vị trí trong lớp',
+    youBeat: 'Bạn xếp trên {value}% số bài đã nộp của lớp',
+    rankOf: 'Hạng {rank}/{total}',
+    tooSmall: 'Lớp chưa đủ số bài nộp để hiển thị vị trí mà không lộ danh tính người khác.',
+    top10: 'Nhóm 10% dẫn đầu',
+    top25: 'Nhóm 25% dẫn đầu',
+    upperHalf: 'Nửa trên của lớp',
+    lowerHalf: 'Nửa dưới của lớp',
+    bottom25: 'Nhóm 25% cuối',
+  },
+  printing: {
+    print: 'In / Lưu PDF',
+    player: 'Người chơi',
+    printedAt: 'In lúc',
+    goldenUsed: 'Đã dùng Chiến lược vàng ở quý',
+    goldenNone: 'Không dùng Chiến lược vàng',
+  },
   errors: {
     weakPassword: 'Mật khẩu cần ít nhất 8 ký tự',
     emailAlreadyExists: 'Email này đã có tài khoản. Hãy sửa trực tiếp trên dòng của họ trong danh sách.',
@@ -508,6 +705,8 @@ export const vi = {
     notYourSession: 'Đây không phải lượt chơi của bạn',
     quarterOutOfRange: 'Quý không hợp lệ',
     gameAlreadyCompleted: 'Lượt chơi đã hoàn thành',
+    gameNotCompleted: 'Chỉ xem được đối chiếu sau khi hoàn thành đủ 6 quý.',
+    goldenLimitReached: 'Bạn đã dùng hết lượt Chiến lược vàng của phiên chơi này.',
     pointsNotHundred: 'Tổng 5 lĩnh vực đầu tư phải đúng 100 điểm',
     pointsRange: 'Mỗi lĩnh vực phải nằm trong khoảng 0–100',
     priceRange: 'Chỉ số giá phải nằm trong khoảng 80–120',
