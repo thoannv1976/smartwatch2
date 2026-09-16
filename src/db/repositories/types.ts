@@ -1,9 +1,14 @@
+import type { CompanyKey } from '@/domain/simulation';
 import type {
   AssignmentDoc,
   CourseDoc,
   CourseMemberDoc,
   FinalResultDoc,
   GameSessionDoc,
+  GroupDoc,
+  GroupGameDoc,
+  GroupMemberDoc,
+  GroupSubmissionDoc,
   LeaderboardSort,
   QuarterDoc,
   Role,
@@ -243,6 +248,139 @@ export interface RoleInviteRepository {
   claim(email: string, uid: string): Promise<Role | null>;
 }
 
+// --- group competition (Part 2) --------------------------------------------
+
+/**
+ * Result of a student trying to take a seat in a group.
+ *
+ * `ALREADY_IN_THIS_GROUP` is a SUCCESS — a second click, or a refresh, hands
+ * back the seat they already hold rather than failing.
+ */
+export type ClaimSeatOutcome =
+  | { status: 'CLAIMED'; member: GroupMemberDoc; group: GroupDoc }
+  | { status: 'ALREADY_IN_THIS_GROUP'; member: GroupMemberDoc; group: GroupDoc }
+  | { status: 'IN_ANOTHER_GROUP'; groupId: string }
+  | { status: 'GROUP_FULL' }
+  | { status: 'GROUP_CLOSED' };
+
+/** Result of creating a group, which also claims its join code. */
+export type CreateGroupOutcome =
+  | { status: 'CREATED'; group: GroupDoc }
+  | { status: 'CODE_TAKEN' };
+
+export interface GroupRepository {
+  get(groupId: string): Promise<GroupDoc | null>;
+  getByJoinCode(joinCode: string): Promise<GroupDoc | null>;
+  listByAssignment(assignmentId: string): Promise<GroupDoc[]>;
+  update(groupId: string, patch: { name?: string }): Promise<void>;
+  /** Soft delete. `at = null` restores. Never deletes a played match. */
+  setArchived(groupId: string, at: number | null): Promise<void>;
+
+  /**
+   * Creates a group and claims its join code in one transaction.
+   *
+   * The code is the document id of a separate claim, so two groups cannot end
+   * up sharing one — which would send a student into someone else's match.
+   * Returns CODE_TAKEN rather than throwing, so the caller can retry with a
+   * fresh code.
+   */
+  create(
+    group: Omit<GroupDoc, 'id' | 'createdAt' | 'seats' | 'archivedAt'>,
+  ): Promise<CreateGroupOutcome>;
+
+  /** Replaces the join code, releasing the old one. */
+  regenerateJoinCode(groupId: string, joinCode: string): Promise<CreateGroupOutcome>;
+
+  /**
+   * Takes the first free seat, in `ARENA_SEATS` order.
+   *
+   * MUST be enforced by the datastore inside a transaction, exactly like
+   * `createOfficialAttempt` and `saveQuarter`. Six students clicking together
+   * all read "seat 3 is free" and a read-then-write in the service would put
+   * several of them in the same seat — which in a group match means several
+   * students sharing one company and one grade.
+   *
+   * The same transaction claims `${assignmentId}_${uid}`, so one student cannot
+   * hold seats in two groups of the same assignment.
+   */
+  claimSeat(input: {
+    groupId: string;
+    uid: string;
+    companyName: string;
+    productName: string;
+    positioning: GroupMemberDoc['positioning'];
+    displayName: string;
+    email: string;
+    studentCode: string | null;
+  }): Promise<ClaimSeatOutcome>;
+
+  /**
+   * Frees a seat. The member row is kept with `leftAt` set, because a student
+   * who played four quarters still has results in the match.
+   */
+  releaseSeat(groupId: string, uid: string): Promise<void>;
+
+  listMembers(groupId: string): Promise<GroupMemberDoc[]>;
+  getMember(groupId: string, uid: string): Promise<GroupMemberDoc | null>;
+  /** The one group this student is in for this assignment, if any. */
+  findMembership(assignmentId: string, uid: string): Promise<GroupMemberDoc | null>;
+}
+
+/** Result of a student submitting one quarter's decision. */
+export type SubmitDecisionOutcome =
+  | { status: 'SUBMITTED'; submission: GroupSubmissionDoc }
+  | { status: 'ALREADY_SUBMITTED'; submission: GroupSubmissionDoc };
+
+/** Result of recording a simulated quarter of a group match. */
+export type SaveGroupQuarterOutcome =
+  | { status: 'SAVED'; quarter: QuarterDoc; game: GroupGameDoc }
+  | { status: 'ALREADY_EXISTS'; quarter: QuarterDoc; game: GroupGameDoc };
+
+export interface GroupGameRepository {
+  /**
+   * Starts the match for a group. Keyed by `groupId`, so a second concurrent
+   * start returns the existing match instead of creating a parallel one.
+   */
+  create(game: Omit<GroupGameDoc, 'id'>): Promise<GroupGameDoc>;
+  get(groupId: string): Promise<GroupGameDoc | null>;
+  listByAssignment(assignmentId: string): Promise<GroupGameDoc[]>;
+
+  /**
+   * Records one student's decision for one quarter.
+   *
+   * Idempotent by construction: the submission document is created inside a
+   * transaction, and if it exists the stored decision is returned untouched.
+   * A student cannot change a decision by submitting twice — which matters far
+   * more here than in a solo game, because the others are waiting on it and
+   * would otherwise be racing a moving target.
+   */
+  submitDecision(
+    groupId: string,
+    submission: Omit<GroupSubmissionDoc, 'submittedAt'>,
+  ): Promise<SubmitDecisionOutcome>;
+
+  listSubmissions(groupId: string, quarter: number): Promise<GroupSubmissionDoc[]>;
+
+  getQuarter(groupId: string, quarter: number): Promise<QuarterDoc | null>;
+  listQuarters(groupId: string): Promise<QuarterDoc[]>;
+
+  /**
+   * Atomically records a simulated quarter and advances the match.
+   *
+   * Same contract as `SessionRepository.saveQuarter`: if the quarter document
+   * already exists the stored one is returned and nothing is recomputed. Here
+   * that is what stops six students, all arriving at "everyone has submitted",
+   * from each running the simulation and writing a different result.
+   */
+  saveQuarter(
+    groupId: string,
+    quarter: QuarterDoc,
+    nextCompanies: GroupGameDoc['companies'],
+  ): Promise<SaveGroupQuarterOutcome>;
+
+  complete(groupId: string, completedAt: number): Promise<void>;
+}
+
 export interface Repositories {
   users: UserRepository;
   courses: CourseRepository;
@@ -250,4 +388,9 @@ export interface Repositories {
   sessions: SessionRepository;
   finalResults: FinalResultRepository;
   roleInvites: RoleInviteRepository;
+  groups: GroupRepository;
+  groupGames: GroupGameRepository;
 }
+
+/** Seat keys, re-exported so repository callers need not reach into the domain. */
+export type SeatKey = CompanyKey;

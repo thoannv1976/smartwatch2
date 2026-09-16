@@ -1,25 +1,36 @@
+import { ARENA_SEATS } from '@/domain/simulation';
 import type {
   AssignmentDoc,
   CourseDoc,
   CourseMemberDoc,
   FinalResultDoc,
   GameSessionDoc,
+  GroupDoc,
+  GroupGameDoc,
+  GroupMemberDoc,
+  GroupSubmissionDoc,
   LeaderboardSort,
   QuarterDoc,
   Role,
   RoleInviteDoc,
   UserDoc,
 } from '../models';
-import { activeOnly, isRemoved } from '../models';
+import { activeOnly, hasLeftGroup, isArchived, isRemoved } from '../models';
 import type {
   AssignmentRepository,
+  ClaimSeatOutcome,
   CourseRepository,
+  CreateGroupOutcome,
   FinalResultRepository,
+  GroupGameRepository,
+  GroupRepository,
   Repositories,
   RoleInviteRepository,
   ClaimGoldenUseOutcome,
+  SaveGroupQuarterOutcome,
   SaveQuarterOutcome,
   SessionRepository,
+  SubmitDecisionOutcome,
   UserRepository,
 } from './types';
 
@@ -514,6 +525,292 @@ class MemoryRoleInviteRepository implements RoleInviteRepository {
   }
 }
 
+// --- group competition (Part 2) --------------------------------------------
+
+class MemoryGroupRepository implements GroupRepository {
+  private nextId = 1;
+  private readonly groups = new Map<string, GroupDoc>();
+  /** Join code (uppercase) -> groupId. Mirrors the `groupJoinCodes` documents. */
+  private readonly codes = new Map<string, string>();
+  /** groupId -> uid -> member. */
+  private readonly members = new Map<string, Map<string, GroupMemberDoc>>();
+  /** `${assignmentId}_${uid}` -> groupId. Mirrors the `groupSeatClaims` documents. */
+  private readonly seatClaims = new Map<string, string>();
+
+  private emptySeats(): Record<string, string | null> {
+    return Object.fromEntries(ARENA_SEATS.map((seat) => [seat, null]));
+  }
+
+  private claimKey(assignmentId: string, uid: string): string {
+    return `${assignmentId}_${uid}`;
+  }
+
+  async create(
+    group: Omit<GroupDoc, 'id' | 'createdAt' | 'seats' | 'archivedAt'>,
+  ): Promise<CreateGroupOutcome> {
+    // NO `await` between the check and the write — see `claimSeat`.
+    const code = group.joinCode.toUpperCase();
+    if (this.codes.has(code)) return { status: 'CODE_TAKEN' };
+
+    const doc: GroupDoc = {
+      ...group,
+      joinCode: code,
+      id: `group-${this.nextId++}`,
+      seats: this.emptySeats(),
+      createdAt: Date.now(),
+      archivedAt: null,
+    };
+    this.groups.set(doc.id, doc);
+    this.codes.set(code, doc.id);
+    return { status: 'CREATED', group: clone(doc) };
+  }
+
+  async regenerateJoinCode(groupId: string, joinCode: string): Promise<CreateGroupOutcome> {
+    const group = this.groups.get(groupId);
+    if (!group) throw new Error(`Group ${groupId} not found`);
+
+    const next = joinCode.toUpperCase();
+    const holder = this.codes.get(next);
+    if (holder && holder !== groupId) return { status: 'CODE_TAKEN' };
+
+    this.codes.delete(group.joinCode);
+    this.codes.set(next, groupId);
+    const updated: GroupDoc = { ...group, joinCode: next };
+    this.groups.set(groupId, updated);
+    return { status: 'CREATED', group: clone(updated) };
+  }
+
+  async get(groupId: string): Promise<GroupDoc | null> {
+    const group = this.groups.get(groupId);
+    return group ? clone(group) : null;
+  }
+
+  async getByJoinCode(joinCode: string): Promise<GroupDoc | null> {
+    const groupId = this.codes.get(joinCode.trim().toUpperCase());
+    return groupId ? this.get(groupId) : null;
+  }
+
+  async listByAssignment(assignmentId: string): Promise<GroupDoc[]> {
+    return [...this.groups.values()]
+      .filter((g) => g.assignmentId === assignmentId)
+      .sort((a, b) => a.createdAt - b.createdAt || a.name.localeCompare(b.name))
+      .map(clone);
+  }
+
+  async update(groupId: string, patch: { name?: string }): Promise<void> {
+    const group = this.groups.get(groupId);
+    if (!group) throw new Error(`Group ${groupId} not found`);
+    this.groups.set(groupId, { ...group, ...(patch.name ? { name: patch.name } : {}) });
+  }
+
+  async setArchived(groupId: string, at: number | null): Promise<void> {
+    const group = this.groups.get(groupId);
+    if (!group) throw new Error(`Group ${groupId} not found`);
+    this.groups.set(groupId, { ...group, archivedAt: at });
+  }
+
+  /**
+   * NO `await` BETWEEN THE CHECK AND THE WRITE.
+   *
+   * Same rule as `createOfficialAttempt` and `claimGoldenUse`: an await here
+   * would yield to the event loop and let a second student read the same free
+   * seat before this one writes it, so both would be seated in it. The
+   * in-memory repository exists to test that race, and can only do so if it is
+   * at least as strict as the Firestore transaction.
+   */
+  async claimSeat(input: {
+    groupId: string;
+    uid: string;
+    companyName: string;
+    productName: string;
+    positioning: GroupMemberDoc['positioning'];
+    displayName: string;
+    email: string;
+    studentCode: string | null;
+  }): Promise<ClaimSeatOutcome> {
+    const group = this.groups.get(input.groupId);
+    if (!group) throw new Error(`Group ${input.groupId} not found`);
+
+    const bucket = this.members.get(group.id) ?? new Map<string, GroupMemberDoc>();
+    const existing = bucket.get(input.uid);
+    if (existing && !hasLeftGroup(existing)) {
+      return { status: 'ALREADY_IN_THIS_GROUP', member: clone(existing), group: clone(group) };
+    }
+
+    const claimKey = this.claimKey(group.assignmentId, input.uid);
+    const claimedGroupId = this.seatClaims.get(claimKey);
+    if (claimedGroupId && claimedGroupId !== group.id) {
+      return { status: 'IN_ANOTHER_GROUP', groupId: claimedGroupId };
+    }
+
+    if (isArchived(group)) return { status: 'GROUP_CLOSED' };
+
+    const seatKey = ARENA_SEATS.find((seat) => group.seats[seat] == null);
+    if (!seatKey) return { status: 'GROUP_FULL' };
+
+    const member: GroupMemberDoc = {
+      uid: input.uid,
+      groupId: group.id,
+      assignmentId: group.assignmentId,
+      seatKey,
+      companyName: input.companyName,
+      productName: input.productName,
+      positioning: input.positioning,
+      displayName: input.displayName,
+      email: input.email,
+      studentCode: input.studentCode,
+      joinedAt: Date.now(),
+      leftAt: null,
+    };
+
+    const updated: GroupDoc = { ...group, seats: { ...group.seats, [seatKey]: input.uid } };
+    this.groups.set(group.id, updated);
+    bucket.set(input.uid, member);
+    this.members.set(group.id, bucket);
+    this.seatClaims.set(claimKey, group.id);
+
+    return { status: 'CLAIMED', member: clone(member), group: clone(updated) };
+  }
+
+  async releaseSeat(groupId: string, uid: string): Promise<void> {
+    const group = this.groups.get(groupId);
+    if (!group) throw new Error(`Group ${groupId} not found`);
+
+    const bucket = this.members.get(groupId);
+    const member = bucket?.get(uid);
+    if (!member || !bucket) return;
+
+    bucket.set(uid, { ...member, leftAt: Date.now() });
+    this.groups.set(groupId, {
+      ...group,
+      seats: { ...group.seats, [member.seatKey]: null },
+    });
+    this.seatClaims.delete(this.claimKey(group.assignmentId, uid));
+  }
+
+  async listMembers(groupId: string): Promise<GroupMemberDoc[]> {
+    return [...(this.members.get(groupId)?.values() ?? [])]
+      .sort((a, b) => ARENA_SEATS.indexOf(a.seatKey) - ARENA_SEATS.indexOf(b.seatKey))
+      .map(clone);
+  }
+
+  async getMember(groupId: string, uid: string): Promise<GroupMemberDoc | null> {
+    const member = this.members.get(groupId)?.get(uid);
+    return member ? clone(member) : null;
+  }
+
+  async findMembership(assignmentId: string, uid: string): Promise<GroupMemberDoc | null> {
+    const groupId = this.seatClaims.get(this.claimKey(assignmentId, uid));
+    return groupId ? this.getMember(groupId, uid) : null;
+  }
+}
+
+class MemoryGroupGameRepository implements GroupGameRepository {
+  /** Keyed by groupId, exactly like the Firestore collection. */
+  private readonly games = new Map<string, GroupGameDoc>();
+  /** groupId -> quarter -> doc. */
+  private readonly quarters = new Map<string, Map<number, QuarterDoc>>();
+  /** groupId -> `q{n}_{seat}` -> submission. */
+  private readonly submissions = new Map<string, Map<string, GroupSubmissionDoc>>();
+
+  private submissionKey(quarter: number, seatKey: string): string {
+    return `q${quarter}_${seatKey}`;
+  }
+
+  async create(game: Omit<GroupGameDoc, 'id'>): Promise<GroupGameDoc> {
+    // The group id IS the document id, so a second concurrent start finds the
+    // existing match rather than creating a parallel one.
+    const existing = this.games.get(game.groupId);
+    if (existing) return clone(existing);
+
+    const doc: GroupGameDoc = { ...clone(game), id: game.groupId };
+    this.games.set(doc.id, doc);
+    return clone(doc);
+  }
+
+  async get(groupId: string): Promise<GroupGameDoc | null> {
+    const game = this.games.get(groupId);
+    return game ? clone(game) : null;
+  }
+
+  async listByAssignment(assignmentId: string): Promise<GroupGameDoc[]> {
+    return [...this.games.values()]
+      .filter((g) => g.assignmentId === assignmentId)
+      .sort((a, b) => a.startedAt - b.startedAt)
+      .map(clone);
+  }
+
+  async submitDecision(
+    groupId: string,
+    submission: Omit<GroupSubmissionDoc, 'submittedAt'>,
+  ): Promise<SubmitDecisionOutcome> {
+    // NO `await` between the check and the write.
+    const bucket = this.submissions.get(groupId) ?? new Map<string, GroupSubmissionDoc>();
+    const key = this.submissionKey(submission.quarter, submission.seatKey);
+
+    const existing = bucket.get(key);
+    if (existing) return { status: 'ALREADY_SUBMITTED', submission: clone(existing) };
+
+    const doc: GroupSubmissionDoc = { ...clone(submission), submittedAt: Date.now() };
+    bucket.set(key, doc);
+    this.submissions.set(groupId, bucket);
+    return { status: 'SUBMITTED', submission: clone(doc) };
+  }
+
+  async listSubmissions(groupId: string, quarter: number): Promise<GroupSubmissionDoc[]> {
+    return [...(this.submissions.get(groupId)?.values() ?? [])]
+      .filter((s) => s.quarter === quarter)
+      .sort((a, b) => ARENA_SEATS.indexOf(a.seatKey) - ARENA_SEATS.indexOf(b.seatKey))
+      .map(clone);
+  }
+
+  async getQuarter(groupId: string, quarter: number): Promise<QuarterDoc | null> {
+    const doc = this.quarters.get(groupId)?.get(quarter);
+    return doc ? clone(doc) : null;
+  }
+
+  async listQuarters(groupId: string): Promise<QuarterDoc[]> {
+    return [...(this.quarters.get(groupId)?.values() ?? [])]
+      .sort((a, b) => a.quarter - b.quarter)
+      .map(clone);
+  }
+
+  async saveQuarter(
+    groupId: string,
+    quarter: QuarterDoc,
+    nextCompanies: GroupGameDoc['companies'],
+  ): Promise<SaveGroupQuarterOutcome> {
+    const game = this.games.get(groupId);
+    if (!game) throw new Error(`Group game ${groupId} not found`);
+
+    const bucket = this.quarters.get(groupId) ?? new Map<number, QuarterDoc>();
+    const existing = bucket.get(quarter.quarter);
+    if (existing) {
+      // Same contract as the session repository: never recompute, never
+      // overwrite, just hand back what was stored.
+      return { status: 'ALREADY_EXISTS', quarter: clone(existing), game: clone(game) };
+    }
+
+    bucket.set(quarter.quarter, clone(quarter));
+    this.quarters.set(groupId, bucket);
+
+    const updated: GroupGameDoc = {
+      ...game,
+      companies: clone(nextCompanies),
+      currentRound: Math.max(game.currentRound, quarter.quarter),
+    };
+    this.games.set(groupId, updated);
+
+    return { status: 'SAVED', quarter: clone(quarter), game: clone(updated) };
+  }
+
+  async complete(groupId: string, completedAt: number): Promise<void> {
+    const game = this.games.get(groupId);
+    if (!game) throw new Error(`Group game ${groupId} not found`);
+    this.games.set(groupId, { ...game, status: 'COMPLETED', completedAt });
+  }
+}
+
 /** A fresh, isolated repository set. One per test. */
 export function createMemoryRepositories(): Repositories {
   return {
@@ -523,5 +820,7 @@ export function createMemoryRepositories(): Repositories {
     sessions: new MemorySessionRepository(),
     finalResults: new MemoryFinalResultRepository(),
     roleInvites: new MemoryRoleInviteRepository(),
+    groups: new MemoryGroupRepository(),
+    groupGames: new MemoryGroupGameRepository(),
   };
 }

@@ -144,6 +144,24 @@ export interface AssignmentDoc extends Archivable {
   isOpen: boolean;
   createdBy: string;
   createdAt: number;
+
+  /**
+   * Solo play against rule-based benchmarks, or six students against each
+   * other.
+   *
+   * OPTIONAL, for the reason spelled out on `Archivable`: every assignment
+   * written before group mode existed has no such field, and Firestore cannot
+   * tell "missing" from any value. Absent therefore means SOLO — read it
+   * through `assignmentMode`, never directly.
+   */
+  mode?: 'SOLO' | 'GROUP';
+  /** Seats per group. Absent means the full six. */
+  groupSize?: number;
+}
+
+/** Mode of an assignment, tolerating documents written before group mode. */
+export function assignmentMode(assignment: Pick<AssignmentDoc, 'mode'>): 'SOLO' | 'GROUP' {
+  return assignment.mode === 'GROUP' ? 'GROUP' : 'SOLO';
 }
 
 /**
@@ -265,6 +283,19 @@ export interface FinalResultDoc {
    * it — read it through `goldenUsedQuarters`.
    */
   goldenUsedQuarters?: number[];
+
+  /**
+   * Which group this result came from, for a group assignment.
+   *
+   * Denormalised onto the graded row on purpose, exactly like `studentCode`:
+   * the class leaderboard and both CSV exports read this one collection, and an
+   * instructor comparing two scores needs to see which match each was earned
+   * in without opening groups one by one. Absent for every solo result.
+   */
+  groupId?: string;
+  groupName?: string;
+  /** The seat this student held. Absent for solo results, which are `player`. */
+  seatKey?: CompanyKey;
 }
 
 /** Sortable columns of the class leaderboard and the instructor table. */
@@ -282,3 +313,111 @@ export const LEADERBOARD_SORTS: readonly LeaderboardSort[] = [
   'finalCsat',
   'finalBrand',
 ] as const;
+
+// ---------------------------------------------------------------------------
+// Group competition (Part 2)
+// ---------------------------------------------------------------------------
+
+/**
+ * A competition group: up to six students, one company each, sharing one
+ * market for six quarters.
+ *
+ * `seats` maps a seat key to the uid holding it, or null. Seats are handed out
+ * in `ARENA_SEATS` order and an empty one is driven by the rule-based
+ * generator, so the market always contains six companies however few students
+ * turned up.
+ */
+export interface GroupDoc extends Archivable {
+  id: string;
+  assignmentId: string;
+  courseId: string;
+  name: string;
+  /**
+   * The code a student types to join. Unique across the whole system, which is
+   * enforced by a document keyed on the code itself, never by a lookup.
+   */
+  joinCode: string;
+  seats: Record<string, string | null>;
+  createdBy: string;
+  createdAt: number;
+}
+
+/**
+ * One student holding one seat.
+ *
+ * `leftAt` rather than deletion, for the same reason `CourseMemberDoc` keeps
+ * removed students: someone who played four quarters and was then pulled out
+ * still has results in the match and a row in the gradebook, and a record that
+ * vanishes would make those look like they came from nowhere.
+ */
+export interface GroupMemberDoc {
+  uid: string;
+  groupId: string;
+  assignmentId: string;
+  seatKey: CompanyKey;
+  companyName: string;
+  productName: string;
+  positioning: Positioning;
+  displayName: string;
+  email: string;
+  studentCode: string | null;
+  joinedAt: number;
+  leftAt?: number | null;
+}
+
+/** True for a member who has been released from their seat. */
+export function hasLeftGroup(member: GroupMemberDoc): boolean {
+  return typeof member.leftAt === 'number';
+}
+
+/**
+ * The shared match one group plays.
+ *
+ * KEYED BY `groupId`. A group has exactly one match, so making the group id the
+ * document id turns "one match per group" into a datastore constraint rather
+ * than something a service has to check, and makes the lookup a single read
+ * with no index.
+ *
+ * Structurally this is `GameSessionDoc` minus everything that is about one
+ * person's attempt (userId, mode, attemptNo, positioning) — those live on the
+ * member rows instead, because in a group each of the six has their own.
+ */
+export interface GroupGameDoc {
+  /** Always equal to `groupId`. */
+  id: string;
+  groupId: string;
+  assignmentId: string;
+  courseId: string;
+  /** Quarters already simulated. The next decision is for `currentRound + 1`. */
+  currentRound: number;
+  scenarioVersion: string;
+  engineVersion: string;
+  randomSeed: string;
+  status: SessionStatus;
+  companies: SessionCompany[];
+  startedAt: number;
+  completedAt: number | null;
+}
+
+/**
+ * One student's decision for one quarter, held until all six are in.
+ *
+ * A quarter cannot run before every seat has a decision, so these accumulate
+ * and are then handed to the engine together. Creating the document is what
+ * makes submitting idempotent — the same rule `saveQuarter` already relies on.
+ */
+export interface GroupSubmissionDoc {
+  quarter: number;
+  seatKey: CompanyKey;
+  uid: string;
+  decision: QuarterDecision;
+  submittedAt: number;
+  /**
+   * True when the system supplied this on the student's behalf, because the
+   * instructor forced the quarter through before they submitted.
+   *
+   * Surfaced in the instructor's report and the CSV export: nobody should be
+   * marked on a decision they did not make without that being visible.
+   */
+  wasDefault: boolean;
+}

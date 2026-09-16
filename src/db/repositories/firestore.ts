@@ -1,5 +1,6 @@
 import 'server-only';
 import type { Firestore, Query } from 'firebase-admin/firestore';
+import { ARENA_SEATS } from '@/domain/simulation';
 import { getDb } from '../firestore';
 import type {
   AssignmentDoc,
@@ -7,22 +8,32 @@ import type {
   CourseMemberDoc,
   FinalResultDoc,
   GameSessionDoc,
+  GroupDoc,
+  GroupGameDoc,
+  GroupMemberDoc,
+  GroupSubmissionDoc,
   LeaderboardSort,
   QuarterDoc,
   Role,
   RoleInviteDoc,
   UserDoc,
 } from '../models';
-import { activeOnly, isRemoved } from '../models';
+import { activeOnly, hasLeftGroup, isArchived, isRemoved } from '../models';
 import type {
   AssignmentRepository,
+  ClaimSeatOutcome,
   CourseRepository,
+  CreateGroupOutcome,
   FinalResultRepository,
+  GroupGameRepository,
+  GroupRepository,
   Repositories,
   RoleInviteRepository,
   ClaimGoldenUseOutcome,
+  SaveGroupQuarterOutcome,
   SaveQuarterOutcome,
   SessionRepository,
+  SubmitDecisionOutcome,
   UserRepository,
 } from './types';
 
@@ -75,6 +86,14 @@ import type {
  *  - one equality filter plus an orderBy on a DIFFERENT field needs a
  *    composite index, and sorting in memory instead (as several methods below
  *    deliberately do) avoids needing one.
+ *
+ * THE GROUP COLLECTIONS (Part 2) DECLARE NO INDEXES, on purpose. Every query
+ * they make is a SINGLE equality filter on a collection-scoped query, which the
+ * automatic single-field indexes already serve, and each one sorts in memory
+ * afterwards. Join codes, seat claims, matches, quarters and submissions are
+ * all addressed BY DOCUMENT ID, which needs no index at all. If you add an
+ * orderBy, a second filter, or a collectionGroup() query here, it needs an
+ * entry in firestore.indexes.json — and the emulator will not tell you.
  * ---------------------------------------------------------------------------
  */
 
@@ -95,6 +114,24 @@ export const COLLECTIONS = {
   // code. Makes "this code is already used in this course" a datastore
   // constraint rather than a read-then-write check.
   studentCodes: 'studentCodes',
+
+  // --- group competition (Part 2) ---
+  groups: 'groups',
+  // Subcollection of a group: one document per student, id = uid.
+  groupMembers: 'members',
+  // One document per join code, id = the CODE itself. Two groups sharing a code
+  // would send a student into someone else's match, so uniqueness is a
+  // datastore constraint. Read and written by id only, so it needs no index.
+  groupJoinCodes: 'groupJoinCodes',
+  // One document per `${assignmentId}_${uid}`, so a student cannot hold seats
+  // in two groups of the same assignment. Doubles as the index-free lookup for
+  // "which group is this person in". By id only, so it needs no index either.
+  groupSeatClaims: 'groupSeatClaims',
+  // The shared match, id = the GROUP id. One match per group, by construction.
+  groupGames: 'groupGames',
+  // Subcollection of a match: decisions waiting for the quarter to run,
+  // id = `q{n}_{seatKey}`.
+  groupSubmissions: 'submissions',
 } as const;
 
 /**
@@ -747,6 +784,361 @@ class FirestoreRoleInviteRepository implements RoleInviteRepository {
   }
 }
 
+// --- group competition (Part 2) --------------------------------------------
+
+class FirestoreGroupRepository implements GroupRepository {
+  constructor(private readonly db: Firestore) {}
+
+  private groupRef(groupId: string) {
+    return this.db.collection(COLLECTIONS.groups).doc(groupId);
+  }
+
+  /** Claim document for one join code. The code IS the id, so it cannot clash. */
+  private codeRef(joinCode: string) {
+    return this.db.collection(COLLECTIONS.groupJoinCodes).doc(joinCode.trim().toUpperCase());
+  }
+
+  private memberRef(groupId: string, uid: string) {
+    return this.groupRef(groupId).collection(COLLECTIONS.groupMembers).doc(uid);
+  }
+
+  /**
+   * Claim document for "this student is in a group for this assignment".
+   *
+   * Lives at the top level, keyed by `${assignmentId}_${uid}`, so it is both
+   * the uniqueness constraint and the index-free way to find someone's group.
+   */
+  private seatClaimRef(assignmentId: string, uid: string) {
+    return this.db.collection(COLLECTIONS.groupSeatClaims).doc(`${assignmentId}_${uid}`);
+  }
+
+  private emptySeats(): Record<string, string | null> {
+    return Object.fromEntries(ARENA_SEATS.map((seat) => [seat, null]));
+  }
+
+  async create(
+    group: Omit<GroupDoc, 'id' | 'createdAt' | 'seats' | 'archivedAt'>,
+  ): Promise<CreateGroupOutcome> {
+    const groupRef = this.db.collection(COLLECTIONS.groups).doc();
+    const joinCode = group.joinCode.trim().toUpperCase();
+    const codeRef = this.codeRef(joinCode);
+
+    try {
+      return await this.db.runTransaction<CreateGroupOutcome>(async (tx) => {
+        const codeSnap = await tx.get(codeRef);
+        if (codeSnap.exists) return { status: 'CODE_TAKEN' as const };
+
+        const doc: GroupDoc = {
+          ...group,
+          joinCode,
+          id: groupRef.id,
+          seats: this.emptySeats(),
+          createdAt: Date.now(),
+          archivedAt: null,
+        };
+        // `create`, not `set`: if another transaction claimed this code between
+        // the read and the commit, this throws rather than stealing it.
+        tx.create(codeRef, { groupId: doc.id, joinCode });
+        tx.set(groupRef, doc);
+        return { status: 'CREATED' as const, group: doc };
+      });
+    } catch (error) {
+      if (isAlreadyExists(error)) return { status: 'CODE_TAKEN' };
+      throw error;
+    }
+  }
+
+  async regenerateJoinCode(groupId: string, joinCode: string): Promise<CreateGroupOutcome> {
+    const groupRef = this.groupRef(groupId);
+    const next = joinCode.trim().toUpperCase();
+    const nextRef = this.codeRef(next);
+
+    try {
+      return await this.db.runTransaction<CreateGroupOutcome>(async (tx) => {
+        const [groupSnap, nextSnap] = await Promise.all([tx.get(groupRef), tx.get(nextRef)]);
+        if (!groupSnap.exists) throw new Error(`Group ${groupId} not found`);
+
+        const group = groupSnap.data() as GroupDoc;
+        const holder = nextSnap.exists ? (nextSnap.data() as { groupId: string }) : null;
+        if (holder && holder.groupId !== groupId) return { status: 'CODE_TAKEN' as const };
+
+        const updated: GroupDoc = { ...group, joinCode: next };
+        tx.delete(this.codeRef(group.joinCode));
+        tx.set(nextRef, { groupId, joinCode: next });
+        tx.set(groupRef, updated);
+        return { status: 'CREATED' as const, group: updated };
+      });
+    } catch (error) {
+      if (isAlreadyExists(error)) return { status: 'CODE_TAKEN' };
+      throw error;
+    }
+  }
+
+  async get(groupId: string): Promise<GroupDoc | null> {
+    const snap = await this.groupRef(groupId).get();
+    return snap.exists ? (snap.data() as GroupDoc) : null;
+  }
+
+  async getByJoinCode(joinCode: string): Promise<GroupDoc | null> {
+    const snap = await this.codeRef(joinCode).get();
+    if (!snap.exists) return null;
+    return this.get((snap.data() as { groupId: string }).groupId);
+  }
+
+  async listByAssignment(assignmentId: string): Promise<GroupDoc[]> {
+    const snap = await this.db
+      .collection(COLLECTIONS.groups)
+      .where('assignmentId', '==', assignmentId)
+      .get();
+    // Sorted in memory: an equality filter plus an orderBy on another field
+    // would need a composite index for no gain at class scale.
+    return snap.docs
+      .map((d) => d.data() as GroupDoc)
+      .sort((a, b) => a.createdAt - b.createdAt || a.name.localeCompare(b.name));
+  }
+
+  async update(groupId: string, patch: { name?: string }): Promise<void> {
+    if (!patch.name) return;
+    await this.groupRef(groupId).update({ name: patch.name });
+  }
+
+  async setArchived(groupId: string, at: number | null): Promise<void> {
+    await this.groupRef(groupId).update({ archivedAt: at });
+  }
+
+  /** See the contract in `types.ts`: the seat is taken here, in a transaction. */
+  async claimSeat(input: {
+    groupId: string;
+    uid: string;
+    companyName: string;
+    productName: string;
+    positioning: GroupMemberDoc['positioning'];
+    displayName: string;
+    email: string;
+    studentCode: string | null;
+  }): Promise<ClaimSeatOutcome> {
+    const groupRef = this.groupRef(input.groupId);
+    const memberRef = this.memberRef(input.groupId, input.uid);
+
+    return this.db.runTransaction<ClaimSeatOutcome>(async (tx) => {
+      const groupSnap = await tx.get(groupRef);
+      if (!groupSnap.exists) throw new Error(`Group ${input.groupId} not found`);
+      const group = groupSnap.data() as GroupDoc;
+
+      // Every read before every write — a Firestore transaction requires it.
+      const claimRef = this.seatClaimRef(group.assignmentId, input.uid);
+      const [memberSnap, claimSnap] = await Promise.all([tx.get(memberRef), tx.get(claimRef)]);
+
+      if (memberSnap.exists) {
+        const existing = memberSnap.data() as GroupMemberDoc;
+        if (!hasLeftGroup(existing)) {
+          return { status: 'ALREADY_IN_THIS_GROUP' as const, member: existing, group };
+        }
+      }
+
+      if (claimSnap.exists) {
+        const claim = claimSnap.data() as { groupId: string };
+        if (claim.groupId !== group.id) {
+          return { status: 'IN_ANOTHER_GROUP' as const, groupId: claim.groupId };
+        }
+      }
+
+      if (isArchived(group)) return { status: 'GROUP_CLOSED' as const };
+
+      const seatKey = ARENA_SEATS.find((seat) => group.seats[seat] == null);
+      if (!seatKey) return { status: 'GROUP_FULL' as const };
+
+      const member: GroupMemberDoc = {
+        uid: input.uid,
+        groupId: group.id,
+        assignmentId: group.assignmentId,
+        seatKey,
+        companyName: input.companyName,
+        productName: input.productName,
+        positioning: input.positioning,
+        displayName: input.displayName,
+        email: input.email,
+        studentCode: input.studentCode,
+        joinedAt: Date.now(),
+        leftAt: null,
+      };
+      const updated: GroupDoc = {
+        ...group,
+        seats: { ...group.seats, [seatKey]: input.uid },
+      };
+
+      tx.set(groupRef, updated);
+      tx.set(memberRef, member);
+      tx.set(claimRef, { groupId: group.id, uid: input.uid, seatKey });
+
+      return { status: 'CLAIMED' as const, member, group: updated };
+    });
+  }
+
+  async releaseSeat(groupId: string, uid: string): Promise<void> {
+    const groupRef = this.groupRef(groupId);
+    const memberRef = this.memberRef(groupId, uid);
+
+    await this.db.runTransaction(async (tx) => {
+      const [groupSnap, memberSnap] = await Promise.all([tx.get(groupRef), tx.get(memberRef)]);
+      if (!groupSnap.exists || !memberSnap.exists) return;
+
+      const group = groupSnap.data() as GroupDoc;
+      const member = memberSnap.data() as GroupMemberDoc;
+
+      tx.set(groupRef, { ...group, seats: { ...group.seats, [member.seatKey]: null } });
+      tx.set(memberRef, { ...member, leftAt: Date.now() });
+      tx.delete(this.seatClaimRef(group.assignmentId, uid));
+    });
+  }
+
+  async listMembers(groupId: string): Promise<GroupMemberDoc[]> {
+    const snap = await this.groupRef(groupId).collection(COLLECTIONS.groupMembers).get();
+    return snap.docs
+      .map((d) => d.data() as GroupMemberDoc)
+      .sort((a, b) => ARENA_SEATS.indexOf(a.seatKey) - ARENA_SEATS.indexOf(b.seatKey));
+  }
+
+  async getMember(groupId: string, uid: string): Promise<GroupMemberDoc | null> {
+    const snap = await this.memberRef(groupId, uid).get();
+    return snap.exists ? (snap.data() as GroupMemberDoc) : null;
+  }
+
+  async findMembership(assignmentId: string, uid: string): Promise<GroupMemberDoc | null> {
+    const snap = await this.seatClaimRef(assignmentId, uid).get();
+    if (!snap.exists) return null;
+    return this.getMember((snap.data() as { groupId: string }).groupId, uid);
+  }
+}
+
+class FirestoreGroupGameRepository implements GroupGameRepository {
+  constructor(private readonly db: Firestore) {}
+
+  /** The group id IS the document id — see `GroupGameDoc`. */
+  private gameRef(groupId: string) {
+    return this.db.collection(COLLECTIONS.groupGames).doc(groupId);
+  }
+
+  private quarterRef(groupId: string, quarter: number) {
+    return this.gameRef(groupId).collection(COLLECTIONS.quarters).doc(String(quarter));
+  }
+
+  private submissionRef(groupId: string, quarter: number, seatKey: string) {
+    return this.gameRef(groupId)
+      .collection(COLLECTIONS.groupSubmissions)
+      .doc(`q${quarter}_${seatKey}`);
+  }
+
+  async create(game: Omit<GroupGameDoc, 'id'>): Promise<GroupGameDoc> {
+    const ref = this.gameRef(game.groupId);
+
+    return this.db.runTransaction<GroupGameDoc>(async (tx) => {
+      const snap = await tx.get(ref);
+      // Keyed by group, so a second concurrent start returns the match that is
+      // already running rather than replacing it with a fresh one — which would
+      // wipe the quarters already played.
+      if (snap.exists) return snap.data() as GroupGameDoc;
+
+      const doc: GroupGameDoc = { ...game, id: game.groupId };
+      tx.set(ref, doc);
+      return doc;
+    });
+  }
+
+  async get(groupId: string): Promise<GroupGameDoc | null> {
+    const snap = await this.gameRef(groupId).get();
+    return snap.exists ? (snap.data() as GroupGameDoc) : null;
+  }
+
+  async listByAssignment(assignmentId: string): Promise<GroupGameDoc[]> {
+    const snap = await this.db
+      .collection(COLLECTIONS.groupGames)
+      .where('assignmentId', '==', assignmentId)
+      .get();
+    return snap.docs
+      .map((d) => d.data() as GroupGameDoc)
+      .sort((a, b) => a.startedAt - b.startedAt);
+  }
+
+  async submitDecision(
+    groupId: string,
+    submission: Omit<GroupSubmissionDoc, 'submittedAt'>,
+  ): Promise<SubmitDecisionOutcome> {
+    const ref = this.submissionRef(groupId, submission.quarter, submission.seatKey);
+
+    return this.db.runTransaction<SubmitDecisionOutcome>(async (tx) => {
+      const snap = await tx.get(ref);
+      if (snap.exists) {
+        return { status: 'ALREADY_SUBMITTED', submission: snap.data() as GroupSubmissionDoc };
+      }
+
+      const doc: GroupSubmissionDoc = { ...submission, submittedAt: Date.now() };
+      tx.create(ref, doc);
+      return { status: 'SUBMITTED', submission: doc };
+    });
+  }
+
+  async listSubmissions(groupId: string, quarter: number): Promise<GroupSubmissionDoc[]> {
+    const snap = await this.gameRef(groupId)
+      .collection(COLLECTIONS.groupSubmissions)
+      .where('quarter', '==', quarter)
+      .get();
+    return snap.docs
+      .map((d) => d.data() as GroupSubmissionDoc)
+      .sort((a, b) => ARENA_SEATS.indexOf(a.seatKey) - ARENA_SEATS.indexOf(b.seatKey));
+  }
+
+  async getQuarter(groupId: string, quarter: number): Promise<QuarterDoc | null> {
+    const snap = await this.quarterRef(groupId, quarter).get();
+    return snap.exists ? (snap.data() as QuarterDoc) : null;
+  }
+
+  async listQuarters(groupId: string): Promise<QuarterDoc[]> {
+    const snap = await this.gameRef(groupId).collection(COLLECTIONS.quarters).get();
+    return snap.docs
+      .map((d) => d.data() as QuarterDoc)
+      .sort((a, b) => a.quarter - b.quarter);
+  }
+
+  async saveQuarter(
+    groupId: string,
+    quarter: QuarterDoc,
+    nextCompanies: GroupGameDoc['companies'],
+  ): Promise<SaveGroupQuarterOutcome> {
+    const gameRef = this.gameRef(groupId);
+    const quarterRef = this.quarterRef(groupId, quarter.quarter);
+
+    return this.db.runTransaction<SaveGroupQuarterOutcome>(async (tx) => {
+      const [gameSnap, quarterSnap] = await Promise.all([tx.get(gameRef), tx.get(quarterRef)]);
+      if (!gameSnap.exists) throw new Error(`Group game ${groupId} not found`);
+      const game = gameSnap.data() as GroupGameDoc;
+
+      if (quarterSnap.exists) {
+        return {
+          status: 'ALREADY_EXISTS',
+          quarter: quarterSnap.data() as QuarterDoc,
+          game,
+        };
+      }
+
+      const updated: GroupGameDoc = {
+        ...game,
+        companies: nextCompanies,
+        currentRound: Math.max(game.currentRound, quarter.quarter),
+      };
+
+      tx.create(quarterRef, quarter);
+      tx.set(gameRef, updated);
+
+      return { status: 'SAVED', quarter, game: updated };
+    });
+  }
+
+  async complete(groupId: string, completedAt: number): Promise<void> {
+    await this.gameRef(groupId).update({ status: 'COMPLETED', completedAt });
+  }
+}
+
 export function getRepositories(): Repositories {
   if (cachedRepositories) return cachedRepositories;
   const db = getDb();
@@ -757,6 +1149,8 @@ export function getRepositories(): Repositories {
     sessions: new FirestoreSessionRepository(db),
     finalResults: new FirestoreFinalResultRepository(db),
     roleInvites: new FirestoreRoleInviteRepository(db),
+    groups: new FirestoreGroupRepository(db),
+    groupGames: new FirestoreGroupGameRepository(db),
   };
   return cachedRepositories;
 }
