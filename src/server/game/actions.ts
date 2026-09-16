@@ -6,6 +6,7 @@ import { POSITIONINGS, getGameConfig } from '@/domain/simulation';
 import { getRepositories } from '@/db/repositories/firestore';
 import { AuthorizationError, requireUser } from '@/server/auth/session';
 import { GameError, type GameErrorKey } from './errors';
+import { createEnrollmentService } from './enrollment';
 import { createGameService } from './service';
 
 /**
@@ -126,6 +127,62 @@ export async function finalizeSessionAction(
     await service.finalize(parsed.sessionId, user.uid);
     revalidatePath(`/report/${parsed.sessionId}`);
     return { ok: true, data: { sessionId: parsed.sessionId } };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+// --- class enrolment -------------------------------------------------------
+
+const joinCourseSchema = z.object({
+  courseId: z.string().min(1),
+  studentCode: z.string().trim().min(1).max(40),
+});
+
+/**
+ * Joins the signed-in student to a class they picked from the open list.
+ *
+ * Every condition is re-checked on the server. The browser was shown a list of
+ * open courses, but that list is a snapshot: the course may have closed or been
+ * archived since, and the student code may have been taken in between.
+ */
+export async function joinCourseAction(
+  input: z.input<typeof joinCourseSchema>,
+): Promise<ActionResult<{ courseId: string }>> {
+  try {
+    const user = await requireUser();
+    const parsed = joinCourseSchema.parse(input);
+
+    const course = await createEnrollmentService(getRepositories()).join({
+      uid: user.uid,
+      displayName: user.displayName,
+      email: user.email,
+      courseId: parsed.courseId,
+      studentCode: parsed.studentCode,
+    });
+
+    revalidatePath('/home');
+    revalidatePath('/join');
+    return { ok: true, data: { courseId: course.id } };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+const leaveCourseSchema = z.object({ courseId: z.string().min(1) });
+
+export async function leaveCourseAction(
+  input: z.input<typeof leaveCourseSchema>,
+): Promise<ActionResult<Record<string, never>>> {
+  try {
+    const user = await requireUser();
+    const parsed = leaveCourseSchema.parse(input);
+
+    await createEnrollmentService(getRepositories()).leave(user.uid, parsed.courseId);
+
+    revalidatePath('/home');
+    revalidatePath('/join');
+    return { ok: true, data: {} };
   } catch (error) {
     return { ok: false, error: toError(error) };
   }

@@ -311,6 +311,25 @@ export const en: Dictionary = {
       'Configuration is read-only in V1. Changing coefficients requires a new engine version so completed games stay valid.',
     cannotDemoteSelf: 'You cannot change your own role',
   },
+  enroll: {
+    title: 'Join a class',
+    subtitle: 'Pick your class, enter your student number, then start playing.',
+    myCourses: 'My classes',
+    noCourses: 'You have not joined a class yet.',
+    browse: 'Find a class to join',
+    available: 'Classes open for enrolment',
+    noneOpen: 'No class is open for enrolment right now. Ask your instructor to open it.',
+    instructor: 'Instructor',
+    studentCodeLabel: 'Your student number for this class',
+    studentCodePlaceholder: 'e.g. 2251012345',
+    studentCodeHint:
+      'This is what matches your grade to the class register. If it is wrong, ask your instructor to correct it.',
+    join: 'Join class',
+    joining: 'Joining…',
+    leave: 'Leave class',
+    leaveHint: 'You can only leave while you have not started an official assignment for it.',
+    archivedCourse: 'Archived class',
+  },
   simTest: {
     title: 'Internal simulation test',
     subtitle:
@@ -408,6 +427,12 @@ export const en: Dictionary = {
     steady: '{company} kept the same strategy as last quarter.',
   },
   errors: {
+    courseNotFound: 'Course not found',
+    enrollmentClosed: 'This class is not open for enrolment',
+    alreadyEnrolled: 'You are already in this class',
+    studentCodeTaken: 'That student number is already used in this class. Check yours.',
+    cannotLeaveAfterStarting:
+      'You have started an official assignment for this class, so you cannot leave it yourself. Ask your instructor.',
     sessionNotFound: 'Game session not found',
     memberNotFound: 'No user found with that email. The student must sign in at least once first.',
     cannotDemoteSelf: 'You cannot change your own role',

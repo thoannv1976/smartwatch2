@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { requireUserPage } from '@/server/auth/guards';
+import { getRepositories } from '@/db/repositories/firestore';
+import { createEnrollmentService } from '@/server/game/enrollment';
 import { listAssignmentsForStudent, listSessionsForStudent } from '@/server/game/queries';
 import { getTranslations } from '@/i18n/server';
 import {
@@ -27,9 +29,10 @@ export default async function HomePage({
   const { t, locale } = await getTranslations();
   const params = await searchParams;
 
-  const [assignments, sessions] = await Promise.all([
+  const [assignments, sessions, enrolled] = await Promise.all([
     listAssignmentsForStudent(user.uid),
     listSessionsForStudent(user.uid),
+    createEnrollmentService(getRepositories()).listEnrolled(user.uid),
   ]);
 
   return (
@@ -42,7 +45,17 @@ export default async function HomePage({
       <Card>
         <CardTitle hint={t.home.officialDesc}>{t.home.officialTitle}</CardTitle>
         {assignments.length === 0 ? (
-          <EmptyState>{t.home.officialNone}</EmptyState>
+          <div className="flex flex-col items-start gap-3">
+            <EmptyState>
+              {enrolled.length === 0 ? t.enroll.noCourses : t.home.officialNone}
+            </EmptyState>
+            <Link
+              href="/join"
+              className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-ink-950 transition hover:bg-brand-400"
+            >
+              {t.enroll.browse}
+            </Link>
+          </div>
         ) : (
           <ul className="flex flex-col gap-3">
             {assignments.map(
@@ -109,6 +122,42 @@ export default async function HomePage({
                 </li>
               ),
             )}
+          </ul>
+        )}
+      </Card>
+
+      <Card>
+        <CardTitle
+          right={
+            <Link
+              href="/join"
+              className="rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-xs font-semibold text-ink-100 transition hover:bg-ink-700"
+            >
+              {t.enroll.browse}
+            </Link>
+          }
+        >
+          {t.enroll.myCourses}
+        </CardTitle>
+        {enrolled.length === 0 ? (
+          <EmptyState>{t.enroll.noCourses}</EmptyState>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {enrolled.map((row) => (
+              <li
+                key={row.course.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-ink-700/60 bg-ink-900/50 px-4 py-3"
+              >
+                <span className="text-sm font-medium text-ink-100">
+                  {row.course.courseName}{' '}
+                  {row.archived ? <Badge tone="warn">{t.enroll.archivedCourse}</Badge> : null}
+                </span>
+                <span className="text-xs text-ink-400">
+                  {row.course.semester} ·{' '}
+                  <span className="font-mono">{row.studentCode}</span>
+                </span>
+              </li>
+            ))}
           </ul>
         )}
       </Card>

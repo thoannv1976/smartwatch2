@@ -311,6 +311,25 @@ export const vi = {
       'Cấu hình chỉ đọc trong V1. Muốn đổi hệ số phải tạo phiên bản engine mới để không ảnh hưởng game đã hoàn thành.',
     cannotDemoteSelf: 'Bạn không thể tự hạ quyền của chính mình',
   },
+  enroll: {
+    title: 'Tham gia lớp học',
+    subtitle: 'Chọn lớp của bạn, nhập mã sinh viên, rồi bắt đầu chơi.',
+    myCourses: 'Lớp của tôi',
+    noCourses: 'Bạn chưa tham gia lớp nào.',
+    browse: 'Tìm lớp để tham gia',
+    available: 'Các lớp đang mở ghi danh',
+    noneOpen: 'Hiện chưa có lớp nào mở ghi danh. Hãy hỏi giảng viên xem lớp đã được mở chưa.',
+    instructor: 'Giảng viên',
+    studentCodeLabel: 'Mã sinh viên của bạn trong lớp này',
+    studentCodePlaceholder: 'Ví dụ: 2251012345',
+    studentCodeHint:
+      'Mã này dùng để đối chiếu điểm với danh sách lớp. Nhập sai thì báo giảng viên sửa giúp.',
+    join: 'Tham gia lớp',
+    joining: 'Đang tham gia…',
+    leave: 'Rời lớp',
+    leaveHint: 'Chỉ rời được khi bạn chưa bắt đầu bài tập chính thức nào của lớp.',
+    archivedCourse: 'Lớp đã lưu trữ',
+  },
   simTest: {
     title: 'Chế độ kiểm thử mô phỏng',
     subtitle:
@@ -407,6 +426,12 @@ export const vi = {
     steady: '{company} giữ nguyên chiến lược như quý trước.',
   },
   errors: {
+    courseNotFound: 'Không tìm thấy lớp học',
+    enrollmentClosed: 'Lớp này hiện không mở ghi danh',
+    alreadyEnrolled: 'Bạn đã ở trong lớp này rồi',
+    studentCodeTaken: 'Mã sinh viên này đã có người dùng trong lớp. Kiểm tra lại mã của bạn.',
+    cannotLeaveAfterStarting:
+      'Bạn đã bắt đầu bài tập chính thức của lớp này nên không tự rời được. Hãy liên hệ giảng viên.',
     sessionNotFound: 'Không tìm thấy lượt chơi',
     memberNotFound: 'Không tìm thấy người dùng với email này. Sinh viên cần đăng nhập ít nhất 1 lần.',
     cannotDemoteSelf: 'Bạn không thể tự thay đổi vai trò của chính mình',
