@@ -10,13 +10,16 @@ import type {
   LeaderboardSort,
   QuarterDoc,
   Role,
+  RoleInviteDoc,
   UserDoc,
 } from '../models';
+import { activeOnly, isRemoved } from '../models';
 import type {
   AssignmentRepository,
   CourseRepository,
   FinalResultRepository,
   Repositories,
+  RoleInviteRepository,
   SaveQuarterOutcome,
   SessionRepository,
   UserRepository,
@@ -51,6 +54,19 @@ import type {
  *   gameSessions userId == AND assignmentId == (count) declared composite
  *   finalResults assignmentId == + orderBy <5 columns> declared composite x5
  *   finalResults userId ==                             automatic single-field
+ *   courses    enrollmentOpen ==                       automatic single-field
+ *   roleInvites by document id                         none needed
+ *
+ * ARCHIVING IS NEVER A FIRESTORE FILTER. `archivedAt`, `enrollmentOpen` on an
+ * old document and `removedAt` are all ABSENT from every document written
+ * before those fields existed, and Firestore excludes a document that lacks a
+ * field from any query filtering or ordering on it — silently, with no error.
+ * `where('archivedAt','==',null)` would therefore hide the entire live
+ * database. Every archive test is applied IN MEMORY, via `isArchived` /
+ * `isRemoved` in models.ts, after the documents come back. At class scale
+ * (tens of courses, hundreds of members) this costs nothing, it is correct for
+ * legacy documents with no backfill, and it adds no index that could be
+ * missing in production.
  *
  * Two rules worth remembering:
  *  - automatic single-field indexes are COLLECTION scope only, so any
@@ -72,6 +88,12 @@ export const COLLECTIONS = {
   // One document per claimed official attempt, id `${assignmentId}_${uid}_${n}`.
   // Only ever read or written by document id, so it needs no index.
   attemptClaims: 'attemptClaims',
+  // Role granted to an email before first sign-in, id = lowercased email.
+  roleInvites: 'roleInvites',
+  // Subcollection of a course: one document per taken student code, id = the
+  // code. Makes "this code is already used in this course" a datastore
+  // constraint rather than a read-then-write check.
+  studentCodes: 'studentCodes',
 } as const;
 
 /**
@@ -141,6 +163,14 @@ class FirestoreUserRepository implements UserRepository {
     await this.db.collection(COLLECTIONS.users).doc(uid).update({ role });
   }
 
+  async setArchived(uid: string, at: number | null): Promise<void> {
+    // A literal null, never undefined: the Admin SDK is configured with
+    // ignoreUndefinedProperties, so writing undefined would drop the field and
+    // make the document indistinguishable from one written before archiving
+    // existed.
+    await this.db.collection(COLLECTIONS.users).doc(uid).update({ archivedAt: at });
+  }
+
   async list(limit = 200): Promise<UserDoc[]> {
     const snap = await this.db
       .collection(COLLECTIONS.users)
@@ -163,9 +193,40 @@ class FirestoreCourseRepository implements CourseRepository {
 
   async create(course: Omit<CourseDoc, 'id' | 'createdAt'>): Promise<CourseDoc> {
     const ref = this.db.collection(COLLECTIONS.courses).doc();
-    const doc: CourseDoc = { ...course, id: ref.id, createdAt: Date.now() };
+    const doc: CourseDoc = {
+      ...course,
+      id: ref.id,
+      createdAt: Date.now(),
+      enrollmentOpen: course.enrollmentOpen ?? false,
+      archivedAt: null,
+    };
     await ref.set(doc);
     return doc;
+  }
+
+  async update(
+    courseId: string,
+    patch: Partial<Pick<CourseDoc, 'courseName' | 'semester' | 'enrollmentOpen' | 'instructorId'>>,
+  ): Promise<void> {
+    if (Object.keys(patch).length === 0) return;
+    await this.db.collection(COLLECTIONS.courses).doc(courseId).update(patch);
+  }
+
+  async setArchived(courseId: string, at: number | null): Promise<void> {
+    await this.db.collection(COLLECTIONS.courses).doc(courseId).update({ archivedAt: at });
+  }
+
+  async listOpenForEnrollment(): Promise<CourseDoc[]> {
+    // `enrollmentOpen` is the ONLY datastore filter. The archived test runs in
+    // memory below, because a course created before `archivedAt` existed has no
+    // such field and would be excluded from any query mentioning it.
+    const snap = await this.db
+      .collection(COLLECTIONS.courses)
+      .where('enrollmentOpen', '==', true)
+      .get();
+    return activeOnly(snap.docs.map((d) => d.data() as CourseDoc)).sort((a, b) =>
+      a.courseName.localeCompare(b.courseName),
+    );
   }
 
   async listByInstructor(instructorId: string): Promise<CourseDoc[]> {
@@ -192,6 +253,88 @@ class FirestoreCourseRepository implements CourseRepository {
       .doc(member.uid)
       .set(doc);
     return doc;
+  }
+
+  private memberRef(courseId: string, uid: string) {
+    return this.db
+      .collection(COLLECTIONS.courses)
+      .doc(courseId)
+      .collection(COLLECTIONS.courseMembers)
+      .doc(uid);
+  }
+
+  /** Claim document for one student code inside one course. */
+  private codeRef(courseId: string, studentCode: string) {
+    return this.db
+      .collection(COLLECTIONS.courses)
+      .doc(courseId)
+      .collection(COLLECTIONS.studentCodes)
+      .doc(encodeURIComponent(studentCode.trim()));
+  }
+
+  async selfEnroll(
+    member: Omit<CourseMemberDoc, 'joinedAt' | 'removedAt'>,
+  ): Promise<
+    { status: 'JOINED'; member: CourseMemberDoc } | { status: 'ALREADY_MEMBER' | 'CODE_TAKEN' }
+  > {
+    const memberRef = this.memberRef(member.courseId, member.uid);
+    const codeRef = this.codeRef(member.courseId, member.studentCode);
+
+    return this.db.runTransaction(async (tx) => {
+      // Every read before every write — a Firestore transaction requires it.
+      const [memberSnap, codeSnap] = await Promise.all([tx.get(memberRef), tx.get(codeRef)]);
+
+      if (memberSnap.exists) {
+        const existing = memberSnap.data() as CourseMemberDoc;
+        if (!isRemoved(existing)) return { status: 'ALREADY_MEMBER' as const };
+
+        // Rejoining keeps the ORIGINAL student code, ignoring whatever was
+        // typed this time. That code may already be baked into a FinalResultDoc
+        // from an earlier attempt, and two different codes for one person in
+        // one export is exactly what breaks an instructor's grade import.
+        const restored: CourseMemberDoc = { ...existing, removedAt: null };
+        tx.set(memberRef, restored);
+        return { status: 'JOINED' as const, member: restored };
+      }
+
+      const claim = codeSnap.exists ? (codeSnap.data() as { uid: string }) : null;
+      if (claim && claim.uid !== member.uid) return { status: 'CODE_TAKEN' as const };
+
+      const doc: CourseMemberDoc = { ...member, joinedAt: Date.now(), removedAt: null };
+      tx.set(memberRef, doc);
+      tx.set(codeRef, { uid: member.uid, studentCode: member.studentCode });
+      return { status: 'JOINED' as const, member: doc };
+    });
+  }
+
+  async updateMember(
+    courseId: string,
+    uid: string,
+    patch: { studentCode: string },
+  ): Promise<{ ok: true } | { ok: false; reason: 'CODE_TAKEN' | 'NOT_A_MEMBER' }> {
+    const memberRef = this.memberRef(courseId, uid);
+    const nextRef = this.codeRef(courseId, patch.studentCode);
+
+    return this.db.runTransaction(async (tx) => {
+      const [memberSnap, nextSnap] = await Promise.all([tx.get(memberRef), tx.get(nextRef)]);
+      if (!memberSnap.exists) return { ok: false as const, reason: 'NOT_A_MEMBER' as const };
+
+      const member = memberSnap.data() as CourseMemberDoc;
+      if (member.studentCode === patch.studentCode) return { ok: true as const };
+
+      const claim = nextSnap.exists ? (nextSnap.data() as { uid: string }) : null;
+      if (claim && claim.uid !== uid) return { ok: false as const, reason: 'CODE_TAKEN' as const };
+
+      // Release the old claim so the code becomes available again.
+      tx.delete(this.codeRef(courseId, member.studentCode));
+      tx.set(nextRef, { uid, studentCode: patch.studentCode });
+      tx.set(memberRef, { ...member, studentCode: patch.studentCode });
+      return { ok: true as const };
+    });
+  }
+
+  async setMemberRemoved(courseId: string, uid: string, at: number | null): Promise<void> {
+    await this.memberRef(courseId, uid).update({ removedAt: at });
   }
 
   async removeMember(courseId: string, uid: string): Promise<void> {
@@ -263,9 +406,18 @@ class FirestoreAssignmentRepository implements AssignmentRepository {
     return snap.exists ? (snap.data() as AssignmentDoc) : null;
   }
 
+  async setArchived(assignmentId: string, at: number | null): Promise<void> {
+    await this.db.collection(COLLECTIONS.assignments).doc(assignmentId).update({ archivedAt: at });
+  }
+
   async create(assignment: Omit<AssignmentDoc, 'id' | 'createdAt'>): Promise<AssignmentDoc> {
     const ref = this.db.collection(COLLECTIONS.assignments).doc();
-    const doc: AssignmentDoc = { ...assignment, id: ref.id, createdAt: Date.now() };
+    const doc: AssignmentDoc = {
+      ...assignment,
+      id: ref.id,
+      createdAt: Date.now(),
+      archivedAt: null,
+    };
     await ref.set(doc);
     return doc;
   }
@@ -501,6 +653,69 @@ class FirestoreFinalResultRepository implements FinalResultRepository {
 let cachedRepositories: Repositories | null = null;
 
 /** The production repository set, backed by Firestore. */
+// --- role invites ----------------------------------------------------------
+
+/** Firestore document ids may not contain "/", be "." or ".." or exceed 1500 bytes. */
+export function isUsableInviteId(email: string): boolean {
+  const id = email.trim().toLowerCase();
+  if (!id || id === '.' || id === '..') return false;
+  if (id.includes('/')) return false;
+  return Buffer.byteLength(id, 'utf8') <= 1500;
+}
+
+class FirestoreRoleInviteRepository implements RoleInviteRepository {
+  constructor(private readonly db: Firestore) {}
+
+  private ref(email: string) {
+    return this.db.collection(COLLECTIONS.roleInvites).doc(email.trim().toLowerCase());
+  }
+
+  async get(email: string): Promise<RoleInviteDoc | null> {
+    const snap = await this.ref(email).get();
+    return snap.exists ? (snap.data() as RoleInviteDoc) : null;
+  }
+
+  async list(limit = 200): Promise<RoleInviteDoc[]> {
+    const snap = await this.db
+      .collection(COLLECTIONS.roleInvites)
+      .orderBy('createdAt', 'desc')
+      .limit(limit)
+      .get();
+    return snap.docs.map((d) => d.data() as RoleInviteDoc);
+  }
+
+  async put(invite: Omit<RoleInviteDoc, 'claimedAt' | 'claimedUid'>): Promise<void> {
+    const doc: RoleInviteDoc = {
+      ...invite,
+      email: invite.email.trim().toLowerCase(),
+      claimedAt: null,
+      claimedUid: null,
+    };
+    await this.ref(doc.email).set(doc);
+  }
+
+  async remove(email: string): Promise<void> {
+    await this.ref(email).delete();
+  }
+
+  async claim(email: string, uid: string): Promise<Role | null> {
+    const ref = this.ref(email);
+    return this.db.runTransaction(async (tx) => {
+      const snap = await tx.get(ref);
+      if (!snap.exists) return null;
+
+      const invite = snap.data() as RoleInviteDoc;
+      // An already-claimed invite grants nothing. Without this, an admin who
+      // later demotes the person would see them re-promoted on their next
+      // sign-in, silently undoing the demotion.
+      if (invite.claimedAt !== null) return null;
+
+      tx.set(ref, { ...invite, claimedAt: Date.now(), claimedUid: uid });
+      return invite.role;
+    });
+  }
+}
+
 export function getRepositories(): Repositories {
   if (cachedRepositories) return cachedRepositories;
   const db = getDb();
@@ -510,6 +725,7 @@ export function getRepositories(): Repositories {
     assignments: new FirestoreAssignmentRepository(db),
     sessions: new FirestoreSessionRepository(db),
     finalResults: new FirestoreFinalResultRepository(db),
+    roleInvites: new FirestoreRoleInviteRepository(db),
   };
   return cachedRepositories;
 }

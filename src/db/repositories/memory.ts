@@ -7,13 +7,16 @@ import type {
   LeaderboardSort,
   QuarterDoc,
   Role,
+  RoleInviteDoc,
   UserDoc,
 } from '../models';
+import { activeOnly, isRemoved } from '../models';
 import type {
   AssignmentRepository,
   CourseRepository,
   FinalResultRepository,
   Repositories,
+  RoleInviteRepository,
   SaveQuarterOutcome,
   SessionRepository,
   UserRepository,
@@ -70,6 +73,12 @@ class MemoryUserRepository implements UserRepository {
     this.users.set(uid, { ...user, role });
   }
 
+  async setArchived(uid: string, at: number | null): Promise<void> {
+    const user = this.users.get(uid);
+    if (!user) throw new Error(`User ${uid} not found`);
+    this.users.set(uid, { ...user, archivedAt: at });
+  }
+
   async list(limit = 200): Promise<UserDoc[]> {
     return [...this.users.values()]
       .sort((a, b) => b.createdAt - a.createdAt)
@@ -81,6 +90,8 @@ class MemoryUserRepository implements UserRepository {
 class MemoryCourseRepository implements CourseRepository {
   private readonly courses = new Map<string, CourseDoc>();
   private readonly members = new Map<string, Map<string, CourseMemberDoc>>();
+  /** courseId -> studentCode -> uid. Mirrors the Firestore claim subcollection. */
+  private readonly codeClaims = new Map<string, Map<string, string>>();
   private nextId = 1;
 
   async get(courseId: string): Promise<CourseDoc | null> {
@@ -89,9 +100,96 @@ class MemoryCourseRepository implements CourseRepository {
   }
 
   async create(course: Omit<CourseDoc, 'id' | 'createdAt'>): Promise<CourseDoc> {
-    const doc: CourseDoc = { ...course, id: `course-${this.nextId++}`, createdAt: Date.now() };
+    const doc: CourseDoc = {
+      ...course,
+      id: `course-${this.nextId++}`,
+      createdAt: Date.now(),
+      enrollmentOpen: course.enrollmentOpen ?? false,
+      archivedAt: null,
+    };
     this.courses.set(doc.id, doc);
     return clone(doc);
+  }
+
+  async update(
+    courseId: string,
+    patch: Partial<Pick<CourseDoc, 'courseName' | 'semester' | 'enrollmentOpen' | 'instructorId'>>,
+  ): Promise<void> {
+    const existing = this.courses.get(courseId);
+    if (!existing) throw new Error(`Course ${courseId} not found`);
+    this.courses.set(courseId, { ...existing, ...patch });
+  }
+
+  async setArchived(courseId: string, at: number | null): Promise<void> {
+    const existing = this.courses.get(courseId);
+    if (!existing) throw new Error(`Course ${courseId} not found`);
+    this.courses.set(courseId, { ...existing, archivedAt: at });
+  }
+
+  async listOpenForEnrollment(): Promise<CourseDoc[]> {
+    return activeOnly([...this.courses.values()].filter((c) => c.enrollmentOpen === true))
+      .sort((a, b) => a.courseName.localeCompare(b.courseName))
+      .map(clone);
+  }
+
+  async selfEnroll(
+    member: Omit<CourseMemberDoc, 'joinedAt' | 'removedAt'>,
+  ): Promise<
+    { status: 'JOINED'; member: CourseMemberDoc } | { status: 'ALREADY_MEMBER' | 'CODE_TAKEN' }
+  > {
+    // No await anywhere between the checks and the writes. The Firestore
+    // version gets this from a transaction; here it comes from staying
+    // synchronous, and losing that is how a concurrency test passes while
+    // production races — the mistake already made once with attempt claims.
+    const bucket = this.members.get(member.courseId) ?? new Map<string, CourseMemberDoc>();
+    const claims = this.codeClaims.get(member.courseId) ?? new Map<string, string>();
+
+    const existing = bucket.get(member.uid);
+    if (existing) {
+      if (!isRemoved(existing)) return { status: 'ALREADY_MEMBER' };
+      // Rejoining keeps the original code — it may already be in a graded row.
+      const restored: CourseMemberDoc = { ...existing, removedAt: null };
+      bucket.set(member.uid, restored);
+      this.members.set(member.courseId, bucket);
+      return { status: 'JOINED', member: clone(restored) };
+    }
+
+    const owner = claims.get(member.studentCode);
+    if (owner !== undefined && owner !== member.uid) return { status: 'CODE_TAKEN' };
+
+    const doc: CourseMemberDoc = { ...member, joinedAt: Date.now(), removedAt: null };
+    bucket.set(member.uid, doc);
+    claims.set(member.studentCode, member.uid);
+    this.members.set(member.courseId, bucket);
+    this.codeClaims.set(member.courseId, claims);
+    return { status: 'JOINED', member: clone(doc) };
+  }
+
+  async updateMember(
+    courseId: string,
+    uid: string,
+    patch: { studentCode: string },
+  ): Promise<{ ok: true } | { ok: false; reason: 'CODE_TAKEN' | 'NOT_A_MEMBER' }> {
+    const bucket = this.members.get(courseId);
+    const member = bucket?.get(uid);
+    if (!bucket || !member) return { ok: false, reason: 'NOT_A_MEMBER' };
+    if (member.studentCode === patch.studentCode) return { ok: true };
+
+    const claims = this.codeClaims.get(courseId) ?? new Map<string, string>();
+    const owner = claims.get(patch.studentCode);
+    if (owner !== undefined && owner !== uid) return { ok: false, reason: 'CODE_TAKEN' };
+
+    claims.delete(member.studentCode);
+    claims.set(patch.studentCode, uid);
+    bucket.set(uid, { ...member, studentCode: patch.studentCode });
+    this.codeClaims.set(courseId, claims);
+    return { ok: true };
+  }
+
+  async setMemberRemoved(courseId: string, uid: string, at: number | null): Promise<void> {
+    const member = this.members.get(courseId)?.get(uid);
+    if (!member) throw new Error(`Member ${uid} not found in ${courseId}`);
+    this.members.get(courseId)!.set(uid, { ...member, removedAt: at });
   }
 
   async listByInstructor(instructorId: string): Promise<CourseDoc[]> {
@@ -153,11 +251,18 @@ class MemoryAssignmentRepository implements AssignmentRepository {
     return doc ? clone(doc) : null;
   }
 
+  async setArchived(assignmentId: string, at: number | null): Promise<void> {
+    const existing = this.assignments.get(assignmentId);
+    if (!existing) throw new Error(`Assignment ${assignmentId} not found`);
+    this.assignments.set(assignmentId, { ...existing, archivedAt: at });
+  }
+
   async create(assignment: Omit<AssignmentDoc, 'id' | 'createdAt'>): Promise<AssignmentDoc> {
     const doc: AssignmentDoc = {
       ...assignment,
       id: `assignment-${this.nextId++}`,
       createdAt: Date.now(),
+      archivedAt: null,
     };
     this.assignments.set(doc.id, doc);
     return clone(doc);
@@ -331,6 +436,51 @@ class MemoryFinalResultRepository implements FinalResultRepository {
   }
 }
 
+class MemoryRoleInviteRepository implements RoleInviteRepository {
+  private readonly invites = new Map<string, RoleInviteDoc>();
+
+  private key(email: string): string {
+    return email.trim().toLowerCase();
+  }
+
+  async get(email: string): Promise<RoleInviteDoc | null> {
+    const invite = this.invites.get(this.key(email));
+    return invite ? clone(invite) : null;
+  }
+
+  async list(limit = 200): Promise<RoleInviteDoc[]> {
+    return [...this.invites.values()]
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .slice(0, limit)
+      .map(clone);
+  }
+
+  async put(invite: Omit<RoleInviteDoc, 'claimedAt' | 'claimedUid'>): Promise<void> {
+    const doc: RoleInviteDoc = {
+      ...invite,
+      email: this.key(invite.email),
+      claimedAt: null,
+      claimedUid: null,
+    };
+    this.invites.set(doc.email, doc);
+  }
+
+  async remove(email: string): Promise<void> {
+    this.invites.delete(this.key(email));
+  }
+
+  async claim(email: string, uid: string): Promise<Role | null> {
+    // Synchronous check-and-mark, matching the Firestore transaction: two
+    // sign-ins arriving together must not both be granted the same invite.
+    const key = this.key(email);
+    const invite = this.invites.get(key);
+    if (!invite || invite.claimedAt !== null) return null;
+
+    this.invites.set(key, { ...invite, claimedAt: Date.now(), claimedUid: uid });
+    return invite.role;
+  }
+}
+
 /** A fresh, isolated repository set. One per test. */
 export function createMemoryRepositories(): Repositories {
   return {
@@ -339,5 +489,6 @@ export function createMemoryRepositories(): Repositories {
     assignments: new MemoryAssignmentRepository(),
     sessions: new MemorySessionRepository(),
     finalResults: new MemoryFinalResultRepository(),
+    roleInvites: new MemoryRoleInviteRepository(),
   };
 }

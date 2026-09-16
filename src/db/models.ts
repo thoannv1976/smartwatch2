@@ -33,7 +33,36 @@ export const ROLES: readonly Role[] = ['STUDENT', 'INSTRUCTOR', 'ADMIN'] as cons
 export type GameMode = 'PRACTICE' | 'OFFICIAL';
 export type SessionStatus = 'IN_PROGRESS' | 'COMPLETED';
 
-export interface UserDoc {
+/**
+ * Soft-delete marker, present on everything an administrator can remove.
+ *
+ * DELIBERATELY OPTIONAL. Documents written before this field existed simply do
+ * not have it, and Firestore cannot distinguish "missing" from any value: an
+ * equality query on the field skips those documents entirely, with no error.
+ * Typing it as required would let `doc.archivedAt === null` compile while
+ * evaluating false for every pre-existing row, quietly hiding the whole live
+ * database. The optional type forces callers through `isArchived`.
+ *
+ * `gameSessions`, `quarters` and `finalResults` deliberately do NOT carry it.
+ * A graded result is never hidden, never filtered and never deleted, so the
+ * absence of this field on those three collections is the invariant that makes
+ * "archiving cannot touch a grade" checkable by inspection.
+ */
+export interface Archivable {
+  archivedAt?: number | null;
+}
+
+/** The one place the archived test is written. Tolerant of the missing field. */
+export function isArchived(doc: Archivable): boolean {
+  return typeof doc.archivedAt === 'number';
+}
+
+/** Keeps only the live rows of a list, leaving legacy documents visible. */
+export function activeOnly<T extends Archivable>(docs: T[]): T[] {
+  return docs.filter((doc) => !isArchived(doc));
+}
+
+export interface UserDoc extends Archivable {
   uid: string;
   email: string;
   displayName: string;
@@ -42,14 +71,27 @@ export interface UserDoc {
   lastSeenAt: number;
 }
 
-export interface CourseDoc {
+export interface CourseDoc extends Archivable {
   id: string;
   courseName: string;
   semester: string;
   instructorId: string;
   createdAt: number;
+  /**
+   * Whether the course appears in the list students can join themselves.
+   * Also optional for the legacy reason above; absent means closed, so an
+   * existing course cannot start accepting strangers because of a deploy.
+   */
+  enrollmentOpen?: boolean;
 }
 
+/**
+ * A student on a course roster.
+ *
+ * `removedAt` rather than deletion: the instructor's participation view has to
+ * keep naming someone who played and then left, or it would disagree with the
+ * leaderboard, which reads graded results and never consults the roster.
+ */
 export interface CourseMemberDoc {
   uid: string;
   courseId: string;
@@ -57,9 +99,30 @@ export interface CourseMemberDoc {
   displayName: string;
   email: string;
   joinedAt: number;
+  removedAt?: number | null;
 }
 
-export interface AssignmentDoc {
+/** True for a roster row that has been removed from the course. */
+export function isRemoved(member: CourseMemberDoc): boolean {
+  return typeof member.removedAt === 'number';
+}
+
+/**
+ * A role granted to an email address before that person has ever signed in.
+ *
+ * Stored under the lowercased email as the document id, so a duplicate invite
+ * is impossible by construction rather than by a check.
+ */
+export interface RoleInviteDoc {
+  email: string;
+  role: Role;
+  createdBy: string;
+  createdAt: number;
+  claimedAt: number | null;
+  claimedUid: string | null;
+}
+
+export interface AssignmentDoc extends Archivable {
   id: string;
   courseId: string;
   title: string;
