@@ -59,7 +59,16 @@ export default async function HomePage({
         ) : (
           <ul className="flex flex-col gap-3">
             {assignments.map(
-              ({ assignment, course, attemptsUsed, inProgressSession, completedResult, blockedReason }) => (
+              ({
+                assignment,
+                course,
+                attemptsUsed,
+                inProgressSession,
+                completedResult,
+                blockedReason,
+                mode,
+                groupId,
+              }) => (
                 <li
                   key={assignment.id}
                   className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-ink-700/60 bg-ink-900/50 p-4"
@@ -68,8 +77,10 @@ export default async function HomePage({
                     <p className="font-semibold text-ink-100">{assignment.title}</p>
                     <p className="mt-0.5 text-xs text-ink-400">
                       {course.courseName} · {course.semester} · {t.home.deadline}:{' '}
-                      {formatDateOnly(assignment.deadline, locale)} · {t.home.attempts}:{' '}
-                      {attemptsUsed}/{assignment.maxAttempts}
+                      {formatDateOnly(assignment.deadline, locale)}
+                      {mode === 'GROUP'
+                        ? ` · ${t.group.title}`
+                        : ` · ${t.home.attempts}: ${attemptsUsed}/${assignment.maxAttempts}`}
                     </p>
                     <p className="mt-0.5 font-mono text-xs text-ink-500">
                       {assignment.scenarioVersion} · engine {assignment.engineVersion}
@@ -77,7 +88,26 @@ export default async function HomePage({
                   </div>
 
                   <div className="flex items-center gap-2">
-                    {completedResult ? (
+                    {/* A group assignment has one match rather than attempts, so
+                        it routes to the group instead of /new-game. */}
+                    {mode === 'GROUP' ? (
+                      blockedReason && !groupId ? (
+                        <Badge tone="warn">
+                          {blockedReason === 'archived'
+                            ? t.instructorAdmin.archived
+                            : blockedReason === 'notOpenYet'
+                              ? t.home.officialNotOpen
+                              : t.home.officialClosed}
+                        </Badge>
+                      ) : (
+                        <Link
+                          href={groupId ? `/group/${groupId}` : '/group/join'}
+                          className="rounded-md bg-brand-500 px-4 py-1.5 text-sm font-semibold text-ink-950 transition hover:bg-brand-400"
+                        >
+                          {groupId ? t.group.lobbyTitle : t.group.joinButton}
+                        </Link>
+                      )
+                    ) : completedResult ? (
                       <>
                         <Badge tone="good">
                           {t.home.finalScore}: {formatDecimal(completedResult.finalScore, locale, 2)}

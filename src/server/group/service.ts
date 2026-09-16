@@ -218,6 +218,12 @@ export class GroupService {
     return member && !hasLeftGroup(member) ? member : null;
   }
 
+  /** This student's seat in a specific group, or null if they do not hold one. */
+  async getMemberOf(groupId: string, uid: string): Promise<GroupMemberDoc | null> {
+    const member = await this.repos.groups.getMember(groupId, uid);
+    return member && !hasLeftGroup(member) ? member : null;
+  }
+
   /**
    * Everything the waiting room shows, including WHO the match is waiting on.
    *

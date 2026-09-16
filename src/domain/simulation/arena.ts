@@ -1,5 +1,5 @@
 import { ARENA_SCENARIO_VERSION, getGameConfig, type GameConfig } from './config';
-import { generateAllCompetitorDecisions } from './competitors';
+import { decisionIntelKey, generateAllCompetitorDecisions } from './competitors';
 import { simulateQuarter } from './engine';
 import { getMarketEvent } from './events';
 import { buildCompetitorContexts } from './game';
@@ -10,6 +10,7 @@ import type {
   CompanyKey,
   CompanyQuarterResult,
   CompanyState,
+  CompetitorIntel,
   CompetitorProfileKey,
   MarketEvent,
   QuarterDecision,
@@ -291,6 +292,47 @@ export function repeatForAllSeats(
     out[seat.seatKey] = Array.from({ length: config.quarters }, () => ({ ...decision }));
   }
   return out;
+}
+
+/**
+ * Competitor intelligence for ONE viewer: a qualitative line about each of the
+ * five rivals, and nothing about the viewer themselves.
+ *
+ * Built per viewer at read time and never stored, because in a group the five
+ * rivals are different for each of the six students — one stored list would
+ * show everyone the same thing, including a line about themselves.
+ *
+ * SAME RULE AS THE SOLO GAME, deliberately: a student learns exactly as much
+ * about a classmate as they would about a benchmark brand. Exact point
+ * allocations never leave the server (spec 7.3), and here that matters more,
+ * because the rival is a person sitting in the same room who is being marked
+ * against them.
+ */
+export function buildArenaIntel(
+  viewerSeat: CompanyKey,
+  decisions: Record<string, QuarterDecision>,
+  previousDecisions: Record<string, QuarterDecision> | null,
+  companies: { companyKey: CompanyKey; companyName: string }[],
+): CompetitorIntel[] {
+  const nameBySeat = new Map(companies.map((c) => [c.companyKey, c.companyName]));
+  const intel: CompetitorIntel[] = [];
+
+  for (const seatKey of ARENA_SEATS) {
+    if (seatKey === viewerSeat) continue;
+    const decision = decisions[seatKey];
+    if (!decision) continue;
+
+    intel.push({
+      companyKey: seatKey,
+      companyName: nameBySeat.get(seatKey) ?? seatKey,
+      // `steady` rather than an archetype signature: a classmate has no
+      // standing characteristic to report, and inventing one would describe a
+      // person rather than a decision.
+      key: decisionIntelKey(decision, previousDecisions?.[seatKey] ?? null, 'steady'),
+    });
+  }
+
+  return intel;
 }
 
 /** Six seats all held by students, named `Company 1` … `Company 6`. */

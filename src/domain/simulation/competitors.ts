@@ -303,6 +303,23 @@ export function competitorIntelKey(
   decision: QuarterDecision,
   previousDecision: QuarterDecision | null,
 ): IntelKey {
+  return decisionIntelKey(decision, previousDecision, competitor.base.signatureIntel);
+}
+
+/**
+ * The same rule with the standing characteristic supplied by the caller.
+ *
+ * Split out for group matches, where the rival is a classmate rather than an
+ * archetype and so has no signature behaviour to fall back on — there the
+ * fallback is `steady`, which says only that nothing moved. Keeping ONE
+ * implementation of the movement rules means a student cannot learn more about
+ * a human rival than they could about a benchmark one.
+ */
+export function decisionIntelKey(
+  decision: QuarterDecision,
+  previousDecision: QuarterDecision | null,
+  fallback: IntelKey,
+): IntelKey {
   const priceDelta = previousDecision ? decision.priceIndex - previousDecision.priceIndex : 0;
   const marketingDelta = previousDecision
     ? decision.marketingPoints - previousDecision.marketingPoints
@@ -324,9 +341,10 @@ export function competitorIntelKey(
   if (marketingDelta >= 4) return 'marketingPush';
   if (distributionDelta >= 4) return 'distributionPush';
 
-  // Nothing moved this quarter: report the archetype's standing characteristic,
-  // which is distinct per competitor (spec 7.3's five example lines).
-  return competitor.base.signatureIntel;
+  // Nothing moved this quarter: report the standing characteristic. For a
+  // benchmark that is its archetype, distinct per competitor (spec 7.3's five
+  // example lines); for a human rival it is simply `steady`.
+  return fallback;
 }
 
 /** Builds the intelligence summary shown on the quarter result screen. */

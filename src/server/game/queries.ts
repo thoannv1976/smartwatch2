@@ -1,6 +1,6 @@
 import 'server-only';
 import { getRepositories } from '@/db/repositories/firestore';
-import { isArchived } from '@/db/models';
+import { assignmentMode, hasLeftGroup, isArchived } from '@/db/models';
 import type { AssignmentDoc, CourseDoc, FinalResultDoc, GameSessionDoc } from '@/db/models';
 
 /**
@@ -19,6 +19,10 @@ export interface AvailableAssignment {
   completedResult: FinalResultDoc | null;
   /** Why the student cannot start, or null when they can. */
   blockedReason: 'notOpenYet' | 'deadlinePassed' | 'maxAttemptsReached' | 'archived' | null;
+  /** Solo play, or six students against each other. */
+  mode: 'SOLO' | 'GROUP';
+  /** For a group assignment: the group this student is already in, if any. */
+  groupId: string | null;
 }
 
 /** Every assignment the student can see, with their own status for each. */
@@ -35,10 +39,20 @@ export async function listAssignmentsForStudent(userId: string): Promise<Availab
   const sessions = await repos.sessions.listByUser(userId, 200);
   const results = await repos.finalResults.listByUser(userId);
 
+  // Group membership for every group assignment on the list, so the home page
+  // can send a student to their match rather than back to the join screen.
+  const groupMemberships = await Promise.all(
+    assignments.map(async (assignment) =>
+      assignmentMode(assignment) === 'GROUP'
+        ? repos.groups.findMembership(assignment.id, userId)
+        : null,
+    ),
+  );
+
   const now = Date.now();
 
   return assignments
-    .map((assignment): AvailableAssignment | null => {
+    .map((assignment, index): AvailableAssignment | null => {
       const course = coursesById.get(assignment.courseId);
       if (!course) return null;
 
@@ -64,6 +78,8 @@ export async function listAssignmentsForStudent(userId: string): Promise<Availab
         blockedReason = 'maxAttemptsReached';
       }
 
+      const membership = groupMemberships[index] ?? null;
+
       return {
         assignment,
         course,
@@ -71,6 +87,8 @@ export async function listAssignmentsForStudent(userId: string): Promise<Availab
         inProgressSession,
         completedResult,
         blockedReason,
+        mode: assignmentMode(assignment),
+        groupId: membership && !hasLeftGroup(membership) ? membership.groupId : null,
       };
     })
     .filter((entry): entry is AvailableAssignment => entry !== null);
