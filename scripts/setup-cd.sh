@@ -66,54 +66,45 @@ echo "    project: $PROJECT_ID"
 echo "    region:  $REGION"
 echo "    deploys: pushes matching  $BRANCH_PATTERN"
 
-gcloud config set project "$PROJECT_ID" >/dev/null 2>&1
-
-# ------------------------------------------------------------------ 2. APIs --
-step "Enabling the APIs a trigger needs"
-gcloud services enable \
-  cloudbuild.googleapis.com \
-  secretmanager.googleapis.com \
-  --project "$PROJECT_ID" >/dev/null
-ok "enabled"
-
-# ------------------------------------------------- 3. the one browser step --
-# Cloud Build can only read a private repository after the Cloud Build GitHub
-# App has been installed on it. That authorisation is an OAuth grant, so it
-# cannot be done from a script — by design, and the same would be true of any
-# other tool. It is needed exactly once per repository.
-step "Checking that Cloud Build can see the repository"
-
-CONNECTED=""
-if gcloud beta builds repositories list --region="$REGION" --project "$PROJECT_ID" \
-     --format='value(remoteUri)' 2>/dev/null | grep -qi "$REPO_OWNER/$REPO_NAME"; then
-  CONNECTED="yes"
-fi
-
-if [[ -z "$CONNECTED" ]]; then
+# Prints the one-time browser step, then stops. Cloud Build can only read a
+# repository after its GitHub App has been authorised on it, and that is an
+# OAuth grant, so no script of any kind can do it.
+needs_connection() {
   cat <<EOF
 
 ────────────────────────────────────────────────────────────────────
-  ONE BROWSER STEP, ONCE. Nothing has been changed yet.
+  ONE BROWSER STEP, ONCE.
+
+  Cloud Build cannot read $REPO_OWNER/$REPO_NAME yet.
 
   Open:
 
     https://console.cloud.google.com/cloud-build/triggers/connect?project=$PROJECT_ID
 
   1. Region: $REGION
-  2. Source: GitHub  →  Continue  →  authorise Google Cloud Build
+  2. Source: GitHub (Cloud Build GitHub App)  →  authorise
   3. Pick the repository: $REPO_OWNER/$REPO_NAME  →  Connect
-  4. When it offers to create a trigger, click Skip / Done — this
-     script creates the trigger for you with the right substitutions.
+  4. If it offers to create a trigger, click Skip / Done — this script
+     creates it for you with the right substitutions.
 
   Then run this script again:
 
     ./scripts/setup-cd.sh $BRANCH_PATTERN
+
+  No trigger was created. Re-running is safe.
 ────────────────────────────────────────────────────────────────────
 
 EOF
   exit 2
-fi
-ok "repository is connected"
+}
+
+# ------------------------------------------------------------------ 2. APIs --
+# Enabling an API that is already on is a no-op, and the trigger cannot be
+# created without these. This is the first step that changes anything, which is
+# why no message before this point promises otherwise.
+step "Enabling the APIs a trigger needs"
+gcloud services enable cloudbuild.googleapis.com --project "$PROJECT_ID" >/dev/null
+ok "enabled"
 
 # ------------------------------------------------------- 4. build SA rights --
 # The trigger runs as the Cloud Build service account, which must be able to
@@ -158,6 +149,16 @@ SUBSTITUTIONS+=",_FIREBASE_APP_ID=${FIREBASE_APP_ID}"
 
 step "Creating the trigger"
 
+# Whether the repository is connected is NOT probed beforehand. The obvious
+# probe, `gcloud builds repositories list`, belongs to the 2nd-generation
+# connection model and needs a --connection, while the trigger below is the
+# 1st-generation --repo-owner/--repo-name kind; mixing the two made the probe
+# fail always, so the script reported "connect the repository" even to people
+# who already had, and never created anything. The create itself is the honest
+# test: its error names the missing connection, so run it and read the result.
+CREATE_LOG="$(mktemp)"
+trap 'rm -f "$CREATE_LOG"' EXIT
+
 if gcloud beta builds triggers describe "$TRIGGER_NAME" \
      --region="$REGION" --project "$PROJECT_ID" >/dev/null 2>&1; then
   gcloud beta builds triggers update github "$TRIGGER_NAME" \
@@ -167,16 +168,25 @@ if gcloud beta builds triggers describe "$TRIGGER_NAME" \
     --build-config=cloudbuild.yaml \
     --substitutions="$SUBSTITUTIONS" >/dev/null
   ok "updated '$TRIGGER_NAME'"
-else
-  gcloud beta builds triggers create github \
+elif gcloud beta builds triggers create github \
     --name="$TRIGGER_NAME" \
     --region="$REGION" --project "$PROJECT_ID" \
     --repo-name="$REPO_NAME" --repo-owner="$REPO_OWNER" \
     --branch-pattern="$BRANCH_PATTERN" \
     --build-config=cloudbuild.yaml \
     --substitutions="$SUBSTITUTIONS" \
-    --description="Build, test and deploy $SERVICE on push" >/dev/null
+    --description="Build, test and deploy $SERVICE on push" >"$CREATE_LOG" 2>&1; then
   ok "created '$TRIGGER_NAME'"
+else
+  # The repository not being connected is the one failure with a fix the user
+  # can act on, so name it. Anything else is shown verbatim rather than being
+  # guessed at.
+  if grep -qiE 'not (connected|installed|found)|no.*(installation|connection)|repository mapping|PERMISSION_DENIED' "$CREATE_LOG"; then
+    needs_connection
+  fi
+  echo >&2
+  cat "$CREATE_LOG" >&2
+  die "could not create the trigger (full error above)"
 fi
 
 cat <<EOF

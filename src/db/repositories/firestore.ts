@@ -69,7 +69,22 @@ export const COLLECTIONS = {
   gameSessions: 'gameSessions',
   quarters: 'quarters',
   finalResults: 'finalResults',
+  // One document per claimed official attempt, id `${assignmentId}_${uid}_${n}`.
+  // Only ever read or written by document id, so it needs no index.
+  attemptClaims: 'attemptClaims',
 } as const;
+
+/**
+ * True for the gRPC ALREADY_EXISTS status (code 6) that `tx.create` raises when
+ * the document is already there. Checked by code rather than by message so it
+ * does not depend on wording, with a message fallback for transports that
+ * surface the status as text only.
+ */
+function isAlreadyExists(error: unknown): boolean {
+  const code = (error as { code?: unknown } | null)?.code;
+  if (code === 6 || code === 'already-exists' || code === 'ALREADY_EXISTS') return true;
+  return error instanceof Error && /already exists/i.test(error.message);
+}
 
 // --- users -----------------------------------------------------------------
 
@@ -311,6 +326,42 @@ class FirestoreSessionRepository implements SessionRepository {
     const ref = this.db.collection(COLLECTIONS.gameSessions).doc();
     const doc: GameSessionDoc = { ...session, id: ref.id };
     await ref.set(doc);
+    return doc;
+  }
+
+  async createOfficialAttempt(
+    session: Omit<GameSessionDoc, 'id'>,
+    assignmentId: string,
+    attemptNo: number,
+  ): Promise<GameSessionDoc | null> {
+    // The claim is a separate tiny document with a derived id, written in the
+    // same transaction as the session. Deriving the SESSION id instead would
+    // put the student's uid in the browser URL and its history; this keeps
+    // session ids opaque while still letting the datastore reject a duplicate.
+    const claimRef = this.db
+      .collection(COLLECTIONS.attemptClaims)
+      .doc(`${assignmentId}_${session.userId}_${attemptNo}`);
+    const sessionRef = this.db.collection(COLLECTIONS.gameSessions).doc();
+    const doc: GameSessionDoc = { ...session, id: sessionRef.id };
+
+    try {
+      await this.db.runTransaction(async (tx) => {
+        // tx.create throws if the document exists, so the loser of a race
+        // fails here and neither write lands.
+        tx.create(claimRef, {
+          assignmentId,
+          userId: session.userId,
+          attemptNo,
+          sessionId: sessionRef.id,
+          claimedAt: Date.now(),
+        });
+        tx.set(sessionRef, doc);
+      });
+    } catch (error) {
+      if (isAlreadyExists(error)) return null;
+      throw error;
+    }
+
     return doc;
   }
 

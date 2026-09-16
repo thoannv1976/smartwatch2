@@ -55,8 +55,10 @@ trigger, there is no key file and no secret stored in GitHub.
 `setup-cd.sh` is idempotent and re-runnable. It needs **one browser step, once**:
 Cloud Build can only read the repository after the Cloud Build GitHub App has
 been authorised on it, which is an OAuth grant and so cannot come from a
-script. If that has not been done, the script prints the exact link and stops
-without changing anything — run it again afterwards.
+script. If that has not been done, the script prints the exact link and stops;
+no trigger is created, and you run it again afterwards. (It does enable the
+Cloud Build API and grant the build service account its deploy roles before
+reaching that point — both idempotent, and needed either way.)
 
 Set CD up **after** a successful `./scripts/deploy.sh`, not before. Automating a
 pipeline that has never gone green just makes it fail automatically, with one

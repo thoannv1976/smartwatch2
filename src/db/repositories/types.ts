@@ -67,6 +67,23 @@ export interface SessionRepository {
   listByAssignment(assignmentId: string): Promise<GameSessionDoc[]>;
   countAttempts(userId: string, assignmentId: string): Promise<number>;
 
+  /**
+   * Creates an official session, claiming one specific attempt number.
+   *
+   * Returns null when that attempt has already been claimed. Counting existing
+   * attempts and then creating a session is two operations, so two clicks
+   * arriving together both see "0 used" and both create a session — the
+   * student gets more attempts than the assignment allows and shows up twice
+   * on the leaderboard and in the CSV. The claim MUST therefore be enforced by
+   * the datastore, the same way `saveQuarter` enforces quarter uniqueness, and
+   * never by a read-then-write in the service.
+   */
+  createOfficialAttempt(
+    session: Omit<GameSessionDoc, 'id'>,
+    assignmentId: string,
+    attemptNo: number,
+  ): Promise<GameSessionDoc | null>;
+
   getQuarter(sessionId: string, quarter: number): Promise<QuarterDoc | null>;
   listQuarters(sessionId: string): Promise<QuarterDoc[]>;
 

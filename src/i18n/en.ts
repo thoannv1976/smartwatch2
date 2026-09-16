@@ -422,6 +422,8 @@ export const en: Dictionary = {
     deadlinePassed: 'The assignment deadline has passed',
     notOpenYet: 'The assignment is not open yet',
     maxAttemptsReached: 'You have used all your attempts',
+    attemptAlreadyStarted:
+      'This attempt is already open. Go back to Home and choose "Continue assignment" rather than starting a new one.',
     assignmentNotFound: 'Assignment not found',
     notEnrolled: 'You are not enrolled in the course for this assignment',
     unauthorized: 'You must sign in',

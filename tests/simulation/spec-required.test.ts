@@ -195,6 +195,42 @@ describe('7. Distribution test — higher Distribution increases fulfilled poten
     );
     expect(strong.unitsSold).toBeGreaterThan(weak.unitsSold);
   });
+
+  /**
+   * The figure is shown to students as "unfulfilled potential demand", blamed
+   * on delivery capacity. It once measured potentialUnits - unitsSold, which
+   * also swallowed the conversion modifier — under 1.00 unless technology and
+   * customer experience both hit 100 — so a student with flawless distribution
+   * was still told distribution was their bottleneck. That inverts the lesson
+   * the simulation exists to teach, so it is pinned here.
+   */
+  it('reports no unfulfilled demand once distribution removes the constraint', () => {
+    const result = playerResult(
+      simulateQuarter(symmetricInput({ distribution: 100 }), config).companyResults,
+    );
+    const { fulfilmentCapacityFactor, unfulfilledUnits, potentialUnits } = result.intermediates;
+
+    expect(fulfilmentCapacityFactor).toBe(1);
+    expect(unfulfilledUnits).toBe(0);
+    // Conversion still takes its cut, so this is not merely a zero-demand case.
+    expect(potentialUnits).toBeGreaterThan(0);
+    expect(result.unitsSold).toBeLessThan(potentialUnits);
+  });
+
+  it('counts only the fulfilment shortfall, never the conversion shortfall', () => {
+    const result = playerResult(
+      simulateQuarter(symmetricInput({ distribution: 40 }), config).companyResults,
+    );
+    const i = result.intermediates;
+
+    expect(i.fulfilmentCapacityFactor).toBeLessThan(1);
+    // Tolerant to a hundredth: the shortfall is taken from the raw figures and
+    // rounded once, while the two components are each rounded before being
+    // published, so recomputing from them can differ in the last place.
+    expect(i.unfulfilledUnits).toBeCloseTo(i.potentialUnits - i.fulfilledPotentialUnits, 1);
+    // The conversion shortfall is thousands of units, so this gap is decisive.
+    expect(i.unfulfilledUnits).toBeLessThan(i.potentialUnits - result.unitsSold);
+  });
 });
 
 describe('8. CX test — higher CX increases CSAT and the conversion modifier', () => {

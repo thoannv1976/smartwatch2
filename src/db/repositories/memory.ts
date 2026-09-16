@@ -191,6 +191,7 @@ class MemoryAssignmentRepository implements AssignmentRepository {
 class MemorySessionRepository implements SessionRepository {
   private readonly sessions = new Map<string, GameSessionDoc>();
   private readonly quarters = new Map<string, Map<number, QuarterDoc>>();
+  private readonly attemptClaims = new Set<string>();
   private nextId = 1;
 
   async get(sessionId: string): Promise<GameSessionDoc | null> {
@@ -202,6 +203,32 @@ class MemorySessionRepository implements SessionRepository {
     const doc: GameSessionDoc = { ...session, id: `session-${this.nextId++}` };
     this.sessions.set(doc.id, clone(doc));
     return clone(doc);
+  }
+
+  async createOfficialAttempt(
+    session: Omit<GameSessionDoc, 'id'>,
+    assignmentId: string,
+    attemptNo: number,
+  ): Promise<GameSessionDoc | null> {
+    // Same contract as Firestore: the claim is what makes the attempt unique,
+    // and a second claim on the same attempt number is refused rather than
+    // silently creating a second session.
+    const claim = `${assignmentId}_${session.userId}_${attemptNo}`;
+
+    // Claim first, with no await between the test and the insert. Awaiting in
+    // between would let a second caller run in the gap and claim the same
+    // attempt, which is the very race this method exists to prevent — the
+    // in-memory store has to be as atomic here as the Firestore transaction is,
+    // or tests would pass on a guarantee production does not share.
+    if (this.attemptClaims.has(claim)) return null;
+    this.attemptClaims.add(claim);
+
+    try {
+      return await this.create(session);
+    } catch (error) {
+      this.attemptClaims.delete(claim);
+      throw error;
+    }
   }
 
   async listByUser(userId: string, limit = 50): Promise<GameSessionDoc[]> {

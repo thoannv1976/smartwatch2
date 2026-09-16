@@ -10,6 +10,7 @@ import {
 import { getRepositories } from '@/db/repositories/firestore';
 import { ROLES, type Role } from '@/db/models';
 import { AuthorizationError, hasRole, requireRole } from '@/server/auth/session';
+import { patchKeepsWindowValid } from './validation';
 import type { GameErrorKey } from '@/server/game/errors';
 
 /**
@@ -195,6 +196,11 @@ export async function updateAssignmentAction(
     await requireCourseAccess(assignment.courseId);
 
     const { assignmentId, ...patch } = parsed;
+
+    if (!patchKeepsWindowValid(assignment, patch)) {
+      return { ok: false, error: 'invalidInput' };
+    }
+
     await repos.assignments.update(assignmentId, patch);
 
     revalidatePath('/instructor');

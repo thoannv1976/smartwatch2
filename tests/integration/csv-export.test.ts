@@ -179,3 +179,65 @@ describe('per-quarter export — the audit trail', () => {
     expect(csv).toContain('ChronoLab');
   });
 });
+
+describe('the export cannot smuggle formulas into the gradebook', () => {
+  /**
+   * Company and display names are student-supplied and only length-checked, so
+   * anything a spreadsheet would execute has to be neutralised here. The export
+   * is opened by the instructor, on the instructor's machine, to grade from.
+   */
+  const dangerous = ['=', '+', '-', '@', '\t', '\r'];
+
+  it.each(dangerous)('quotes a cell beginning with %j as text', (lead) => {
+    const csv = toCsv(['name'], [[`${lead}HYPERLINK("http://x","Grades")`]]);
+    const cell = csv.split('\r\n')[1]!;
+
+    expect(cell.startsWith("'") || cell.startsWith('"\'')).toBe(true);
+  });
+
+  it('leaves negative numbers usable as numbers', () => {
+    // -1234.5 must stay -1234.5: prefixing it would turn every loss in the
+    // export into text and break the instructor's totals.
+    const csv = toCsv(['net_profit'], [[-1234.5], ['-1234.5']]);
+    const [, fromNumber, fromString] = csv.split('\r\n');
+
+    expect(fromNumber).toBe('-1234.5');
+    expect(fromString).toBe('-1234.5');
+  });
+
+  it('still quotes commas, quotes and newlines as before', () => {
+    const csv = toCsv(['name'], [['Nova, "Best" Watch\nLtd']]);
+
+    expect(csv).toContain('"Nova, ""Best"" Watch\nLtd"');
+  });
+
+  it('neutralises a hostile company name end to end', async () => {
+    const attack = '=cmd|calc';
+    const session = await service.createSession({
+      userId: STUDENT.uid,
+      displayName: STUDENT.displayName,
+      email: STUDENT.email,
+      mode: 'PRACTICE',
+      assignmentId: null,
+      companyName: attack,
+      productName: 'Nova Watch One',
+      positioning: 'BALANCED',
+    });
+    const config = getGameConfig();
+    for (let q = 1; q <= config.quarters; q += 1) {
+      await service.submitQuarter(session.id, STUDENT.uid, q, decision);
+    }
+
+    const csv = quartersToCsv([
+      {
+        studentCode: 'SV001',
+        displayName: STUDENT.displayName,
+        companyName: attack,
+        quarters: await repos.sessions.listQuarters(session.id),
+      },
+    ]);
+
+    expect(csv).not.toContain(`,${attack},`);
+    expect(csv).toContain("'=cmd|calc");
+  });
+});

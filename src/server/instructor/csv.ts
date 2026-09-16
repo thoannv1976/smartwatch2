@@ -9,9 +9,31 @@ import { PLAYER_COMPANY_KEY } from '@/domain/simulation';
  * rather than being mangled by a localised thousands separator.
  */
 
+/**
+ * Cells a spreadsheet would execute rather than display.
+ *
+ * Excel, LibreOffice and Sheets treat a leading =, +, - or @ as the start of a
+ * formula, and a leading tab or carriage return can smuggle one in. Company and
+ * display names come straight from students, so an unescaped export turns the
+ * instructor's gradebook into an execution surface: a company called
+ * `=HYPERLINK("http://…",  "Grades")` runs when the file is opened.
+ */
+const FORMULA_START = /^[=+\-@\t\r]/;
+
+/** A value we wrote as a number, so the leading `-` is a minus sign. */
+const PLAIN_NUMBER = /^-?\d+(\.\d+)?$/;
+
 function escapeCell(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return '';
-  const text = String(value);
+  let text = String(value);
+
+  // Prefixing an apostrophe tells every major spreadsheet "this is text". Real
+  // numbers are exempt, or every negative profit in the export would arrive as
+  // the string '-1234.5 and stop being summable.
+  if (typeof value !== 'number' && FORMULA_START.test(text) && !PLAIN_NUMBER.test(text)) {
+    text = `'${text}`;
+  }
+
   return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
 }
 

@@ -421,6 +421,8 @@ export const vi = {
     deadlinePassed: 'Đã quá hạn cuối của bài tập',
     notOpenYet: 'Bài tập chưa mở',
     maxAttemptsReached: 'Bạn đã dùng hết số lần làm bài',
+    attemptAlreadyStarted:
+      'Lượt làm bài này đã được mở rồi. Hãy quay lại Trang chủ và bấm "Tiếp tục bài tập" — đừng bắt đầu lượt mới.',
     assignmentNotFound: 'Không tìm thấy bài tập',
     notEnrolled: 'Bạn không thuộc lớp của bài tập này',
     unauthorized: 'Bạn cần đăng nhập',

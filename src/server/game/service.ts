@@ -109,7 +109,7 @@ export class GameService {
     const config = getGameConfig(scenarioVersion);
     const companies = createInitialCompanies(companyName, config) as SessionCompany[];
 
-    return this.repos.sessions.create({
+    const draft = {
       userId: input.userId,
       assignmentId: assignment?.id ?? null,
       mode: input.mode,
@@ -121,11 +121,31 @@ export class GameService {
       scenarioVersion,
       engineVersion: config.engineVersion,
       randomSeed: seed,
-      status: 'IN_PROGRESS',
+      status: 'IN_PROGRESS' as const,
       companies,
       startedAt: Date.now(),
       completedAt: null,
-    });
+    };
+
+    if (!assignment) return this.repos.sessions.create(draft);
+
+    // The count above is a courtesy check that produces a good error message;
+    // it is NOT what enforces the limit. Two clicks arriving together both read
+    // the same count, so the attempt number is claimed in the datastore and the
+    // loser is rejected there. Retrying picks up the now-higher count and
+    // either claims the next attempt or reports the limit properly.
+    const claimed = await this.repos.sessions.createOfficialAttempt(
+      draft,
+      assignment.id,
+      attemptNo,
+    );
+    // Losing the claim means this attempt number is already taken — almost
+    // always a double-click. Deliberately NOT retried with the next number:
+    // silently opening a second game would burn one of a limited set of graded
+    // attempts on a stray click. Sending the student back to the game they
+    // already have is both safer and what they meant.
+    if (!claimed) throw new GameError('attemptAlreadyStarted');
+    return claimed;
   }
 
   private async assertEnrolled(userId: string, assignment: AssignmentDoc): Promise<void> {
@@ -141,12 +161,56 @@ export class GameService {
 
   // -- reading --------------------------------------------------------------
 
-  /** Loads a session and checks it belongs to the caller. */
+  /**
+   * Loads a session and checks it belongs to the caller.
+   *
+   * Also repairs a session that finished playing but never got its final
+   * result — see `ensureFinalized`. Opening any of the player's own pages is
+   * therefore enough to recover, with no support request and no lost grade.
+   */
   async getOwnedSession(sessionId: string, userId: string): Promise<GameSessionDoc> {
+    return this.ensureFinalized(await this.loadOwnedSession(sessionId, userId), userId);
+  }
+
+  /** The ownership check alone, with no repair — used by paths that finalize. */
+  private async loadOwnedSession(sessionId: string, userId: string): Promise<GameSessionDoc> {
     const session = await this.repos.sessions.get(sessionId);
     if (!session) throw new GameError('sessionNotFound');
     if (session.userId !== userId) throw new GameError('notYourSession');
     return session;
+  }
+
+  /**
+   * Finishes a session that played all its quarters but has no final result.
+   *
+   * Storing quarter six and finalizing are two separate operations, so a
+   * failure between them — a Firestore blip, or the Cloud Run request timeout
+   * firing on a slow quarter six — leaves a session with every quarter on
+   * record, no score, and no way back: re-submitting returns the stored quarter
+   * without finalizing, and nothing else calls finalize. The student would
+   * silently lose the grade for a completed game.
+   *
+   * The test is "is there a final result", not "is the status COMPLETED",
+   * because finalize marks the session complete BEFORE it writes the result;
+   * failing in between leaves a session that looks finished and is not.
+   * `finalize` is idempotent and preserves the original completedAt, so
+   * re-running it cannot change a grade that was already awarded.
+   */
+  private async ensureFinalized(
+    session: GameSessionDoc,
+    userId: string,
+  ): Promise<GameSessionDoc> {
+    const config = getGameConfig(session.scenarioVersion);
+
+    // currentRound is advanced in the same transaction that stores the quarter,
+    // so this is true only once every quarter really is on record. Sessions
+    // still being played cost no extra read.
+    if (session.currentRound < config.quarters) return session;
+
+    const result = await this.repos.finalResults.get(session.id);
+    if (result) return session;
+
+    return this.finalize(session.id, userId);
   }
 
   /** Loads a session for an instructor or admin, without the ownership check. */
@@ -177,7 +241,7 @@ export class GameService {
     quarter: number,
     decision: QuarterDecision,
   ): Promise<{ quarter: QuarterDoc; session: GameSessionDoc; replayed: boolean }> {
-    const session = await this.getOwnedSession(sessionId, userId);
+    const session = await this.loadOwnedSession(sessionId, userId);
     const config = getGameConfig(session.scenarioVersion);
 
     if (!Number.isInteger(quarter) || quarter < 1 || quarter > config.quarters) {
@@ -185,9 +249,17 @@ export class GameService {
     }
 
     // A quarter already on record wins immediately: no revalidation, no
-    // recomputation, no write.
+    // recomputation, no write. Re-submitting the last quarter still gets the
+    // session finalized, so a retry recovers a finalize that failed the first
+    // time rather than short-circuiting past it forever.
     const existing = await this.repos.sessions.getQuarter(sessionId, quarter);
-    if (existing) return { quarter: existing, session, replayed: true };
+    if (existing) {
+      return {
+        quarter: existing,
+        session: await this.ensureFinalized(session, userId),
+        replayed: true,
+      };
+    }
 
     if (session.status === 'COMPLETED') throw new GameError('gameAlreadyCompleted');
     if (quarter !== session.currentRound + 1) throw new GameError('quarterOutOfRange');
@@ -297,7 +369,9 @@ export class GameService {
    * the scores are a pure function of the stored quarters.
    */
   async finalize(sessionId: string, userId: string): Promise<GameSessionDoc> {
-    const session = await this.getOwnedSession(sessionId, userId);
+    // The raw loader, not getOwnedSession: that one calls back into here to
+    // repair unfinalized sessions, which would recurse without end.
+    const session = await this.loadOwnedSession(sessionId, userId);
     const config = getGameConfig(session.scenarioVersion);
     const quarters = await this.repos.sessions.listQuarters(sessionId);
 

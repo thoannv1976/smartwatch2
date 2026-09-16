@@ -11,6 +11,7 @@ import {
 } from 'firebase/auth';
 import { getFirebaseAuth, isFirebaseClientConfigured } from '@/lib/firebase-client';
 import { useI18n } from '@/i18n/client';
+import { safeNextPath } from '@/lib/safe-next-path';
 import { Card, ErrorNote, WarningNote } from '@/components/ui/primitives';
 
 /**
@@ -23,7 +24,7 @@ export function LoginForm() {
   const { t } = useI18n();
   const router = useRouter();
   const params = useSearchParams();
-  const nextPath = params.get('next') ?? '/home';
+  const nextPath = safeNextPath(params.get('next'));
   const forbidden = params.get('error') === 'forbidden';
 
   const [mode, setMode] = useState<'signIn' | 'signUp'>('signIn');

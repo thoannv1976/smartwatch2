@@ -86,6 +86,19 @@ async function startPractice() {
   });
 }
 
+async function startOfficial(assignmentId: string) {
+  return service.createSession({
+    userId: STUDENT.uid,
+    displayName: STUDENT.displayName,
+    email: STUDENT.email,
+    mode: 'OFFICIAL',
+    assignmentId,
+    companyName: 'NovaTime',
+    productName: 'Nova Watch One',
+    positioning: 'BALANCED',
+  });
+}
+
 /** Plays every quarter of a session with one fixed decision. */
 async function playAllQuarters(sessionId: string, decision = validDecision) {
   const config = getGameConfig();
@@ -495,6 +508,155 @@ describe('completion, scoring and the leaderboard row (spec 8)', () => {
     expect(analysis.lessons).toHaveLength(3);
     expect(analysis.labels.length).toBeGreaterThan(0);
     expect(analysis.averages.priceIndex).toBe(validDecision.priceIndex);
+  });
+});
+
+describe('official attempts are claimed atomically (spec 9.2)', () => {
+  /** Both requests start before either has written, as a double-click does. */
+  function startOfficialTwiceConcurrently(assignmentId: string) {
+    const start = () =>
+      service.createSession({
+        userId: STUDENT.uid,
+        displayName: STUDENT.displayName,
+        email: STUDENT.email,
+        mode: 'OFFICIAL',
+        assignmentId,
+        companyName: 'NovaTime',
+        productName: 'Nova Watch One',
+        positioning: 'BALANCED',
+      });
+    return Promise.allSettled([start(), start()]);
+  }
+
+  it('creates one session when two starts race, even with attempts to spare', async () => {
+    const { assignment } = await seedAssignment({ maxAttempts: 5 });
+
+    const outcomes = await startOfficialTwiceConcurrently(assignment.id);
+
+    expect(outcomes.filter((o) => o.status === 'fulfilled')).toHaveLength(1);
+    expect(await repos.sessions.countAttempts(STUDENT.uid, assignment.id)).toBe(1);
+  });
+
+  it('tells the loser the attempt is already open, not that attempts ran out', async () => {
+    const { assignment } = await seedAssignment({ maxAttempts: 5 });
+
+    const outcomes = await startOfficialTwiceConcurrently(assignment.id);
+    const rejected = outcomes.find((o) => o.status === 'rejected');
+
+    expect(rejected).toBeDefined();
+    expect((rejected as PromiseRejectedResult).reason).toBeInstanceOf(GameError);
+    expect((rejected as PromiseRejectedResult).reason.key).toBe('attemptAlreadyStarted');
+  });
+
+  it('still lets the student use their remaining attempts one at a time', async () => {
+    const { assignment } = await seedAssignment({ maxAttempts: 2 });
+
+    const first = await startOfficial(assignment.id);
+    await playAllQuarters(first.id);
+    const second = await startOfficial(assignment.id);
+
+    expect(second.id).not.toBe(first.id);
+    expect(second.attemptNo).toBe(2);
+    expect(await repos.sessions.countAttempts(STUDENT.uid, assignment.id)).toBe(2);
+  });
+
+  it('still refuses an attempt past the limit', async () => {
+    const { assignment } = await seedAssignment({ maxAttempts: 1 });
+    await startOfficial(assignment.id);
+
+    await expect(startOfficial(assignment.id)).rejects.toMatchObject({
+      key: 'maxAttemptsReached',
+    });
+  });
+});
+
+describe('recovering a session that played out but never finalized', () => {
+  /**
+   * Storing quarter six and finalizing are two operations. A failure between
+   * them used to be permanent: re-submitting returned the stored quarter
+   * without finalizing, and no other path called finalize, so the student kept
+   * a played-out game with no score and never appeared on the leaderboard.
+   *
+   * Note the state this leaves behind: finalize marks the session COMPLETED
+   * before it writes the result, so the session looks finished while no result
+   * exists. That is why recovery keys on the missing result, not the status.
+   */
+  async function playSixWithFailingFinalize(sessionId: string) {
+    const config = getGameConfig();
+    for (let quarter = 1; quarter < config.quarters; quarter += 1) {
+      await service.submitQuarter(sessionId, STUDENT.uid, quarter, validDecision);
+    }
+
+    const save = repos.finalResults.save.bind(repos.finalResults);
+    repos.finalResults.save = () => Promise.reject(new Error('firestore unavailable'));
+    await expect(
+      service.submitQuarter(sessionId, STUDENT.uid, config.quarters, validDecision),
+    ).rejects.toThrow('firestore unavailable');
+    repos.finalResults.save = save;
+  }
+
+  it('leaves every quarter stored but no final result when finalize fails', async () => {
+    const session = await startPractice();
+    await playSixWithFailingFinalize(session.id);
+
+    expect(await repos.sessions.listQuarters(session.id)).toHaveLength(getGameConfig().quarters);
+    expect(await repos.finalResults.get(session.id)).toBeNull();
+    // Marked complete before the write that failed — looks finished, is not.
+    expect((await repos.sessions.get(session.id))?.status).toBe('COMPLETED');
+  });
+
+  it('finalizes when the student simply opens the session again', async () => {
+    const session = await startPractice();
+    await playSixWithFailingFinalize(session.id);
+
+    const recovered = await service.getOwnedSession(session.id, STUDENT.uid);
+
+    expect(recovered.status).toBe('COMPLETED');
+    const result = await repos.finalResults.get(session.id);
+    expect(result).not.toBeNull();
+    expect(result!.finalScore).toBeGreaterThan(0);
+  });
+
+  it('finalizes when the student re-submits the last quarter', async () => {
+    const session = await startPractice();
+    await playSixWithFailingFinalize(session.id);
+
+    const outcome = await service.submitQuarter(
+      session.id,
+      STUDENT.uid,
+      getGameConfig().quarters,
+      validDecision,
+    );
+
+    expect(outcome.replayed).toBe(true);
+    expect(outcome.session.status).toBe('COMPLETED');
+    expect(await repos.finalResults.get(session.id)).not.toBeNull();
+  });
+
+  it('does not re-score or re-date a session that finalized normally', async () => {
+    const session = await startPractice();
+    await playAllQuarters(session.id);
+
+    const first = (await repos.finalResults.get(session.id))!;
+    const completedAt = (await repos.sessions.get(session.id))!.completedAt;
+
+    await service.getOwnedSession(session.id, STUDENT.uid);
+    await service.getOwnedSession(session.id, STUDENT.uid);
+
+    const after = (await repos.finalResults.get(session.id))!;
+    expect(after.finalScore).toBe(first.finalScore);
+    expect(after.completedAt).toBe(first.completedAt);
+    expect((await repos.sessions.get(session.id))!.completedAt).toBe(completedAt);
+  });
+
+  it('leaves a game still in progress alone', async () => {
+    const session = await startPractice();
+    await service.submitQuarter(session.id, STUDENT.uid, 1, validDecision);
+
+    const loaded = await service.getOwnedSession(session.id, STUDENT.uid);
+
+    expect(loaded.status).toBe('IN_PROGRESS');
+    expect(await repos.finalResults.get(session.id)).toBeNull();
   });
 });
 

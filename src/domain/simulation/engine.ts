@@ -314,7 +314,18 @@ export function simulateQuarter(
         conversionModifier: r.conversion,
         unitProductCost: r.unitCost,
         returnRate: r.rate,
-        unfulfilledUnits: round(Math.max(0, r.potentialUnits - r.unitsSold), 2),
+        // Demand lost to FULFILMENT only — what distribution could not deliver.
+        // Measuring against unitsSold instead would fold in the conversion
+        // modifier, which is under 1.00 unless technology and customer
+        // experience both reach 100; the figure would then stay positive at
+        // distribution 100 and tell a student their distribution is the
+        // bottleneck when it demonstrably is not. The UI labels this
+        // "unfulfilled potential demand" and blames delivery capacity, so the
+        // number has to mean exactly that.
+        unfulfilledUnits: round(
+          Math.max(0, r.potentialUnits - r.fulfilledPotentialUnits),
+          2,
+        ),
       },
     };
   });

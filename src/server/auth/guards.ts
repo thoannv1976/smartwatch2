@@ -12,7 +12,13 @@ import { getCurrentUser, hasRole, type AuthenticatedUser } from './session';
  */
 
 export async function requireUserPage(nextPath?: string): Promise<AuthenticatedUser> {
-  const user = await getCurrentUser().catch(() => null);
+  // No catch here on purpose. getCurrentUser already returns null for the one
+  // thing that means "not signed in" — an expired, revoked or malformed cookie
+  // — and rethrows everything else. Catching that rethrow turned a Firestore or
+  // Admin SDK outage into an endless /login ↔ /home bounce: signing in worked,
+  // loading the user did not, and the user was sent back to sign in again. An
+  // outage has to reach the error page, where it is visible and diagnosable.
+  const user = await getCurrentUser();
   if (!user) {
     const target = nextPath ? `/login?next=${encodeURIComponent(nextPath)}` : '/login';
     redirect(target);
