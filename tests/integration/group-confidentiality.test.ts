@@ -23,8 +23,17 @@ import { getQuarterView, getGroupReportView } from '@/server/group/queries';
  *
  * The rule is the same one the solo game already follows (spec 7.3): public
  * outcomes — share, units, revenue, profit, satisfaction, rank — are visible,
- * because they are what a real market reveals. The five POINT ALLOCATIONS and
- * price indexes are not.
+ * because they are what a real market reveals. The five POINT ALLOCATIONS are
+ * not.
+ *
+ * ONE HONEST QUALIFICATION, which is deliberate rather than a gap. Revenue and
+ * units are both published, so a rival's average price is `revenue / units`,
+ * and their price index follows from it. That has been true of solo play since
+ * the beginning and it is realistic: a real market publishes prices — it is the
+ * most visible thing about a competitor. The five investment allocations, which
+ * a real competitor genuinely cannot see, stay private. `pricingIsDerivable`
+ * below states this as a property so nobody later mistakes it for a leak, or
+ * claims the price is hidden when it is not.
  */
 
 const arena = getGameConfig(ARENA_SCENARIO_VERSION);
@@ -319,6 +328,46 @@ describe('the final report, as one student sees it', () => {
 
     const report = await getGroupReportView(repos, group.id, 'student-1');
     expect(report!.defaultedQuarters).toEqual([1]);
+  });
+});
+
+describe('what is deliberately NOT secret', () => {
+  it('pricingIsDerivable: a rival average price follows from published figures', async () => {
+    // Stated as a test rather than left implicit. Revenue and units are on the
+    // ranking table in both modes, so price is arithmetic away. Hiding it would
+    // mean hiding revenue or units — two numbers a market genuinely reveals —
+    // to protect one it also reveals.
+    const view = await getQuarterView(repos, group.id, seatByUid.get('student-1')!, 1);
+    const rival = view!.rivals[0]!;
+
+    const impliedPrice = rival.revenue / rival.unitsSold;
+    const impliedIndex = Math.round((impliedPrice / arena.referencePrice) * 100);
+
+    const rivalIndex = STRATEGIES.findIndex(
+      (_, index) => seatByUid.get(`student-${index + 1}`) === rival.seatKey,
+    );
+    expect(impliedIndex).toBe(STRATEGIES[rivalIndex]!.priceIndex);
+  });
+
+  it('but the five allocations stay private, which is the part that matters', async () => {
+    const view = await getQuarterView(repos, group.id, seatByUid.get('student-1')!, 1);
+    // No combination of published rival figures yields an allocation: the view
+    // simply has no field carrying one.
+    for (const rival of view!.rivals) {
+      expect(Object.keys(rival).sort()).toEqual(
+        [
+          'companyName',
+          'customerSatisfaction',
+          'isBot',
+          'marketShare',
+          'netProfit',
+          'rank',
+          'revenue',
+          'seatKey',
+          'unitsSold',
+        ].sort(),
+      );
+    }
   });
 });
 

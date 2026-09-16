@@ -771,6 +771,48 @@ export const en: Dictionary = {
     exportGroups: 'Export CSV · Group decisions',
     standings: 'Final group standings',
   },
+  rivals: {
+    title: 'Reading the competition',
+    hint:
+      'Drawn from what you have ALREADY seen: last quarter intelligence lines and the ranking table. No hidden figures, so you can check every sentence yourself.',
+    mapTitle: 'Positioning map',
+    mapHint:
+      'Average selling price (revenue divided by units) against customer satisfaction — both on the ranking table. Where the field is crowded, competition is fierce; where it is empty, there is an opening.',
+    mapPrice: 'Avg price',
+    mapCsat: 'Satisfaction',
+    mapShare: 'Share',
+    manyCutPrice:
+      '{count} rivals cut their price last quarter. Price carries {price}% of the buying decision this quarter — following them down is a race to the bottom, where everyone sells cheaper and nobody gains share.',
+    manyRaisedPrice:
+      '{count} rivals moved to premium pricing, while price still carries {price}% of the buying decision. The value end of the market is sitting empty.',
+    marketingCrowded:
+      '{count} rivals all pushed hard on marketing. When everyone shouts, nobody is heard — and that budget may work harder elsewhere.',
+    innovationRace:
+      '{count} rivals are racing on product and technology. That race compounds over quarters; joining late costs a lot and rarely catches up.',
+    distributionGap:
+      'Nobody pushed distribution last quarter, and distribution carries {weight}% of the buying decision this one. That is an opening nobody is taking.',
+    cxGap: 'No rival is focused on customer experience. CSAT drags both brand and the return rate — a direction few are going.',
+    leaderPulling:
+      '{company} leads on {share}% share, half again your {yours}%. Copying what they did is usually too late; look for where they are thin instead.',
+    youLead: 'You lead the group on {share}% share. You are the one being aimed at now.',
+    packTight:
+      'The field is very close — only {value} percentage points between best and worst share. A distinctive move counts for more than usual right now.',
+    botSeats:
+      '{count} seats are run by bots. A bot plays a fixed archetype, so it is the one rival whose behaviour you can predict.',
+    quietQuarter: 'Not enough played yet to read the field. There will be after the first quarter.',
+  },
+  sandbox: {
+    title: 'Practice bench',
+    hint:
+      'Try an allocation and see how the model responds. The rivals here are five copies of your own company, all playing 20/20/20/20/20 at price 100.',
+    disclaimer:
+      'THIS IS NOT A PREDICTION of the real quarter. It deliberately uses none of your group mates data — if it did, you could try repeatedly and work backwards to their decisions. It answers "what does this model reward?", not "will I win?".',
+    run: 'Try this allocation',
+    running: 'Trying…',
+    yours: 'Your allocation',
+    neutral: 'Even split',
+    difference: 'Difference',
+  },
   errors: {
     weakPassword: 'Password must be at least 8 characters',
     emailAlreadyExists: 'That email already has an account. Edit their row in the list instead.',

@@ -7,7 +7,9 @@ import {
   getGameConfig,
   riskWarnings,
   type CompanyState,
+  type PositionPoint,
   type QuarterDecision,
+  type RivalNote,
   type StrategySuggestion,
 } from '@/domain/simulation';
 import { submitGroupDecisionAction } from '@/server/group/actions';
@@ -16,6 +18,7 @@ import { interpolate } from '@/i18n';
 import { DecisionInputs, type CapabilitySnapshot } from '@/components/game/DecisionInputs';
 import { RiskWarningList } from '@/components/game/StrategyCoach';
 import { GroupSuggestions } from './GroupSuggestions';
+import { PositioningMap, RivalNotes, SandboxPanel } from './RivalPanel';
 import { Card, CardTitle, ErrorNote, InfoNote, WarningNote } from '@/components/ui/primitives';
 import { formatMoney } from '@/lib/format';
 
@@ -39,6 +42,9 @@ export function GroupDecisionScreen({
   playerState,
   suggestions,
   previousDecisions,
+  rivalNotes,
+  positioning,
+  seed,
 }: {
   groupId: string;
   quarter: number;
@@ -47,6 +53,9 @@ export function GroupDecisionScreen({
   playerState: CompanyState;
   suggestions: StrategySuggestion[];
   previousDecisions: QuarterDecision[];
+  rivalNotes: RivalNote[];
+  positioning: PositionPoint[];
+  seed: string;
 }) {
   const { t, locale } = useI18n();
   const router = useRouter();
@@ -123,7 +132,19 @@ export function GroupDecisionScreen({
         </div>
       </Card>
 
+      <RivalNotes notes={rivalNotes} />
+
+      <PositioningMap points={positioning} />
+
       <GroupSuggestions suggestions={suggestions} onApply={setDecision} disabled={pending} />
+
+      <SandboxPanel
+        playerState={playerState}
+        decision={decision}
+        quarter={quarter}
+        seed={seed}
+        config={config}
+      />
 
       <RiskWarningList warnings={risks} />
 

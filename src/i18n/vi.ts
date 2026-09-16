@@ -771,6 +771,48 @@ export const vi = {
     exportGroups: 'Xuất CSV · Bảng quyết định nhóm',
     standings: 'Xếp hạng cuối nhóm',
   },
+  rivals: {
+    title: 'Đọc vị đối thủ',
+    hint:
+      'Rút ra từ những gì bạn ĐÃ nhìn thấy: các dòng tin tình báo và bảng xếp hạng quý trước. Không dùng số liệu ẩn nào, nên bạn tự kiểm chứng được từng câu.',
+    mapTitle: 'Bản đồ vị thế',
+    mapHint:
+      'Giá bán trung bình (doanh thu ÷ sản lượng) đặt cạnh mức hài lòng khách hàng — cả hai đều có trên bảng xếp hạng. Chỗ nào đông là chỗ cạnh tranh gay gắt; chỗ nào trống là khoảng hở.',
+    mapPrice: 'Giá bán TB',
+    mapCsat: 'Hài lòng KH',
+    mapShare: 'Thị phần',
+    manyCutPrice:
+      '{count} đối thủ đã hạ giá ở quý trước. Quý này giá chiếm {price}% quyết định mua — hạ giá theo là cuộc đua xuống đáy, ai cũng bán rẻ hơn mà không ai giành thêm được thị phần.',
+    manyRaisedPrice:
+      '{count} đối thủ đã đẩy giá lên cao cấp, trong khi quý này giá vẫn chiếm {price}% quyết định mua. Phân khúc giá tốt đang bị bỏ trống.',
+    marketingCrowded:
+      '{count} đối thủ cùng đổ mạnh vào marketing. Khi ai cũng hét to thì không ai được nghe thấy — và ngân sách ấy có thể dùng chỗ khác hiệu quả hơn.',
+    innovationRace:
+      '{count} đối thủ đang chạy đua sản phẩm và công nghệ. Đây là cuộc đua tích luỹ nhiều quý; nhảy vào muộn thì tốn mà không kịp bắt.',
+    distributionGap:
+      'Không ai đẩy phân phối ở quý trước, mà quý này phân phối chiếm {weight}% quyết định mua. Đây là khoảng trống đang bỏ ngỏ.',
+    cxGap: 'Không đối thủ nào tập trung vào trải nghiệm khách hàng. CSAT kéo theo cả thương hiệu lẫn tỷ lệ trả hàng — một hướng ít người đi.',
+    leaderPulling:
+      '{company} đang dẫn với {share}% thị phần, gấp rưỡi bạn ({yours}%). Đi theo đúng cách họ làm thường là muộn; tìm chỗ họ yếu thì hơn.',
+    youLead: 'Bạn đang dẫn đầu nhóm với {share}% thị phần. Giờ bạn là người bị nhắm tới.',
+    packTight:
+      'Cả nhóm bám rất sát nhau — chênh lệch thị phần chỉ {value} điểm phần trăm. Một nước đi khác biệt lúc này có sức nặng hơn bình thường.',
+    botSeats:
+      '{count} chỗ ngồi do máy điều khiển. Máy chơi theo một khuôn cố định, nên đó là đối thủ duy nhất bạn đoán trước được.',
+    quietQuarter: 'Chưa đủ dữ liệu để đọc vị. Sau quý đầu tiên sẽ có.',
+  },
+  sandbox: {
+    title: 'Bàn thử nghiệm',
+    hint:
+      'Thử một phân bổ và xem mô hình phản ứng thế nào. Đối thủ ở đây là 5 bản sao của chính công ty bạn, cùng chơi 20/20/20/20/20 ở giá 100.',
+    disclaimer:
+      'ĐÂY KHÔNG PHẢI DỰ ĐOÁN kết quả quý thật. Nó cố tình không dùng số liệu của bạn cùng nhóm — nếu dùng, bạn có thể thử đi thử lại để dò ngược ra quyết định của họ. Nó trả lời "mô hình này thưởng cho điều gì", không phải "tôi sẽ thắng hay thua".',
+    run: 'Thử phân bổ này',
+    running: 'Đang thử…',
+    yours: 'Phân bổ của bạn',
+    neutral: 'Phân bổ cân bằng',
+    difference: 'Chênh lệch',
+  },
   errors: {
     weakPassword: 'Mật khẩu cần ít nhất 8 ký tự',
     emailAlreadyExists: 'Email này đã có tài khoản. Hãy sửa trực tiếp trên dòng của họ trong danh sách.',

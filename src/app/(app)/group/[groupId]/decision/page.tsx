@@ -2,9 +2,12 @@ import { notFound, redirect } from 'next/navigation';
 import {
   ARENA_SCENARIO_VERSION,
   ARENA_SEATS,
+  buildArenaIntel,
   createArenaCompanies,
   getGameConfig,
   getMarketEvent,
+  positioningMap,
+  readRivals,
   suggestStrategies,
   type QuarterDecision,
 } from '@/domain/simulation';
@@ -85,6 +88,32 @@ export default async function GroupDecisionPage({
     .map((q) => q.decisions[member.seatKey])
     .filter((decision): decision is QuarterDecision => Boolean(decision));
 
+  // Reading the field, from PUBLISHED signals only: the intelligence lines and
+  // the ranking table of the last played quarter. Built per viewer, like the
+  // intel itself — see `buildArenaIntel`.
+  const lastQuarter = quarters[quarters.length - 1] ?? null;
+  const botSeats = ARENA_SEATS.filter((seat) => state.group.seats[seat] == null);
+  const rivalNotes = readRivals({
+    viewerSeat: member.seatKey,
+    lastQuarter: lastQuarter
+      ? {
+          intel: buildArenaIntel(
+            member.seatKey,
+            lastQuarter.decisions,
+            quarters[quarters.length - 2]?.decisions ?? null,
+            companies,
+          ),
+          results: lastQuarter.results,
+        }
+      : null,
+    event,
+    botSeats,
+    config,
+  });
+  const positioning = lastQuarter
+    ? positioningMap(lastQuarter.results, member.seatKey, botSeats)
+    : [];
+
   const suggestions = suggestStrategies(
     event,
     playerState,
@@ -123,6 +152,9 @@ export default async function GroupDecisionPage({
         playerState={playerState}
         suggestions={suggestions}
         previousDecisions={previousDecisions}
+        rivalNotes={rivalNotes}
+        positioning={positioning}
+        seed={state.game?.randomSeed ?? groupId}
       />
     </main>
   );
