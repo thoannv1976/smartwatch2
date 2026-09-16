@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getRepositories } from '@/db/repositories/firestore';
 import { AuthorizationError, hasRole, requireRole } from '@/server/auth/session';
-import { quartersToCsv, resultsToCsv } from '@/server/instructor/csv';
-import { listLeaderboard } from '@/server/instructor/queries';
+import { groupsToCsv, quartersToCsv, resultsToCsv } from '@/server/instructor/csv';
+import { getGroupDetail, listGroupProgress, listLeaderboard } from '@/server/instructor/queries';
 
 /**
  * CSV export for an assignment (spec 9.3).
@@ -26,7 +26,9 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const assignmentId = url.searchParams.get('assignmentId');
-  const type = url.searchParams.get('type') === 'quarters' ? 'quarters' : 'results';
+  const requestedType = url.searchParams.get('type');
+  const type =
+    requestedType === 'quarters' || requestedType === 'groups' ? requestedType : 'results';
   if (!assignmentId) {
     return NextResponse.json({ error: 'assignmentNotFound' }, { status: 400 });
   }
@@ -45,7 +47,29 @@ export async function GET(request: Request) {
   const results = await listLeaderboard(assignmentId, 'finalScore');
 
   let csv: string;
-  if (type === 'quarters') {
+  if (type === 'groups') {
+    // Every group of this assignment, all six companies per quarter. Staff only
+    // — this is the one export that carries exact allocations.
+    const progress = await listGroupProgress(assignmentId);
+    const details = await Promise.all(progress.map((row) => getGroupDetail(row.group.id)));
+
+    csv = groupsToCsv(
+      details
+        .filter((detail): detail is NonNullable<typeof detail> => detail !== null)
+        .map((detail) => ({
+          groupName: detail.group.name,
+          quarters: detail.quarters,
+          members: detail.members.map((member) => ({
+            seatKey: member.seatKey,
+            studentCode: member.studentCode,
+            displayName: member.displayName,
+            email: member.email,
+            companyName: member.companyName,
+          })),
+          defaults: detail.defaults,
+        })),
+    );
+  } else if (type === 'quarters') {
     const entries = await Promise.all(
       results.map(async (result) => ({
         studentCode: result.studentCode,

@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import {
+  ARENA_SCENARIO_VERSION,
   ENGINE_VERSION,
   SCENARIO_VERSION,
   SELECTABLE_SCENARIO_VERSIONS,
@@ -12,6 +13,7 @@ import { ROLES, type Role } from '@/db/models';
 import { AuthorizationError, hasRole, requireRole } from '@/server/auth/session';
 import { getAuthAdmin } from '@/server/auth/admin-users';
 import { createAccountAdminService } from '@/server/auth/account-admin';
+import { createGroupService } from '@/server/group/service';
 import { patchKeepsWindowValid } from './validation';
 import type { GameErrorKey } from '@/server/game/errors';
 
@@ -138,6 +140,9 @@ const createAssignmentSchema = z.object({
   scenarioVersion: z.enum(SELECTABLE_SCENARIO_VERSIONS as unknown as [string, ...string[]]),
   officialSeed: z.string().trim().min(3).max(80),
   isOpen: z.boolean(),
+  mode: z.enum(['SOLO', 'GROUP']).optional(),
+  /** GROUP only: how many empty groups to create up front. */
+  groupCount: z.number().int().min(1).max(50).optional(),
 });
 
 export async function createAssignmentAction(
@@ -149,20 +154,38 @@ export async function createAssignmentAction(
 
     if (parsed.deadline <= parsed.startAt) return { ok: false, error: 'invalidInput' };
 
+    const mode = parsed.mode ?? 'SOLO';
+
     const assignment = await getRepositories().assignments.create({
       courseId: parsed.courseId,
       title: parsed.title,
       startAt: parsed.startAt,
       deadline: parsed.deadline,
-      maxAttempts: parsed.maxAttempts,
-      scenarioVersion: parsed.scenarioVersion || SCENARIO_VERSION,
+      // A group assignment is one shared match, not a set of attempts.
+      maxAttempts: mode === 'GROUP' ? 1 : parsed.maxAttempts,
+      // Group play REQUIRES the arena scenario, where all six seats start
+      // identically — the solo scenarios begin 60 capability points apart and
+      // would decide the match by which seat a student was handed. Forced here
+      // rather than offered, because it is not a preference.
+      scenarioVersion:
+        mode === 'GROUP' ? ARENA_SCENARIO_VERSION : parsed.scenarioVersion || SCENARIO_VERSION,
       // The engine version is recorded by the server, never chosen in the UI:
       // it identifies the code that will produce the results (spec 13.3).
       engineVersion: ENGINE_VERSION,
       officialSeed: parsed.officialSeed,
       isOpen: parsed.isOpen,
       createdBy: user.uid,
+      mode,
     });
+
+    if (mode === 'GROUP') {
+      await createGroupService(getRepositories()).createGroups({
+        assignmentId: assignment.id,
+        count: parsed.groupCount ?? 1,
+        createdBy: user.uid,
+        namePrefix: 'Group',
+      });
+    }
 
     revalidatePath('/instructor');
     return { ok: true, data: { assignmentId: assignment.id } };
@@ -637,5 +660,165 @@ export async function passwordResetLinkAction(
   } catch (error) {
     logAuthFailure('passwordResetLink', error);
     return { ok: false, error: 'authOperationFailed' };
+  }
+}
+
+// --- group competition (Part 2) ---------------------------------------------
+
+/**
+ * Verifies the caller may manage this group's assignment.
+ *
+ * Group ids are not secrets — they appear in URLs — so every group action
+ * resolves the group to its course and checks ownership there, exactly like
+ * every other staff action. Being handed an id is not authorisation.
+ */
+async function requireGroupAccess(groupId: string) {
+  const repos = getRepositories();
+  const group = await repos.groups.get(groupId);
+  if (!group) throw new AuthorizationError('forbidden');
+  await requireCourseAccess(group.courseId);
+  return { repos, group };
+}
+
+const groupIdSchema = z.object({ groupId: z.string().min(1) });
+
+const addGroupsSchema = z.object({
+  assignmentId: z.string().min(1),
+  count: z.number().int().min(1).max(50),
+});
+
+export async function addGroupsAction(
+  input: z.input<typeof addGroupsSchema>,
+): Promise<StaffActionResult<{ created: number }>> {
+  try {
+    const parsed = addGroupsSchema.parse(input);
+    const repos = getRepositories();
+    const assignment = await repos.assignments.get(parsed.assignmentId);
+    if (!assignment) return { ok: false, error: 'assignmentNotFound' };
+    const { user } = await requireCourseAccess(assignment.courseId);
+
+    const groups = await createGroupService(repos).createGroups({
+      assignmentId: assignment.id,
+      count: parsed.count,
+      createdBy: user.uid,
+      namePrefix: 'Group',
+    });
+
+    revalidatePath(`/instructor/assignments/${assignment.id}`);
+    return { ok: true, data: { created: groups.length } };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+/**
+ * Runs the current quarter now, filling in for anyone who has not submitted.
+ *
+ * The escape hatch for a match stalled on one person. Every filled-in decision
+ * is flagged so the group report shows it — see `GroupService.forceQuarter`.
+ */
+export async function forceGroupQuarterAction(
+  input: z.input<typeof groupIdSchema>,
+): Promise<StaffActionResult<{ ran: boolean; filled: number }>> {
+  try {
+    const parsed = groupIdSchema.parse(input);
+    const { repos, group } = await requireGroupAccess(parsed.groupId);
+
+    const result = await createGroupService(repos).forceQuarter(group.id);
+
+    revalidatePath(`/instructor/assignments/${group.assignmentId}`);
+    revalidatePath(`/group/${group.id}`);
+    return { ok: true, data: { ran: result.ran, filled: result.filledSeats.length } };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+/** Issues a fresh join code, invalidating the old one. */
+export async function regenerateGroupCodeAction(
+  input: z.input<typeof groupIdSchema>,
+): Promise<StaffActionResult<{ joinCode: string }>> {
+  try {
+    const parsed = groupIdSchema.parse(input);
+    const { repos, group } = await requireGroupAccess(parsed.groupId);
+
+    const updated = await createGroupService(repos).regenerateJoinCode(group.id);
+
+    revalidatePath(`/instructor/assignments/${group.assignmentId}`);
+    return { ok: true, data: { joinCode: updated.joinCode } };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+const releaseSeatSchema = z.object({
+  groupId: z.string().min(1),
+  uid: z.string().min(1),
+});
+
+/**
+ * Takes a student out of their seat, which a bot then drives.
+ *
+ * The member row is kept with `leftAt` set — they may already have results in
+ * the match, and a row that vanished would make those look like they came from
+ * nowhere.
+ */
+export async function releaseGroupSeatAction(
+  input: z.input<typeof releaseSeatSchema>,
+): Promise<StaffActionResult<Record<string, never>>> {
+  try {
+    const parsed = releaseSeatSchema.parse(input);
+    const { repos, group } = await requireGroupAccess(parsed.groupId);
+
+    await createGroupService(repos).releaseSeat(group.id, parsed.uid);
+
+    revalidatePath(`/instructor/assignments/${group.assignmentId}`);
+    revalidatePath(`/group/${group.id}`);
+    return { ok: true, data: {} };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+const renameGroupSchema = z.object({
+  groupId: z.string().min(1),
+  name: z.string().trim().min(1).max(60),
+});
+
+export async function renameGroupAction(
+  input: z.input<typeof renameGroupSchema>,
+): Promise<StaffActionResult<Record<string, never>>> {
+  try {
+    const parsed = renameGroupSchema.parse(input);
+    const { repos, group } = await requireGroupAccess(parsed.groupId);
+
+    await repos.groups.update(group.id, { name: parsed.name });
+
+    revalidatePath(`/instructor/assignments/${group.assignmentId}`);
+    return { ok: true, data: {} };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+const setGroupArchivedSchema = z.object({
+  groupId: z.string().min(1),
+  archived: z.boolean(),
+});
+
+/** Soft delete. A played match is never removed, only hidden from the list. */
+export async function setGroupArchivedAction(
+  input: z.input<typeof setGroupArchivedSchema>,
+): Promise<StaffActionResult<Record<string, never>>> {
+  try {
+    const parsed = setGroupArchivedSchema.parse(input);
+    const { repos, group } = await requireGroupAccess(parsed.groupId);
+
+    await repos.groups.setArchived(group.id, parsed.archived ? Date.now() : null);
+
+    revalidatePath(`/instructor/assignments/${group.assignmentId}`);
+    return { ok: true, data: {} };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
   }
 }

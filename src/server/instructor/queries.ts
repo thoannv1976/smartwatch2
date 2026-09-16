@@ -1,4 +1,12 @@
 import 'server-only';
+import {
+  ARENA_SCENARIO_VERSION,
+  ARENA_SEATS,
+  computeGameFinalScores,
+  getGameConfig,
+  groupResultsByCompany,
+  type CompanyKey,
+} from '@/domain/simulation';
 import { getRepositories } from '@/db/repositories/firestore';
 import { isRemoved } from '@/db/models';
 import type {
@@ -6,6 +14,9 @@ import type {
   CourseDoc,
   CourseMemberDoc,
   FinalResultDoc,
+  GroupDoc,
+  GroupGameDoc,
+  GroupMemberDoc,
   GameSessionDoc,
   LeaderboardSort,
 } from '@/db/models';
@@ -179,4 +190,117 @@ export async function getStudentDetail(sessionId: string) {
   ]);
 
   return { session, quarters, result, user };
+}
+
+// --- group competition (Part 2) ---------------------------------------------
+
+/** One group, as the instructor's progress table shows it. */
+export interface GroupProgress {
+  group: GroupDoc;
+  members: GroupMemberDoc[];
+  /** null until the first quarter has been submitted for. */
+  game: GroupGameDoc | null;
+  quartersPlayed: number;
+  /** Quarter everyone is deciding, or null once the match is finished. */
+  currentQuarter: number | null;
+  completed: boolean;
+  /** Students whose decision the whole group is waiting on. The blockers. */
+  waitingOn: { uid: string; displayName: string; seatKey: CompanyKey }[];
+  submittedCount: number;
+  /** Seats with no student, driven by the rule-based generator. */
+  botSeatCount: number;
+}
+
+/**
+ * Every group of an assignment, with who is holding it up.
+ *
+ * This is the screen that makes "wait for all six, instructor can force it"
+ * workable: without a per-quarter deadline, an instructor needs to see at a
+ * glance which groups are stuck and on whom.
+ */
+export async function listGroupProgress(assignmentId: string): Promise<GroupProgress[]> {
+  const repos = getRepositories();
+  const groups = await repos.groups.listByAssignment(assignmentId);
+  if (groups.length === 0) return [];
+
+  const config = getGameConfig(ARENA_SCENARIO_VERSION);
+
+  return Promise.all(
+    groups.map(async (group) => {
+      const [members, game] = await Promise.all([
+        repos.groups.listMembers(group.id),
+        repos.groupGames.get(group.id),
+      ]);
+
+      const round = game?.currentRound ?? 0;
+      const completed = game?.status === 'COMPLETED' || round >= config.quarters;
+      const currentQuarter = completed ? null : round + 1;
+
+      const occupied = ARENA_SEATS.filter((seat) => group.seats[seat] != null);
+      const submissions =
+        currentQuarter !== null && game
+          ? await repos.groupGames.listSubmissions(group.id, currentQuarter)
+          : [];
+      const submitted = new Set(submissions.map((s) => s.seatKey));
+
+      const byUid = new Map(members.map((m) => [m.uid, m]));
+      const waitingOn = occupied
+        .filter((seat) => !submitted.has(seat))
+        .map((seatKey) => {
+          const uid = group.seats[seatKey]!;
+          return { uid, displayName: byUid.get(uid)?.displayName ?? uid, seatKey };
+        });
+
+      return {
+        group,
+        members,
+        game,
+        quartersPlayed: round,
+        currentQuarter,
+        completed,
+        waitingOn: completed ? [] : waitingOn,
+        submittedCount: occupied.length - waitingOn.length,
+        botSeatCount: ARENA_SEATS.length - occupied.length,
+      } satisfies GroupProgress;
+    }),
+  );
+}
+
+/**
+ * Everything the instructor's group report needs.
+ *
+ * Unlike the student view, this DOES carry all six decisions: staff may see the
+ * exact allocations (spec 7.3), and the whole point of the screen is to explain
+ * why one company beat another.
+ */
+export async function getGroupDetail(groupId: string) {
+  const repos = getRepositories();
+  const group = await repos.groups.get(groupId);
+  if (!group) return null;
+
+  const [members, game, quarters] = await Promise.all([
+    repos.groups.listMembers(groupId),
+    repos.groupGames.get(groupId),
+    repos.groupGames.listQuarters(groupId),
+  ]);
+
+  const config = getGameConfig(game?.scenarioVersion ?? ARENA_SCENARIO_VERSION);
+  const scores =
+    quarters.length > 0
+      ? computeGameFinalScores(
+          groupResultsByCompany(quarters.flatMap((q) => q.results)),
+          config,
+        )
+      : [];
+
+  // Which decisions were supplied by the system rather than by the student.
+  const defaults = new Map<string, boolean>();
+  for (const quarter of quarters) {
+    const submissions = await repos.groupGames.listSubmissions(groupId, quarter.quarter);
+    for (const submission of submissions) {
+      defaults.set(`${quarter.quarter}_${submission.seatKey}`, submission.wasDefault);
+    }
+  }
+
+  return { group, members, game, quarters, scores, defaults };
 }

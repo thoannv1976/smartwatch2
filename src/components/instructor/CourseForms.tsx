@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
+  ARENA_SCENARIO_VERSION,
   OFFICIAL_SEED_EXAMPLE,
   SCENARIO_VERSION,
   SELECTABLE_SCENARIO_VERSIONS,
@@ -132,6 +133,10 @@ export function CreateAssignmentForm({ courseId }: { courseId: string }) {
   const [scenarioVersion, setScenarioVersion] = useState<string>(SCENARIO_VERSION);
   const [officialSeed, setOfficialSeed] = useState(OFFICIAL_SEED_EXAMPLE);
   const [isOpen, setIsOpen] = useState(true);
+  const [mode, setMode] = useState<'SOLO' | 'GROUP'>('SOLO');
+  const [groupCount, setGroupCount] = useState(4);
+
+  const isGroup = mode === 'GROUP';
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -146,6 +151,8 @@ export function CreateAssignmentForm({ courseId }: { courseId: string }) {
         scenarioVersion,
         officialSeed,
         isOpen,
+        mode,
+        groupCount: isGroup ? groupCount : undefined,
       });
       if (result.ok) {
         setTitle('');
@@ -160,6 +167,35 @@ export function CreateAssignmentForm({ courseId }: { courseId: string }) {
     <Card>
       <CardTitle hint={t.instructor.seedHint}>{t.instructor.newAssignment}</CardTitle>
       <form onSubmit={submit} className="flex flex-col gap-4">
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="flex flex-col gap-1 text-xs text-ink-300">
+            {t.groupAdmin.modeLabel}
+            <select
+              value={mode}
+              onChange={(e) => setMode(e.target.value as 'SOLO' | 'GROUP')}
+              className="rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
+            >
+              <option value="SOLO">{t.groupAdmin.modeSolo}</option>
+              <option value="GROUP">{t.groupAdmin.modeGroup}</option>
+            </select>
+          </label>
+          {isGroup ? (
+            <label className="flex flex-col gap-1 text-xs text-ink-300">
+              {t.groupAdmin.groupCount}
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={groupCount}
+                onChange={(e) =>
+                  setGroupCount(Math.max(1, Math.min(50, Number(e.target.value) || 1)))
+                }
+                className="tnum w-24 rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
+              />
+            </label>
+          ) : null}
+        </div>
+
         <div className="flex flex-wrap items-end gap-3">
           <Field label={t.instructor.assignmentTitle} value={title} onChange={setTitle} width="w-64" />
           <label className="flex flex-col gap-1 text-xs text-ink-300">
@@ -180,34 +216,43 @@ export function CreateAssignmentForm({ courseId }: { courseId: string }) {
               className="rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
             />
           </label>
-          <label className="flex flex-col gap-1 text-xs text-ink-300">
-            {t.instructor.maxAttempts}
-            <input
-              type="number"
-              min={1}
-              max={10}
-              value={maxAttempts}
-              onChange={(e) => setMaxAttempts(Number(e.target.value))}
-              className="tnum w-20 rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
-            />
-          </label>
+          {/* A group assignment is one shared match, so attempts do not apply. */}
+          {isGroup ? null : (
+            <label className="flex flex-col gap-1 text-xs text-ink-300">
+              {t.instructor.maxAttempts}
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={maxAttempts}
+                onChange={(e) => setMaxAttempts(Number(e.target.value))}
+                className="tnum w-20 rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
+              />
+            </label>
+          )}
         </div>
 
         <div className="flex flex-wrap items-end gap-3">
-          <label className="flex flex-col gap-1 text-xs text-ink-300">
-            {t.instructor.scenarioVersion}
-            <select
-              value={scenarioVersion}
-              onChange={(e) => setScenarioVersion(e.target.value)}
-              className="rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
-            >
-              {SELECTABLE_SCENARIO_VERSIONS.map((version) => (
-                <option key={version} value={version}>
-                  {version}
-                </option>
-              ))}
-            </select>
-          </label>
+          {/* Group play is locked to the arena scenario, where all six seats
+              start identically. Not a preference — see the hint below. */}
+          {isGroup ? (
+            <p className="pb-2 font-mono text-xs text-ink-400">{ARENA_SCENARIO_VERSION}</p>
+          ) : (
+            <label className="flex flex-col gap-1 text-xs text-ink-300">
+              {t.instructor.scenarioVersion}
+              <select
+                value={scenarioVersion}
+                onChange={(e) => setScenarioVersion(e.target.value)}
+                className="rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
+              >
+                {SELECTABLE_SCENARIO_VERSIONS.map((version) => (
+                  <option key={version} value={version}>
+                    {version}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           <Field
             label={t.instructor.officialSeed}
             value={officialSeed}
@@ -233,7 +278,7 @@ export function CreateAssignmentForm({ courseId }: { courseId: string }) {
           </button>
         </div>
 
-        <InfoNote>{t.leaderboard.subtitle}</InfoNote>
+        <InfoNote>{isGroup ? t.groupAdmin.modeGroupHint : t.leaderboard.subtitle}</InfoNote>
         {error ? <ErrorNote>{error}</ErrorNote> : null}
       </form>
     </Card>

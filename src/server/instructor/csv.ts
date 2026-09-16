@@ -215,3 +215,110 @@ export function quartersToCsv(
 
   return toCsv(QUARTER_HEADERS, rows);
 }
+
+const GROUP_HEADERS = [
+  'group_name',
+  'student_code',
+  'display_name',
+  'email',
+  'company_name',
+  'seat',
+  'quarter',
+  'event',
+  'product_points',
+  'technology_points',
+  'marketing_points',
+  'distribution_points',
+  'cx_points',
+  'price_index',
+  // 1 when the system supplied this decision because the instructor forced the
+  // quarter through before the student submitted.
+  'was_default',
+  'units_sold',
+  'actual_price',
+  'revenue',
+  'net_profit',
+  'net_profit_margin',
+  'market_share',
+  'rank',
+  'product_quality',
+  'technology',
+  'brand_awareness',
+  'distribution',
+  'customer_experience',
+  'customer_satisfaction',
+];
+
+/**
+ * Per-quarter export of a whole group: all six companies side by side.
+ *
+ * The file that answers "why did this company win and that one lose", which in
+ * a group match is a question about six students rather than one. Unlike
+ * anything a student can see, it carries the exact allocations of all six —
+ * staff may see those (spec 7.3), and comparing them IS the teaching material.
+ *
+ * Bot-driven seats are included, marked by an empty student code and name, so
+ * the market in the file is the market that was actually simulated.
+ */
+export function groupsToCsv(
+  groups: {
+    groupName: string;
+    quarters: QuarterDoc[];
+    members: {
+      seatKey: CompanyKey;
+      studentCode: string | null;
+      displayName: string;
+      email: string;
+      companyName: string;
+    }[];
+    /** `${quarter}_${seatKey}` -> whether the decision was supplied by the system. */
+    defaults: Map<string, boolean>;
+  }[],
+): string {
+  const rows: (string | number | null)[][] = [];
+
+  for (const group of groups) {
+    const bySeat = new Map(group.members.map((m) => [m.seatKey, m]));
+
+    for (const quarter of [...group.quarters].sort((a, b) => a.quarter - b.quarter)) {
+      for (const result of [...quarter.results].sort((a, b) => a.rank - b.rank)) {
+        const decision = quarter.decisions[result.companyKey];
+        if (!decision) continue;
+        const member = bySeat.get(result.companyKey);
+
+        rows.push([
+          group.groupName,
+          member?.studentCode ?? '',
+          member?.displayName ?? '',
+          member?.email ?? '',
+          result.companyName,
+          result.companyKey,
+          quarter.quarter,
+          quarter.eventKey,
+          decision.productPoints,
+          decision.technologyPoints,
+          decision.marketingPoints,
+          decision.distributionPoints,
+          decision.cxPoints,
+          decision.priceIndex,
+          group.defaults.get(`${quarter.quarter}_${result.companyKey}`) ? 1 : 0,
+          result.unitsSold,
+          result.actualPrice,
+          result.revenue,
+          result.netProfit,
+          result.netProfitMargin,
+          result.marketShare,
+          result.rank,
+          result.productQuality,
+          result.technology,
+          result.brandAwareness,
+          result.distribution,
+          result.customerExperience,
+          result.customerSatisfaction,
+        ]);
+      }
+    }
+  }
+
+  return toCsv(GROUP_HEADERS, rows);
+}

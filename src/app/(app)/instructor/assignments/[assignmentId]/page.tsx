@@ -1,15 +1,24 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { isArchived, LEADERBOARD_SORTS, type LeaderboardSort } from '@/db/models';
+import { ARENA_SEATS } from '@/domain/simulation';
+import { assignmentMode, isArchived, LEADERBOARD_SORTS, type LeaderboardSort } from '@/db/models';
 import { requireRolePage } from '@/server/auth/guards';
 import { hasRole } from '@/server/auth/session';
 import {
   getAssignmentAnalytics,
+  listGroupProgress,
   listLeaderboard,
   listParticipation,
 } from '@/server/instructor/queries';
 import { getTranslations } from '@/i18n/server';
+import { interpolate } from '@/i18n';
 import { AssignmentArchiveButton, AssignmentToggle } from '@/components/instructor/CourseForms';
+import {
+  AddGroupsForm,
+  ForceQuarterButton,
+  RegenerateCodeButton,
+  ReleaseSeatButton,
+} from '@/components/instructor/GroupControls';
 import {
   Badge,
   Card,
@@ -74,6 +83,8 @@ export default async function AssignmentDetailPage({
   const sessionByUser = new Map(participation.map((p) => [p.member.uid, p.session?.id ?? null]));
 
   const { assignment } = analytics;
+  const mode = assignmentMode(assignment);
+  const groups = mode === 'GROUP' ? await listGroupProgress(assignmentId) : [];
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
@@ -162,6 +173,16 @@ export default async function AssignmentDetailPage({
           >
             {t.common.export} · {t.history.decisionsTable}
           </a>
+          {/* Staff only, and the one export that carries every company's exact
+              allocation — which is what makes a group match explainable. */}
+          {mode === 'GROUP' ? (
+            <a
+              href={`/api/instructor/export?assignmentId=${assignment.id}&type=groups`}
+              className="rounded-md border border-ink-600 bg-ink-800 px-4 py-2 text-sm font-semibold text-ink-100 transition hover:bg-ink-700"
+            >
+              {t.groupAdmin.exportGroups}
+            </a>
+          ) : null}
         </div>
         <p className="mt-2 text-xs text-ink-400">{t.instructor.exportHint}</p>
       </Card>
@@ -249,6 +270,121 @@ export default async function AssignmentDetailPage({
           </TableScroll>
         )}
       </Card>
+
+      {/* Groups. The column that matters is WAITING ON: with no automatic
+          per-quarter deadline, a stalled group is stalled on a person, and the
+          instructor needs to see who at a glance. */}
+      {mode === 'GROUP' ? (
+        <Card>
+          <CardTitle right={<AddGroupsForm assignmentId={assignmentId} />}>
+            {t.groupAdmin.tab}
+          </CardTitle>
+
+          {groups.length === 0 ? (
+            <EmptyState>{t.groupAdmin.noGroups}</EmptyState>
+          ) : (
+            <TableScroll>
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr>
+                    <Th>{t.groupAdmin.tab}</Th>
+                    <Th>{t.groupAdmin.joinCode}</Th>
+                    <Th align="right">{t.groupAdmin.members}</Th>
+                    <Th>{t.groupAdmin.progress}</Th>
+                    <Th>{t.groupAdmin.waitingOn.replace('{names}', '').replace(':', '')}</Th>
+                    <Th align="right">{t.groupAdmin.forceRun}</Th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {groups.map((row) => (
+                    <tr key={row.group.id}>
+                      <Td className="text-ink-100">
+                        <Link
+                          href={`/instructor/groups/${row.group.id}`}
+                          className="underline-offset-2 hover:underline"
+                        >
+                          {row.group.name}
+                        </Link>
+                        {isArchived(row.group) ? (
+                          <span className="ml-2 align-middle">
+                            <Badge tone="warn">{t.instructorAdmin.archived}</Badge>
+                          </span>
+                        ) : null}
+                      </Td>
+                      <Td>
+                        <span className="flex flex-wrap items-center gap-2">
+                          <span className="font-mono text-sm tracking-widest text-ink-100">
+                            {row.group.joinCode}
+                          </span>
+                          <RegenerateCodeButton groupId={row.group.id} />
+                        </span>
+                      </Td>
+                      <Td numeric align="right">
+                        {row.members.filter((m) => m.leftAt == null).length} / {ARENA_SEATS.length}
+                        {row.botSeatCount > 0 ? (
+                          <span className="ml-2 text-xs text-ink-500">
+                            {interpolate(t.groupAdmin.botSeats, { count: row.botSeatCount })}
+                          </span>
+                        ) : null}
+                      </Td>
+                      <Td>
+                        {row.completed ? (
+                          <Badge tone="good">{t.groupAdmin.finished}</Badge>
+                        ) : row.quartersPlayed === 0 && row.waitingOn.length === 0 ? (
+                          <Badge tone="neutral">{t.groupAdmin.notStarted}</Badge>
+                        ) : (
+                          <span className="tnum text-sm text-ink-200">
+                            {interpolate(t.groupAdmin.quarterOf, {
+                              current: row.currentQuarter ?? row.quartersPlayed,
+                              total: 6,
+                            })}
+                          </span>
+                        )}
+                      </Td>
+                      <Td>
+                        {row.completed ? (
+                          <span className="text-xs text-ink-500">—</span>
+                        ) : row.waitingOn.length === 0 ? (
+                          <span className="text-xs text-good-400">
+                            {t.groupAdmin.allSubmitted}
+                          </span>
+                        ) : (
+                          <span className="flex flex-col gap-1">
+                            {row.waitingOn.map((student) => (
+                              <span
+                                key={student.uid}
+                                className="flex items-center gap-2 text-xs text-warn-500"
+                              >
+                                {student.displayName}
+                                <ReleaseSeatButton groupId={row.group.id} uid={student.uid} />
+                              </span>
+                            ))}
+                          </span>
+                        )}
+                      </Td>
+                      <Td align="right">
+                        {row.completed ? (
+                          <Link
+                            href={`/instructor/groups/${row.group.id}`}
+                            className="rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-700"
+                          >
+                            {t.groupAdmin.viewGroup}
+                          </Link>
+                        ) : (
+                          <ForceQuarterButton
+                            groupId={row.group.id}
+                            disabled={row.members.filter((m) => m.leftAt == null).length === 0}
+                          />
+                        )}
+                      </Td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </TableScroll>
+          )}
+        </Card>
+      ) : null}
 
       {/* Participation, including students who never started */}
       <Card>
