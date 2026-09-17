@@ -17,6 +17,7 @@ export * from './analysis';
 export * from './advice';
 export * from './forecast';
 export * from './press';
+export * from './achievements';
 export * from './optimizer';
 export * from './arena';
 export * from './rivals';

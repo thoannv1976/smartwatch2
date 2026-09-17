@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   PLAYER_COMPANY_KEY,
+  awardAchievements,
   classPercentile,
   forecastAccuracy,
   getGameConfig,
@@ -18,6 +19,7 @@ import { BarChart } from '@/components/charts/BarChart';
 import { HindsightPanel } from '@/components/game/HindsightPanel';
 import { TenureReviewCard } from '@/components/game/TenureReview';
 import { ForecastAccuracyCard } from '@/components/game/ForecastReview';
+import { AchievementShelf } from '@/components/game/AchievementShelf';
 import { PrintButton } from '@/components/ui/PrintButton';
 import { seriesColor } from '@/components/charts/series';
 import {
@@ -105,6 +107,23 @@ export default async function ReportPage({
       })
       .filter((entry): entry is NonNullable<typeof entry> => entry !== null),
   );
+
+  // Derived, never stored — so a session played long before achievements
+  // existed earns exactly what its results deserve.
+  const achievements = awardAchievements({
+    quarters: quarters
+      .map((q) => {
+        const result = q.results.find((r) => r.companyKey === PLAYER_COMPANY_KEY);
+        const decision = q.decisions[PLAYER_COMPANY_KEY];
+        return result && decision
+          ? { quarter: q.quarter, eventKey: q.eventKey, weights: q.weights, decision, result }
+          : null;
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => entry !== null),
+    score: playerScore,
+    config,
+    forecastIndex: forecast?.index ?? null,
+  });
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6">
@@ -194,6 +213,8 @@ export default async function ReportPage({
       {/* Intent beside outcome. Placed straight after the tenure verdict, while
           the student is still reading about how they played, rather than at the
           bottom where a printed report buries it. */}
+      <AchievementShelf t={t} locale={locale} earned={achievements} />
+
       {forecast ? (
         <ForecastAccuracyCard t={t} accuracy={forecast} totalQuarters={config.quarters} />
       ) : null}
@@ -401,6 +422,12 @@ export default async function ReportPage({
 
       <div className="no-print flex flex-wrap gap-3">
         <PrintButton />
+        <Link
+          href={`/report/${sessionId}/certificate`}
+          className="rounded-md border border-brand-600/50 bg-brand-500/10 px-5 py-2.5 text-sm font-semibold text-brand-400 transition hover:bg-brand-500/20"
+        >
+          {t.certificate.open}
+        </Link>
         <Link
           href={`/game/${sessionId}/history`}
           className="rounded-md border border-ink-600 bg-ink-800 px-5 py-2.5 text-sm text-ink-100 transition hover:bg-ink-700"

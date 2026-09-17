@@ -938,6 +938,61 @@ export const vi = {
       'Việc nên làm ở quý sau: giữ nguyên hướng này. Hội đồng không thấy vấn đề nào cần chữa gấp — hãy làm sâu thêm thứ đang hiệu quả.',
   },
 
+  achievements: {
+    title: 'Thành tích',
+    hint: 'Suy ra từ chính kết quả 6 quý của bạn. Không có huy hiệu nào thưởng cho việc chăm vào app — mỗi cái đều mô tả một điều bạn đã LÀM với tư cách CEO.',
+    none: 'Nhiệm kỳ này chưa đạt huy hiệu nào. Không sao — mỗi huy hiệu là một tiêu chuẩn khá cao, và chúng vẫn ở đó cho lần chơi sau.',
+    earnedCount: 'Đạt {earned}/{total}',
+    lockedTitle: 'Chưa đạt',
+  },
+
+  achievementName: {
+    comeback: 'Lội ngược dòng',
+    wireToWire: 'Dẫn đầu từ đầu đến cuối',
+    sustainedProfit: 'CEO lãi bền',
+    marketReader: 'Đọc vị thị trường',
+    eventSurfer: 'Đúng người đúng lúc',
+    nobodyLeftBehind: 'Không bỏ khách hàng lại',
+    capitalDiscipline: 'Kỷ luật vốn',
+    shareLeader: 'Ngôi đầu thị phần',
+    innovator: 'Nhà đổi mới',
+    brandBuilder: 'Người dựng thương hiệu',
+    efficientOperator: 'Vận hành hiệu quả',
+    steadyHand: 'Tay lái vững',
+  },
+
+  achievementDesc: {
+    comeback: 'Khởi đầu hạng {from}, kết thúc hạng {to}. Sáu quý là đủ để lật ngược tình thế — bạn đã chứng minh điều đó.',
+    wireToWire: 'Dẫn đầu cả sáu quý. Không ai chạm được vào bạn.',
+    sustainedProfit: 'Lãi dương cả sáu quý, luỹ kế {profit}. Tăng trưởng mà không đốt tiền.',
+    marketReader: 'Chỉ số đọc thị trường {index}/100. Bạn không chỉ quyết định đúng — bạn biết trước vì sao nó đúng.',
+    eventSurfer: 'Cả {quarters} quý có sự kiện, bạn đều đầu tư khớp với thứ thị trường đang trả giá cao.',
+    nobodyLeftBehind: 'Mức hài lòng khách hàng không quý nào tụt dưới {floor}. Tăng trưởng không đánh đổi bằng khách hàng.',
+    capitalDiscipline: 'Không quý nào âm tiền, kết thúc với {cash}. Công ty luôn còn lựa chọn.',
+    shareLeader: 'Kết thúc dẫn đầu với {share}% thị phần, và đó cũng là mức cao nhất bạn từng đạt.',
+    innovator: 'Chất lượng {quality} và công nghệ {technology} — bạn đã xây được một sản phẩm thật sự.',
+    brandBuilder: 'Thương hiệu đạt {brand} từ mức khởi đầu rất thấp. Thứ khó xây nhất trong game này.',
+    efficientOperator: 'Biên lợi nhuận {margin}%. Bán được hàng là một chuyện, giữ được lãi là chuyện khác.',
+    steadyHand: 'Không quý nào đảo chiến lược quá {swing} điểm. Kiên định, không phải bảo thủ.',
+  },
+
+  certificate: {
+    title: 'Chứng nhận hoàn thành',
+    open: 'Xem chứng nhận',
+    heading: 'CHỨNG NHẬN HOÀN THÀNH',
+    subheading: 'Mô phỏng điều hành doanh nghiệp · 6 quý',
+    awardedTo: 'Chứng nhận',
+    hasCompleted: 'đã hoàn thành nhiệm kỳ CEO sáu quý tại',
+    finalScoreLabel: 'Điểm cuối',
+    rankLabel: 'Hạng trong thị trường',
+    classRankLabel: 'Hạng trong lớp',
+    achievementsLabel: 'Thành tích đạt được',
+    issued: 'Cấp ngày',
+    verify: 'Mã phiên: {sessionId} · kịch bản {scenario} · engine {engine}',
+    disclaimer:
+      'Đây là chứng nhận hoàn thành một bài mô phỏng học tập, không phải chứng chỉ nghề nghiệp.',
+  },
+
   errors: {
     weakPassword: 'Mật khẩu cần ít nhất 8 ký tự',
     emailAlreadyExists: 'Email này đã có tài khoản. Hãy sửa trực tiếp trên dòng của họ trong danh sách.',

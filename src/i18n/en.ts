@@ -938,6 +938,61 @@ export const en: Dictionary = {
       'One thing for next quarter: stay on this course. The board sees nothing that needs urgent repair — go deeper on what is working.',
   },
 
+  achievements: {
+    title: 'Achievements',
+    hint: 'Derived from your own six quarters. Nothing here rewards time spent in the app — every badge describes something you DID as a CEO.',
+    none: 'No badges this tenure. That is fine — each one is a genuinely high bar, and they will still be there next time.',
+    earnedCount: '{earned} of {total} earned',
+    lockedTitle: 'Not earned',
+  },
+
+  achievementName: {
+    comeback: 'The comeback',
+    wireToWire: 'Wire to wire',
+    sustainedProfit: 'Profitable throughout',
+    marketReader: 'Read the market',
+    eventSurfer: 'Right move, right quarter',
+    nobodyLeftBehind: 'Nobody left behind',
+    capitalDiscipline: 'Capital discipline',
+    shareLeader: 'Share leader',
+    innovator: 'The innovator',
+    brandBuilder: 'Brand builder',
+    efficientOperator: 'Efficient operator',
+    steadyHand: 'Steady hand',
+  },
+
+  achievementDesc: {
+    comeback: 'Started {from}, finished {to}. Six quarters is enough to turn a game around, and you proved it.',
+    wireToWire: 'First in all six quarters. Nobody laid a glove on you.',
+    sustainedProfit: 'Profitable in every quarter, {profit} cumulative. Growth without burning the company.',
+    marketReader: 'Reading-the-market index of {index}/100. You did not just decide well — you knew in advance why it would work.',
+    eventSurfer: 'In all {quarters} event quarters you invested in line with what the market was paying for.',
+    nobodyLeftBehind: 'Customer satisfaction never fell below {floor}. Growth that was not taken out of the customer.',
+    capitalDiscipline: 'Never ran the cash negative, finishing on {cash}. The company always had options.',
+    shareLeader: 'Finished in the lead on {share}% share, and that was your own highest mark.',
+    innovator: 'Quality {quality} and technology {technology} — you built a genuine product.',
+    brandBuilder: 'Brand reached {brand} from a very low start. The hardest thing to build in this game.',
+    efficientOperator: 'A {margin}% margin. Selling is one thing; keeping the profit is another.',
+    steadyHand: 'Never reallocated more than {swing} points between quarters. Consistent, not stubborn.',
+  },
+
+  certificate: {
+    title: 'Certificate of completion',
+    open: 'View certificate',
+    heading: 'CERTIFICATE OF COMPLETION',
+    subheading: 'Business management simulation · six quarters',
+    awardedTo: 'This certifies that',
+    hasCompleted: 'completed a six-quarter tenure as CEO of',
+    finalScoreLabel: 'Final score',
+    rankLabel: 'Rank in market',
+    classRankLabel: 'Rank in class',
+    achievementsLabel: 'Achievements earned',
+    issued: 'Issued',
+    verify: 'Session {sessionId} · scenario {scenario} · engine {engine}',
+    disclaimer:
+      'This certifies completion of a teaching simulation. It is not a professional qualification.',
+  },
+
   errors: {
     weakPassword: 'Password must be at least 8 characters',
     emailAlreadyExists: 'That email already has an account. Edit their row in the list instead.',

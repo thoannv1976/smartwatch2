@@ -385,6 +385,19 @@ mấy, thực tế hạng mấy, và câu lý do bạn đã ghi.
 > quyết định tốt, nhưng bạn có *biết vì sao* nó tốt không? Quý nào bạn không dự
 > đoán thì được **bỏ qua**, không bị coi là dự đoán sai.
 
+**Thành tích** — khoảng 12 huy hiệu, suy ra từ chính kết quả 6 quý của bạn. Không
+có huy hiệu nào thưởng cho việc chăm mở app: mỗi cái mô tả một điều bạn đã *làm*
+với tư cách CEO (lội ngược dòng từ hạng 6 lên top 3, lãi dương cả 6 quý, không quý
+nào âm tiền, đọc đúng cả ba quý có sự kiện…). Những huy hiệu **chưa đạt** cũng hiện
+kèm điều kiện — để lần sau bạn biết nhắm vào đâu.
+
+**Chứng nhận hoàn thành** — một trang in được, có tên bạn, tên công ty, điểm cuối,
+hạng trong thị trường và trong lớp, cùng các huy hiệu đã đạt.
+
+> Trên chứng nhận có in **mã phiên, kịch bản và phiên bản engine**, để giảng viên
+> đối chiếu bản nộp với cơ sở dữ liệu. Và nó ghi rõ đây là **chứng nhận hoàn thành
+> một bài mô phỏng học tập, không phải chứng chỉ nghề nghiệp**.
+
 ### A10. Bảng xếp hạng lớp
 
 Vào từ Trang chủ (sau khi hoàn thành bài tập) hoặc từ Báo cáo.

@@ -5,6 +5,7 @@ import {
   computeGameFinalScores,
   getGameConfig,
   groupResultsByCompany,
+  awardAchievements,
   boardLetter,
   customerVoices,
   forecastAccuracy,
@@ -16,6 +17,7 @@ import {
   type CompanyKey,
   type CompanyQuarterResult,
   type CompetitorIntel,
+  type Achievement,
   type BoardLetter,
   type CustomerVoice,
   type ForecastAccuracy,
@@ -111,6 +113,8 @@ export interface GroupReportView {
   defaultedQuarters: number[];
   /** The viewer's own calibration across the match. Null if they never predicted. */
   forecast: ForecastAccuracy | null;
+  /** Badges the viewer earned. Derived from their own rows, never stored. */
+  achievements: Achievement[];
 }
 
 /**
@@ -306,5 +310,17 @@ export async function getGroupReportView(
     resultsByQuarter: quarters.map((q) => ({ quarter: q.quarter, results: q.results })),
     defaultedQuarters,
     forecast: forecastAccuracy(forecastEntries),
+    achievements: awardAchievements({
+      quarters: facts.map((fact) => ({
+        quarter: fact.quarter,
+        eventKey: quarters.find((q) => q.quarter === fact.quarter)!.eventKey,
+        weights: fact.weights,
+        decision: fact.decision,
+        result: fact.result,
+      })),
+      score: yourScore,
+      config,
+      forecastIndex: forecastAccuracy(forecastEntries)?.index ?? null,
+    }),
   };
 }

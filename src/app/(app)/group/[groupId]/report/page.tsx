@@ -12,6 +12,7 @@ import { interpolate } from '@/i18n';
 import { HistoryCharts } from '@/components/game/HistoryCharts';
 import { TenureReviewCard } from '@/components/game/TenureReview';
 import { ForecastAccuracyCard } from '@/components/game/ForecastReview';
+import { AchievementShelf } from '@/components/game/AchievementShelf';
 import { PrintButton } from '@/components/ui/PrintButton';
 import {
   Badge,
@@ -72,7 +73,8 @@ export default async function GroupReportPage({
     );
   }
 
-  const { member, yourScore, scores, tenure, forecast, resultsByQuarter } = report;
+  const { member, yourScore, scores, tenure, forecast, resultsByQuarter, achievements } =
+    report;
   const leader = scores.find((s) => s.gameRank === 1) ?? yourScore;
   const gapToLeader = leader.finalScore - yourScore.finalScore;
 
@@ -156,6 +158,8 @@ export default async function GroupReportPage({
       ) : null}
 
       <TenureReviewCard t={t} locale={locale} review={tenure} />
+
+      <AchievementShelf t={t} locale={locale} earned={achievements} />
 
       {forecast ? (
         <ForecastAccuracyCard t={t} accuracy={forecast} totalQuarters={resultsByQuarter.length} />
