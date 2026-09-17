@@ -11,6 +11,7 @@ import { interpolate } from '@/i18n';
 import { RankingTable } from '@/components/game/RankingTable';
 import { QuarterReviewCard } from '@/components/game/QuarterReview';
 import { ForecastReviewCard } from '@/components/game/ForecastReview';
+import { BoardLetterCard, PressRoom } from '@/components/game/PressRoom';
 import {
   Badge,
   Card,
@@ -206,9 +207,13 @@ export default async function GroupQuarterResultPage({
         </ul>
       </Card>
 
+      <PressRoom t={t} locale={locale} headlines={view.headlines} voices={view.voices} />
+
       {view.yourForecast ? <ForecastReviewCard t={t} score={view.yourForecast} /> : null}
 
       <QuarterReviewCard t={t} notes={view.reviewNotes} />
+
+      <BoardLetterCard t={t} locale={locale} letter={view.board} />
 
       <div className="flex flex-wrap gap-3">
         <Link

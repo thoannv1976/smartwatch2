@@ -872,6 +872,72 @@ export const vi = {
     unread: 'Dự đoán của bạn cách thực tế rất xa. Trước khi nộp quý sau, hãy thử nói rõ bạn kỳ vọng ĐIỀU GÌ sẽ tạo ra vị trí đó.',
   },
 
+  press: {
+    title: 'Báo chí nói gì về bạn',
+    hint: 'Sinh ra từ chính số liệu quý này của công ty bạn — không phải tin thật, và chỉ nói về công ty bạn.',
+    shareSurge: 'Thị phần {company} tăng {points} điểm, lên {share}% — quý này họ giành được khách từ tay đối thủ.',
+    shareSlide: '{company} mất {points} điểm thị phần, còn {share}%. Khách hàng đã đi đâu đó khác.',
+    profitRecord: '{company} báo lãi {profit} đ, cao nhất từ đầu nhiệm kỳ tới nay.',
+    profitLoss: '{company} lỗ {loss} đ trong quý. Doanh thu không gánh được chi phí.',
+    thinMargin: '{company} có lãi, nhưng biên lợi nhuận chỉ {margin}% — mỏng đến mức một quý xấu là đủ xoá sạch.',
+    stockout: '{company} không giao được {units} chiếc khách đã muốn mua ({percent}% nhu cầu) — hàng có, nhưng không tới được tay khách.',
+    satisfactionPraise: 'Khách hàng của {company} hài lòng rõ rệt: chỉ số đạt {csat}/100.',
+    satisfactionProblem: 'Mức hài lòng của khách {company} rơi xuống {csat}/100. Uy tín sẽ ngấm dần vào quý sau.',
+    tookTheLead: '{company} vươn lên dẫn đầu thị trường, từ vị trí thứ {from}.',
+    lostTheLead: '{company} đánh mất vị trí dẫn đầu, tụt xuống thứ {to}.',
+    quietQuarter: 'Một quý bình lặng với {company}: không có biến động nào đủ lớn để lên trang nhất.',
+  },
+
+  voices: {
+    title: 'Khách hàng nói gì',
+    hint: 'Đánh giá mô phỏng, dựng từ giá bán, chất lượng, mức hài lòng, tỷ lệ trả hàng và khả năng giao hàng của bạn.',
+    lovesQuality: 'Chất lượng và công nghệ đúng như quảng cáo ({quality}/100). Đáng tiền.',
+    lovesValue: 'Tầm giá {price} đ mà được thế này thì khó đòi hỏi hơn. Tôi đã giới thiệu cho hai người bạn.',
+    lovesService: 'Hỗ trợ sau bán rất tốt — đây là lý do tôi sẽ mua lại hãng này ({csat}/100).',
+    waitedForStock: 'Máy tốt, nhưng tôi đợi ba tuần mới có hàng. {percent}% người muốn mua đã không mua được.',
+    tooExpensive: 'Giá ở mức {price} so với thị trường, mà tôi thì chưa từng nghe tên hãng này. Tôi chọn hãng khác.',
+    qualityComplaint: 'Tôi đã phải trả lại máy. Tỷ lệ trả hàng {rate}% — không phải mình tôi gặp vấn đề này.',
+    serviceComplaint: 'Gọi hỗ trợ ba lần không ai giải quyết. Mức hài lòng {csat}/100 là có lý do.',
+    neverHeardOfIt: 'Thấy trên kệ nhưng chưa nghe tên hãng bao giờ, nên tôi không dám thử.',
+    solidChoice: 'Một lựa chọn ổn ở mức giá {price}% so với tham chiếu. Không xuất sắc, không có gì để phàn nàn.',
+    averageExperience: 'Dùng ổn, không có gì đặc biệt. Mức hài lòng chung quanh {csat}/100 — đúng như tôi cảm nhận.',
+  },
+
+  board: {
+    title: 'Thư của Hội đồng quản trị',
+    hint: 'Góc nhìn của cổ đông về quý vừa rồi. Gay gắt với con số, không phán xét con người.',
+    signature: 'Hội đồng quản trị',
+    delighted:
+      'Quý {quarter} là một quý tốt. {company} đứng thứ {rank}, lãi {profit} đ, thị phần {share}%. Hội đồng ghi nhận đây là kết quả của lựa chọn, không phải của may mắn.',
+    pleased:
+      'Quý {quarter} đi đúng hướng. Thứ {rank} với lãi {profit} đ là nền tảng dùng được. Hội đồng muốn thấy nó được giữ thêm một quý nữa trước khi kết luận.',
+    watchful:
+      'Quý {quarter}: {company} ở vị trí thứ {rank}, thị phần {share}%. Không có gì sai, nhưng cũng chưa có gì tạo khác biệt. Hội đồng đang chờ một quyết định rõ ràng.',
+    concerned:
+      'Quý {quarter} lỗ {profit} đ. Hội đồng không coi một quý lỗ là thất bại — nhưng cần thấy nguyên nhân được xử lý ở quý sau, chứ không phải được hy vọng là tự hết.',
+    alarmed:
+      'Sau {quarter} quý, lợi nhuận luỹ kế của {company} vẫn âm ({cumulativeProfit} đ). Hội đồng cần một thay đổi có chủ đích, không phải một điều chỉnh nhỏ.',
+    cashCrisis:
+      'Tiền mặt của {company} đã âm. Đây là vấn đề cấp bách nhất trên bàn: một công ty hết tiền không còn lựa chọn nào nữa, kể cả những lựa chọn đúng.',
+  },
+
+  boardAdvice: {
+    fixDistribution:
+      'Việc nên làm ở quý sau: nâng phân phối. Khách đã muốn mua mà không mua được — đó là doanh thu bạn đã giành được rồi nhưng không thu về.',
+    fixSatisfaction:
+      'Việc nên làm ở quý sau: chăm mức hài lòng khách hàng. Nó ngấm sang thương hiệu và tỷ lệ trả hàng của mọi quý còn lại.',
+    fixMargin:
+      'Việc nên làm ở quý sau: chữa biên lợi nhuận. Bán nhiều mà lãi mỏng là nhiều rủi ro hơn, không phải nhiều thành công hơn.',
+    buildBrand:
+      'Việc nên làm ở quý sau: xây thương hiệu. Khách không mua thứ họ chưa từng nghe tên, dù sản phẩm tốt tới đâu.',
+    defendShare:
+      'Việc nên làm ở quý sau: giữ thị phần. Bạn vừa tụt hạng — hãy tìm xem đối thủ đã làm đúng điều gì.',
+    protectCash:
+      'Việc nên làm ở quý sau: giữ tiền mặt trước đã. Mọi kế hoạch khác đều phụ thuộc vào việc công ty còn tiền để thực hiện.',
+    keepGoing:
+      'Việc nên làm ở quý sau: giữ nguyên hướng này. Hội đồng không thấy vấn đề nào cần chữa gấp — hãy làm sâu thêm thứ đang hiệu quả.',
+  },
+
   errors: {
     weakPassword: 'Mật khẩu cần ít nhất 8 ký tự',
     emailAlreadyExists: 'Email này đã có tài khoản. Hãy sửa trực tiếp trên dòng của họ trong danh sách.',

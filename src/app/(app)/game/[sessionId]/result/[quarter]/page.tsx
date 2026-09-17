@@ -2,7 +2,10 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   PLAYER_COMPANY_KEY,
+  boardLetter,
+  customerVoices,
   getGameConfig,
+  pressHeadlines,
   reviewQuarter,
   scoreForecast,
 } from '@/domain/simulation';
@@ -16,6 +19,7 @@ import { interpolate } from '@/i18n';
 import { RankingTable } from '@/components/game/RankingTable';
 import { QuarterReviewCard } from '@/components/game/QuarterReview';
 import { ForecastReviewCard } from '@/components/game/ForecastReview';
+import { BoardLetterCard, PressRoom } from '@/components/game/PressRoom';
 import {
   Badge,
   Card,
@@ -78,6 +82,32 @@ export default async function QuarterResultPage({
   // simply not rendered rather than showing a miss the student never made.
   const forecast = quarterForecast(current);
   const forecastScore = forecast ? scoreForecast(forecast, result) : null;
+
+  // The market told as something that happened, derived from the same figures
+  // the tiles above already show. Pure — see `press.ts`.
+  const pressFacts = decision
+    ? {
+        companyName: session.companyName,
+        quarter: quarterNumber,
+        eventKey: current.eventKey,
+        weights: current.weights,
+        decision,
+        result,
+        previous: previousResult,
+        config,
+      }
+    : null;
+  const headlines = pressFacts ? pressHeadlines(pressFacts) : [];
+  const voices = pressFacts ? customerVoices(pressFacts) : [];
+  const letter = pressFacts
+    ? boardLetter(
+        pressFacts,
+        quarters
+          .filter((q) => q.quarter < quarterNumber)
+          .map((q) => q.results.find((r) => r.companyKey === PLAYER_COMPANY_KEY))
+          .filter((row): row is NonNullable<typeof row> => Boolean(row)),
+      )
+    : null;
 
   const revenueChange = previousResult ? relativeChange(result.revenue, previousResult.revenue) : null;
   const profitChange = previousResult
@@ -242,9 +272,13 @@ export default async function QuarterResultPage({
 
       {/* The rule-based review of this quarter's decision, directly below the
           competitor intelligence. */}
+      <PressRoom t={t} locale={locale} headlines={headlines} voices={voices} />
+
       {forecastScore ? <ForecastReviewCard t={t} score={forecastScore} /> : null}
 
       <QuarterReviewCard t={t} notes={reviewNotes} />
+
+      {letter ? <BoardLetterCard t={t} locale={locale} letter={letter} /> : null}
 
       <div className="flex flex-wrap gap-3">
         {isLastQuarter || !hasNextQuarter ? (

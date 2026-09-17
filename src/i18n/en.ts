@@ -872,6 +872,72 @@ export const en: Dictionary = {
     unread: 'Your predictions were a long way from the outcome. Before the next quarter, try saying out loud WHAT you expect to produce that position.',
   },
 
+  press: {
+    title: 'What the press said',
+    hint: "Generated from this quarter's own figures for your company — not real news, and only ever about you.",
+    shareSurge: '{company} share up {points} points to {share}% — they took customers off a rival this quarter.',
+    shareSlide: '{company} loses {points} points of share, down to {share}%. Those customers went somewhere.',
+    profitRecord: '{company} reports a profit of {profit}, its best of the tenure so far.',
+    profitLoss: '{company} loses {loss} for the quarter. Revenue did not cover the cost of earning it.',
+    thinMargin: '{company} is profitable, but on a margin of just {margin}% — thin enough that one bad quarter erases it.',
+    stockout: '{company} could not deliver {units} watches customers wanted ({percent}% of demand) — the demand was won and then not served.',
+    satisfactionPraise: '{company} customers are markedly happy: satisfaction at {csat}/100.',
+    satisfactionProblem: 'Satisfaction among {company} customers falls to {csat}/100. Reputation will feel it next quarter.',
+    tookTheLead: '{company} moves into the market lead, up from {from}.',
+    lostTheLead: '{company} loses the lead, slipping to {to}.',
+    quietQuarter: 'A quiet quarter for {company}: nothing moved far enough to make the front page.',
+  },
+
+  voices: {
+    title: 'What customers said',
+    hint: 'Simulated reviews, built from your price, quality, satisfaction, return rate and ability to deliver.',
+    lovesQuality: 'Quality and tech are exactly as advertised ({quality}/100). Worth the money.',
+    lovesValue: 'At {price} you cannot ask for much more. I have recommended it to two friends.',
+    lovesService: 'After-sales support was genuinely good — that is why I would buy this brand again ({csat}/100).',
+    waitedForStock: 'Good watch, but I waited three weeks for it. {percent}% of people who wanted one never got one.',
+    tooExpensive: 'Priced at {price} against the market, and I had never heard of the brand. I bought elsewhere.',
+    qualityComplaint: 'I sent mine back. A {rate}% return rate says it was not just me.',
+    serviceComplaint: 'Three calls to support and nothing was resolved. A satisfaction score of {csat}/100 is earned.',
+    neverHeardOfIt: 'Saw it on the shelf but had never heard of the brand, so I did not risk it.',
+    solidChoice: 'A sound choice at {price}% of the reference price. Not remarkable, nothing to complain about.',
+    averageExperience: 'Fine to live with, nothing that stands out. Satisfaction around {csat}/100 matches how it felt.',
+  },
+
+  board: {
+    title: 'Letter from the board',
+    hint: 'How your shareholders read the quarter. Hard on the numbers, never on the person.',
+    signature: 'The Board',
+    delighted:
+      'Quarter {quarter} was a good one. {company} placed {rank}, made {profit}, and holds {share}% of the market. The board reads this as the result of choices rather than luck.',
+    pleased:
+      'Quarter {quarter} moved in the right direction. {rank} with a profit of {profit} is a base we can use. The board would like to see it held for another quarter before drawing conclusions.',
+    watchful:
+      'Quarter {quarter}: {company} sits {rank} on {share}% share. Nothing is wrong, and nothing yet sets us apart. The board is waiting for a clear decision.',
+    concerned:
+      'Quarter {quarter} lost {profit}. The board does not treat one losing quarter as failure — but it needs the cause addressed next quarter rather than hoped away.',
+    alarmed:
+      'After {quarter} quarters {company} is still behind on cumulative profit ({cumulativeProfit}). The board needs a deliberate change of course, not an adjustment.',
+    cashCrisis:
+      '{company} has run its cash negative. That is the most urgent item on this table: a company out of money has no options left, including the right ones.',
+  },
+
+  boardAdvice: {
+    fixDistribution:
+      'One thing for next quarter: raise distribution. Customers wanted to buy and could not — that is revenue you had already won and did not collect.',
+    fixSatisfaction:
+      'One thing for next quarter: look after customer satisfaction. It feeds brand and returns in every quarter that follows.',
+    fixMargin:
+      'One thing for next quarter: repair the margin. Selling a lot at a thin margin is more exposure, not more success.',
+    buildBrand:
+      'One thing for next quarter: build the brand. Customers do not buy what they have never heard of, however good it is.',
+    defendShare:
+      'One thing for next quarter: defend your share. You just lost a place — find out what the rival above you got right.',
+    protectCash:
+      'One thing for next quarter: protect cash first. Every other plan depends on the company still being able to fund it.',
+    keepGoing:
+      'One thing for next quarter: stay on this course. The board sees nothing that needs urgent repair — go deeper on what is working.',
+  },
+
   errors: {
     weakPassword: 'Password must be at least 8 characters',
     emailAlreadyExists: 'That email already has an account. Edit their row in the list instead.',

@@ -5,7 +5,10 @@ import {
   computeGameFinalScores,
   getGameConfig,
   groupResultsByCompany,
+  boardLetter,
+  customerVoices,
   forecastAccuracy,
+  pressHeadlines,
   reviewQuarter,
   scoreForecast,
   tenureReview,
@@ -13,9 +16,12 @@ import {
   type CompanyKey,
   type CompanyQuarterResult,
   type CompetitorIntel,
+  type BoardLetter,
+  type CustomerVoice,
   type ForecastAccuracy,
   type ForecastScore,
   type QuarterDecision,
+  type PressHeadline,
   type QuarterForecast,
   type ReviewNote,
   type TenureReview,
@@ -79,6 +85,17 @@ export interface QuarterView {
    * list: a caller cannot leak a field it was never handed.
    */
   yourForecast: ForecastScore | null;
+  /**
+   * The quarter told as reporting, reviews and a letter from the board.
+   *
+   * Generated HERE rather than on the page, for the same reason the decisions
+   * are stripped here: this file is the boundary, and press about the viewer's
+   * own company is the only press a student may read. Building it on the page
+   * would mean handing the page the raw quarter documents it must never see.
+   */
+  headlines: PressHeadline[];
+  voices: CustomerVoice[];
+  board: BoardLetter;
 }
 
 export interface GroupReportView {
@@ -112,6 +129,8 @@ export function buildQuarterView(input: {
   yourDecisionWasDefault: boolean;
   /** The VIEWER's own prediction, already separated from the other five. */
   yourForecast?: QuarterForecast | null;
+  /** The VIEWER's own earlier result rows, oldest first, for the board letter. */
+  yourHistory?: CompanyQuarterResult[];
 }): QuarterView | null {
   const { viewerSeat, quarter, previousQuarter, game, occupiedSeats } = input;
 
@@ -121,6 +140,17 @@ export function buildQuarterView(input: {
 
   const previousResult =
     previousQuarter?.results.find((r) => r.companyKey === viewerSeat) ?? null;
+
+  const pressFacts = {
+    companyName: yourResult.companyName,
+    quarter: quarter.quarter,
+    eventKey: quarter.eventKey,
+    weights: quarter.weights,
+    decision: yourDecision,
+    result: yourResult,
+    previous: previousResult,
+    config: getGameConfig(game.scenarioVersion),
+  };
 
   const rivals: RivalView[] = ARENA_SEATS.filter((seat) => seat !== viewerSeat)
     .map((seatKey) => {
@@ -167,6 +197,9 @@ export function buildQuarterView(input: {
     ),
     yourDecisionWasDefault: input.yourDecisionWasDefault,
     yourForecast: input.yourForecast ? scoreForecast(input.yourForecast, yourResult) : null,
+    headlines: pressHeadlines(pressFacts),
+    voices: customerVoices(pressFacts),
+    board: boardLetter(pressFacts, input.yourHistory ?? []),
   };
 }
 
@@ -183,14 +216,22 @@ export async function getQuarterView(
   ]);
   if (!group || !game) return null;
 
-  const [quarter, previousQuarter, submissions] = await Promise.all([
-    repos.groupGames.getQuarter(groupId, quarterNumber),
-    quarterNumber > 1
-      ? repos.groupGames.getQuarter(groupId, quarterNumber - 1)
-      : Promise.resolve(null),
+  // One read of the match instead of two of its quarters: the board letter needs
+  // the whole tenure so far, so that a bad quarter inside a rising trend is not
+  // written up as a crisis.
+  const [allQuarters, submissions] = await Promise.all([
+    repos.groupGames.listQuarters(groupId),
     repos.groupGames.listSubmissions(groupId, quarterNumber),
   ]);
+  const quarter = allQuarters.find((q) => q.quarter === quarterNumber) ?? null;
+  const previousQuarter = allQuarters.find((q) => q.quarter === quarterNumber - 1) ?? null;
   if (!quarter) return null;
+
+  const yourHistory = allQuarters
+    .filter((q) => q.quarter < quarterNumber)
+    .sort((a, b) => a.quarter - b.quarter)
+    .map((q) => q.results.find((r) => r.companyKey === viewerSeat))
+    .filter((row): row is CompanyQuarterResult => Boolean(row));
 
   return buildQuarterView({
     viewerSeat,
@@ -205,6 +246,7 @@ export async function getQuarterView(
     yourForecast: quarterForecast(
       submissions.find((s) => s.seatKey === viewerSeat) ?? { forecast: null },
     ),
+    yourHistory,
   });
 }
 

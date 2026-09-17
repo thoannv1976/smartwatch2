@@ -279,6 +279,12 @@ lý do** bạn chọn cách làm đó.
 
 Sau khi mô phỏng, bạn thấy **Kết quả quý**:
 
+- **Báo chí nói gì về bạn** — 1–2 tin về chính công ty bạn, dựng từ số liệu quý
+  này. Không phải tin thật, và **chỉ nói về công ty bạn** — không bao giờ tiết lộ
+  gì về đối thủ mà bảng xếp hạng chưa công bố.
+- **Khách hàng nói gì** — 2–3 đánh giá mô phỏng kèm số sao, suy từ giá bán, chất
+  lượng, mức hài lòng, tỷ lệ trả hàng và khả năng giao hàng của bạn. *"Máy tốt,
+  nhưng tôi đợi ba tuần mới có hàng"* nói về phân phối rõ hơn con số 42/100.
 - **Dự đoán so với thực tế** — *"Bạn dự đoán hạng 3 → thực tế hạng 2"*, kèm câu
   lý do bạn vừa viết, đặt ngay cạnh kết quả nó tạo ra.
 - Toàn bộ KPI, kèm **mức thay đổi so với quý trước**.
@@ -300,6 +306,11 @@ Toàn bộ nhận xét sinh ra bằng **luật cố định từ chính số li�
 dùng AI, và giảng viên tái lập được từng câu.
 
 Bấm **Sang quý tiếp theo** và lặp lại từ A6 cho tới Q6.
+
+**Thư của Hội đồng quản trị** đóng lại mỗi quý: một đoạn về quý vừa rồi, và
+**đúng một việc nên làm** ở quý sau. Giọng thư đổi theo kết quả, nhưng nguyên tắc
+cố định — **gay gắt với con số, không phán xét con người**. Một lá thư kèm năm lời
+khuyên là một lá thư không có lời khuyên nào.
 
 ### A8. Lịch sử chiến lược
 
