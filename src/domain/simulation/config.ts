@@ -297,10 +297,70 @@ const COMPETITOR_START_CSAT = {
 
 const STARTING_CASH = 5_000_000;
 
+/**
+ * The five benchmark rivals, by the real brands they are modelled on.
+ *
+ * WHY THEY ARE NOT THE DEFAULT. The archetypes were drawn from real products,
+ * and naming them makes the exercise land harder in a classroom. But this
+ * software is distributed and sold, and putting someone else's trademark in a
+ * paid product is a materially different proposition from using it in your own
+ * teaching material. So the shipped default is descriptive, and an institution
+ * that has decided it is comfortable doing so turns the real names on.
+ *
+ * NOTHING ELSE CHANGES. Not a coefficient, not a starting row, not a
+ * `CompetitorKey` — those keys are written into every stored session, quarter
+ * and exported CSV, so renaming them would break saved data and force a
+ * `scenarioVersion` bump that makes every already-graded result incomparable.
+ * Only the label a human reads is different, so a game played under either
+ * setting scores identically.
+ */
+export const BRAND_DISPLAY_NAMES: Record<CompetitorKey, string> = {
+  apple: 'Apple Watch benchmark',
+  garmin: 'Garmin benchmark',
+  samsung: 'Samsung Galaxy Watch benchmark',
+  huawei: 'Huawei Watch benchmark',
+  pixel: 'Pixel Watch / Fitbit benchmark',
+};
+
+/**
+ * Whether this build shows the real brand names.
+ *
+ * The one `process.env` read in the whole pure domain, and it is deliberate:
+ * `NEXT_PUBLIC_*` values are substituted by the bundler at BUILD time, so this
+ * is a compile-time constant rather than runtime state, and the domain stays
+ * deterministic. Every scenario is already built per institution — the four
+ * Firebase values are baked into the image the same way — so this costs no new
+ * machinery.
+ *
+ * It is read once, here, rather than at each call site, so a test can reason
+ * about exactly one switch.
+ */
+export const USE_BRAND_NAMES = process.env.NEXT_PUBLIC_USE_BRAND_NAMES === 'true';
+
+/**
+ * Applies the institution's naming choice to a config.
+ *
+ * Pure and explicit, so the tests can build both variants and prove they are
+ * identical apart from the labels.
+ */
+function brandedIfEnabled(config: GameConfig): GameConfig {
+  return USE_BRAND_NAMES ? withBrandNames(config) : config;
+}
+
+export function withBrandNames(config: GameConfig): GameConfig {
+  return {
+    ...config,
+    competitors: config.competitors.map((competitor) => ({
+      ...competitor,
+      displayName: BRAND_DISPLAY_NAMES[competitor.key] ?? competitor.displayName,
+    })),
+  };
+}
+
 const COMPETITORS: CompetitorConfig[] = [
   {
     key: 'apple',
-    displayName: 'Apple Watch benchmark',
+    displayName: 'Premium benchmark',
     start: {
       brandAwareness: 90,
       productQuality: 88,
@@ -326,7 +386,7 @@ const COMPETITORS: CompetitorConfig[] = [
   },
   {
     key: 'garmin',
-    displayName: 'Garmin benchmark',
+    displayName: 'Sport benchmark',
     start: {
       brandAwareness: 75,
       productQuality: 92,
@@ -352,7 +412,7 @@ const COMPETITORS: CompetitorConfig[] = [
   },
   {
     key: 'samsung',
-    displayName: 'Samsung Galaxy Watch benchmark',
+    displayName: 'Ecosystem benchmark',
     start: {
       brandAwareness: 85,
       productQuality: 82,
@@ -378,7 +438,7 @@ const COMPETITORS: CompetitorConfig[] = [
   },
   {
     key: 'huawei',
-    displayName: 'Huawei Watch benchmark',
+    displayName: 'Value benchmark',
     start: {
       brandAwareness: 78,
       productQuality: 84,
@@ -404,7 +464,7 @@ const COMPETITORS: CompetitorConfig[] = [
   },
   {
     key: 'pixel',
-    displayName: 'Pixel Watch / Fitbit benchmark',
+    displayName: 'Technology benchmark',
     start: {
       brandAwareness: 70,
       productQuality: 78,
@@ -674,10 +734,15 @@ export const smartwatchV1VariedConfig: GameConfig = {
 
 /** Registry of scenario configurations, keyed by scenario version. */
 export const gameConfigs: Record<string, GameConfig> = {
-  [SCENARIO_VERSION]: smartwatchV1Config,
-  [CHALLENGER_SCENARIO_VERSION]: smartwatchV1ChallengerConfig,
+  // The three SOLO scenarios honour the institution's naming choice.
+  [SCENARIO_VERSION]: brandedIfEnabled(smartwatchV1Config),
+  [CHALLENGER_SCENARIO_VERSION]: brandedIfEnabled(smartwatchV1ChallengerConfig),
+  [VARIED_SCENARIO_VERSION]: brandedIfEnabled(smartwatchV1VariedConfig),
+  // The GROUP scenario never does. Its five non-human seats are `Bot 2`…`Bot 6`
+  // precisely so a classmate's empty chair is not mistaken for a real company —
+  // turning brand names on there would undo that, and it is not what the switch
+  // is for.
   [ARENA_SCENARIO_VERSION]: smartwatchV1ArenaConfig,
-  [VARIED_SCENARIO_VERSION]: smartwatchV1VariedConfig,
 };
 
 /**

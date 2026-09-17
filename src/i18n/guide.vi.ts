@@ -49,7 +49,7 @@ export const guideVi = {
     honestTitle: 'Một điều cần nói thẳng trước khi bạn chơi',
     honestBody: 'Trong kịch bản mặc định, bạn khởi đầu là một startup: thương hiệu 30, sản phẩm 50, công nghệ 50, phân phối 40. Năm đối thủ là các thương hiệu lớn đã có sẵn: thương hiệu 70–90, và mọi năng lực khác đều cao hơn bạn 30–40 điểm. Họ cũng đầu tư 100 điểm mỗi quý như bạn.',
     honestConsequence: 'Hệ quả, và chúng tôi đã đo chứ không đoán: một lần quét 95.634 phương án phân bổ cho thấy người chơi về hạng 6/6 trong MỌI phương án. Thương hiệu, mức hài lòng và đổi mới chiếm 45% điểm cuối, và sáu quý không đủ để bù 30–40 điểm năng lực.',
-    honestPoint: 'Vì vậy đừng lấy thứ hạng trong thị trường làm thước đo bản thân. Điểm của bạn được so với các bạn cùng lớp, không phải với Apple. Khoảng cách giữa phương án tốt nhất và tệ nhất trong cùng phép quét đó là 32 điểm — đó mới là thứ được chấm, và nó hoàn toàn nằm trong tay bạn. Nếu bạn muốn một kịch bản mà chơi giỏi thì leo được lên hạng 3, hãy hỏi giảng viên về bản Challenger.',
+    honestPoint: 'Vì vậy đừng lấy thứ hạng trong thị trường làm thước đo bản thân. Điểm của bạn được so với các bạn cùng lớp, không phải với năm hãng lớn trong thị trường. Khoảng cách giữa phương án tốt nhất và tệ nhất trong cùng phép quét đó là 32 điểm — đó mới là thứ được chấm, và nó hoàn toàn nằm trong tay bạn. Nếu bạn muốn một kịch bản mà chơi giỏi thì leo được lên hạng 3, hãy hỏi giảng viên về bản Challenger.',
   },
 
   // --- 2. Giá trị ----------------------------------------------------------

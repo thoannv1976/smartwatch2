@@ -26,3 +26,9 @@ next-env.d.ts
 
 # Written by scripts/gcp-setup.sh
 .deploy.env
+
+# Python bytecode from scripts/firebase_setup.py. One .pyc was actually
+# COMMITTED before this rule existed, and would have shipped in every customer
+# ZIP. Removed with `git rm --cached`; this keeps the next one out.
+__pycache__/
+*.pyc

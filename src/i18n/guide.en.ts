@@ -41,7 +41,7 @@ export const guideEn: typeof guideVi = {
     honestTitle: 'One thing to be straight about before you play',
     honestBody: 'In the default scenario you start as a startup: brand 30, product 50, technology 50, distribution 40. The five rivals are established brands: brand 70–90, and every other capability 30–40 points ahead of you. They also invest 100 points a quarter, exactly as you do.',
     honestConsequence: 'The consequence, measured rather than guessed: a sweep of 95,634 allocations found the player finishing 6th of 6 in EVERY one of them. Brand, satisfaction and innovation are 45% of the final score between them, and six quarters is not enough to close a 30–40 point capability gap.',
-    honestPoint: 'So do not use your rank in the market as a measure of yourself. Your score is compared with your classmates, not with Apple. The gap between the best and worst allocation in that same sweep was 32 points — that is what is actually graded, and it is entirely in your hands. If you want a scenario where playing well reaches 3rd place, ask your instructor about the Challenger version.',
+    honestPoint: 'So do not use your rank in the market as a measure of yourself. Your score is compared with your classmates, not with the five incumbents in the market. The gap between the best and worst allocation in that same sweep was 32 points — that is what is actually graded, and it is entirely in your hands. If you want a scenario where playing well reaches 3rd place, ask your instructor about the Challenger version.',
   },
 
   // --- 2. Value ------------------------------------------------------------

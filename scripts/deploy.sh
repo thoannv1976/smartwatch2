@@ -32,7 +32,20 @@ echo "    project: $PROJECT_ID"
 
 # SHORT_SHA is normally supplied by a Cloud Build trigger. Submitting by hand
 # leaves it empty, which would tag the image ':' — so pass it explicitly.
-SHORT_SHA="$(git rev-parse --short HEAD 2>/dev/null || date +%Y%m%d-%H%M%S)"
+#
+# Three sources, in order of how useful the resulting tag is:
+#   git      — a developer checkout; the tag points at an exact commit
+#   VERSION  — an installation unpacked from a release ZIP, which has no .git.
+#              Without this the tag fell back to a timestamp, so nobody could
+#              tell afterwards which release an image came from.
+#   date     — neither, which should not happen but must not be fatal.
+if SHORT_SHA="$(git rev-parse --short HEAD 2>/dev/null)" && [[ -n "$SHORT_SHA" ]]; then
+  :
+elif [[ -f VERSION ]] && grep -q '^version' VERSION; then
+  SHORT_SHA="$(awk '/^version/ {print $2}' VERSION | tr -c 'A-Za-z0-9._-' '-' | sed 's/-*$//')"
+else
+  SHORT_SHA="$(date +%Y%m%d-%H%M%S)"
+fi
 echo "    tag:     $SHORT_SHA"
 
 # Submitted with --async, then polled here.

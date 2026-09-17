@@ -1,0 +1,217 @@
+SMARTWATCH CEO CHALLENGE — END USER LICENCE AGREEMENT (TEMPLATE)
+GIẤY PHÉP SỬ DỤNG PHẦN MỀM — BẢN MẪU
+
+===============================================================================
+⚠  THIS IS A TEMPLATE, NOT LEGAL ADVICE.
+⚠  ĐÂY LÀ BẢN MẪU, KHÔNG PHẢI TƯ VẤN PHÁP LÝ.
+
+    It was prepared by a software assistant, not a lawyer. Have a qualified
+    lawyer review and adapt it before you licence this software to anyone,
+    especially across borders. Every line marked [FILL IN] must be completed,
+    and every line marked [LAWYER] is a commercial or legal decision that only
+    you and your lawyer can make.
+
+    Bản mẫu này do một trợ lý phần mềm soạn, không phải luật sư. Hãy đưa luật
+    sư xem và điều chỉnh trước khi cấp phép cho bất kỳ ai, nhất là khi bán ra
+    nước ngoài. Mọi dòng [FILL IN] phải điền, và mọi dòng [LAWYER] là quyết
+    định thương mại hoặc pháp lý chỉ bạn và luật sư của bạn quyết được.
+===============================================================================
+
+Copyright (c) [FILL IN: year] [FILL IN: your legal name or company].
+All rights reserved. / Bảo lưu mọi quyền.
+
+Licensor / Bên cấp phép: [FILL IN: name, address, tax code]
+Licensee  / Bên được cấp phép: [FILL IN: institution name and address]
+Effective date / Ngày hiệu lực: [FILL IN]
+
+
+1. DEFINITIONS / ĐỊNH NGHĨA
+
+   "Software" means the Smartwatch CEO Challenge application supplied in this
+   package, including its source code, the simulation engine, the documentation
+   and any updates the Licensor chooses to supply.
+
+   "Phần mềm" là ứng dụng Smartwatch CEO Challenge trong gói này, bao gồm mã
+   nguồn, engine mô phỏng, tài liệu và các bản cập nhật Bên cấp phép cung cấp.
+
+   "Institution" means the single named educational institution above, at the
+   campuses listed in Schedule A.
+
+   "Cơ sở" là cơ sở giáo dục được nêu tên ở trên, tại các địa điểm liệt kê ở
+   Phụ lục A.
+
+
+2. GRANT OF LICENCE / PHẠM VI CẤP PHÉP
+
+   Subject to payment and to this agreement, the Licensor grants the Institution
+   a non-exclusive, non-transferable licence to install, run and use the
+   Software for teaching and assessment of its own enrolled students.
+
+   Theo điều kiện thanh toán và thoả thuận này, Bên cấp phép cấp cho Cơ sở một
+   giấy phép không độc quyền, không chuyển nhượng, để cài đặt, vận hành và sử
+   dụng Phần mềm cho việc giảng dạy và đánh giá sinh viên của chính Cơ sở.
+
+   [LAWYER] Scope to decide: number of campuses; number of concurrent students;
+   whether a term/semester cap applies; whether executive education, paid
+   short courses or corporate training are included or excluded.
+
+
+3. WHAT THE INSTITUTION MAY DO / CƠ SỞ ĐƯỢC LÀM GÌ
+
+   a) Install the Software on cloud infrastructure it controls.
+   b) Modify the Software — including course content, translations and the
+      simulation coefficients — for its own internal teaching use.
+   c) Make backup copies.
+
+   a) Cài Phần mềm lên hạ tầng đám mây do Cơ sở kiểm soát.
+   b) Sửa đổi Phần mềm — kể cả nội dung môn học, bản dịch và các hệ số mô
+      phỏng — cho việc giảng dạy nội bộ của chính mình.
+   c) Sao lưu.
+
+   NOTE ON MODIFYING THE COEFFICIENTS / LƯU Ý KHI SỬA HỆ SỐ
+   Changing the simulation coefficients or the engine version makes results
+   incomparable with results produced by an unmodified build. That is the
+   Institution's decision to make and its consequence to carry; the Licensor
+   does not support modified engines.
+
+   Sửa hệ số mô phỏng hoặc phiên bản engine sẽ làm kết quả không còn so sánh
+   được với bản gốc. Đó là quyền quyết định và trách nhiệm của Cơ sở; Bên cấp
+   phép không hỗ trợ engine đã bị sửa.
+
+
+4. WHAT THE INSTITUTION MAY NOT DO / CƠ SỞ KHÔNG ĐƯỢC LÀM GÌ
+
+   a) Sell, sublicence, rent, lease or distribute the Software, in original or
+      modified form, to any third party.
+   b) Provide access to students who are not enrolled at the Institution, or
+      operate it as a service for another organisation.
+   c) Remove or alter copyright notices, licence notices or the third-party
+      notices in THIRD_PARTY_NOTICES.md.
+
+   a) Bán, cấp phép lại, cho thuê hoặc phân phối Phần mềm — bản gốc hay bản
+      sửa đổi — cho bên thứ ba.
+   b) Cho người không phải sinh viên của Cơ sở truy cập, hoặc vận hành Phần
+      mềm như một dịch vụ cho tổ chức khác.
+   c) Gỡ bỏ hoặc thay đổi thông báo bản quyền, thông báo giấy phép, hoặc các
+      thông báo bên thứ ba trong THIRD_PARTY_NOTICES.md.
+
+
+5. THIRD-PARTY COMPONENTS / THÀNH PHẦN BÊN THỨ BA
+
+   The Software includes open-source components listed in
+   THIRD_PARTY_NOTICES.md. Those components are licensed to the Institution
+   under their own terms, which prevail over this agreement for those
+   components. Nothing here restricts a right granted by an open-source licence.
+
+   Phần mềm có các thành phần nguồn mở liệt kê trong THIRD_PARTY_NOTICES.md.
+   Các thành phần đó được cấp phép theo điều khoản riêng của chúng, và các điều
+   khoản đó được ưu tiên áp dụng cho chính chúng. Không điều nào ở đây hạn chế
+   quyền mà một giấy phép nguồn mở đã trao.
+
+
+6. DATA / DỮ LIỆU
+
+   The Institution installs the Software on infrastructure it owns and controls.
+   All student data created by the Software resides in the Institution's own
+   cloud project. The Licensor has no access to it, does not process it, and is
+   not a data processor for it.
+
+   Cơ sở cài Phần mềm trên hạ tầng của chính mình. Toàn bộ dữ liệu sinh viên do
+   Phần mềm tạo ra nằm trong dự án đám mây của Cơ sở. Bên cấp phép không truy
+   cập, không xử lý, và không phải là bên xử lý dữ liệu.
+
+   [LAWYER] If the Licensor ever performs installation or support work that
+   touches live student data, that arrangement needs its own data-processing
+   terms and may fall under personal-data law in the Institution's country.
+
+
+7. SUPPORT AND UPDATES / HỖ TRỢ VÀ CẬP NHẬT
+
+   [LAWYER] Decide and state: what support is included, response times, for how
+   long, at what price after that, and whether updates are included.
+
+
+8. FEES / PHÍ
+
+   [FILL IN: licence fee, payment schedule, renewal terms, currency, taxes.]
+
+
+9. WARRANTY / BẢO HÀNH
+
+   The Licensor warrants that the Software will perform substantially as
+   described in the supplied documentation for [FILL IN: e.g. 90] days from the
+   Effective date. The Institution's sole remedy for breach of this warranty is
+   repair or, at the Licensor's option, a refund of the fee paid.
+
+   Bên cấp phép bảo đảm Phần mềm hoạt động về cơ bản đúng như tài liệu kèm theo
+   trong vòng [FILL IN] ngày kể từ Ngày hiệu lực. Biện pháp khắc phục duy nhất
+   là sửa chữa hoặc, theo lựa chọn của Bên cấp phép, hoàn lại phí đã trả.
+
+   EXCEPT AS STATED ABOVE, THE SOFTWARE IS PROVIDED "AS IS" WITHOUT WARRANTY OF
+   ANY KIND, EXPRESS OR IMPLIED, INCLUDING MERCHANTABILITY AND FITNESS FOR A
+   PARTICULAR PURPOSE.
+
+   NGOÀI PHẦN NÊU TRÊN, PHẦN MỀM ĐƯỢC CUNG CẤP "NGUYÊN TRẠNG", KHÔNG KÈM BẢO
+   ĐẢM NÀO KHÁC, DÙ MINH THỊ HAY NGỤ Ý.
+
+   The Software is a teaching simulation. Its figures are simulated educational
+   values, not real market data or financial advice.
+
+   Phần mềm là một mô phỏng giảng dạy. Các con số trong đó là giá trị mô phỏng
+   phục vụ giáo dục, không phải số liệu thị trường thật hay tư vấn tài chính.
+
+
+10. LIMITATION OF LIABILITY / GIỚI HẠN TRÁCH NHIỆM
+
+    [LAWYER] A liability cap is enforceable differently in different countries,
+    and a cap that is too low can be struck out entirely. Have this drafted.
+
+    Suggested starting point: the Licensor's total liability is limited to the
+    fees paid in the twelve months before the claim; neither party is liable
+    for indirect or consequential loss. Nothing limits liability for death,
+    personal injury, or fraud.
+
+
+11. TERM AND TERMINATION / THỜI HẠN VÀ CHẤM DỨT
+
+    [FILL IN: term.] The Licensor may terminate on written notice if the
+    Institution breaches this agreement and does not remedy the breach within
+    30 days. On termination the Institution stops using the Software and
+    removes the installation; see the uninstall instructions in INSTALL.md.
+    Student results already produced remain the Institution's own records.
+
+    [FILL IN: thời hạn.] Bên cấp phép có thể chấm dứt bằng văn bản nếu Cơ sở vi
+    phạm và không khắc phục trong 30 ngày. Khi chấm dứt, Cơ sở ngừng sử dụng và
+    gỡ bản cài; xem hướng dẫn gỡ trong INSTALL.md. Kết quả sinh viên đã tạo ra
+    vẫn là hồ sơ của Cơ sở.
+
+
+12. TRADEMARKS / NHÃN HIỆU
+
+    This package ships with descriptive competitor names and contains no
+    third-party trademarks by default. A build option exists to display the
+    names of real brands the benchmark archetypes were modelled on. If the
+    Institution enables it, the Institution is responsible for that use.
+
+    Gói này mặc định dùng tên đối thủ mang tính mô tả và không chứa nhãn hiệu
+    của bên thứ ba. Có một tuỳ chọn build để hiển thị tên các thương hiệu thật
+    mà các hình mẫu được dựng theo. Nếu Cơ sở bật tuỳ chọn đó, Cơ sở chịu trách
+    nhiệm về việc sử dụng đó.
+
+
+13. GOVERNING LAW / LUẬT ÁP DỤNG
+
+    [LAWYER] [FILL IN: governing law and dispute forum.] If the Institution is
+    in a different country from the Licensor, this clause matters a great deal
+    and should not be chosen casually.
+
+
+Signed / Ký:
+
+  Licensor / Bên cấp phép: ____________________  Date: __________
+
+  Licensee / Bên được cấp phép: _______________  Date: __________
+
+
+SCHEDULE A — CAMPUSES AND LIMITS / PHỤ LỤC A — CƠ SỞ VÀ GIỚI HẠN
+[FILL IN]

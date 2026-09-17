@@ -46,7 +46,27 @@ command -v gcloud >/dev/null || die "gcloud is not installed. Run this in Cloud 
 # The GitHub repository this checkout points at, so the trigger cannot be
 # pointed at the wrong one by accident.
 ORIGIN_URL="$(git remote get-url origin 2>/dev/null || true)"
-[[ -n "$ORIGIN_URL" ]] || die "This checkout has no 'origin' remote."
+if [[ -z "$ORIGIN_URL" ]]; then
+  # The common way to arrive here is not a broken checkout — it is somebody who
+  # installed from the release ZIP and is working through the scripts folder in
+  # order. Say what this tool is for rather than reporting a missing remote.
+  cat >&2 <<'NOREMOTE'
+
+  This is a developer tool, and it is not part of installing the application.
+
+  It makes Cloud Build redeploy automatically whenever you push to a GitHub
+  repository, so it needs one. An installation unpacked from the release ZIP
+  has no repository, which is fine: deploying is one command.
+
+  To deploy now:            ./scripts/deploy.sh
+  To install from scratch:  ./install.sh
+
+  If you DO keep this project in GitHub and want automatic deploys, run this
+  again from a checkout that has an 'origin' remote.
+
+NOREMOTE
+  exit 0
+fi
 # Match the host explicitly. Trimming a prefix that is not there leaves the
 # string untouched, so parsing without this test turns a non-GitHub remote into
 # a nonsense owner ("https:") instead of an error.

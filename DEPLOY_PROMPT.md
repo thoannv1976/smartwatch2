@@ -7,9 +7,11 @@ Nếu bạn chỉ muốn app chạy, **đừng dùng agent điều khiển trìn
 docker) và chạy:
 
 ```bash
-git clone <repo-url> && cd smartwatch2
-git checkout claude/inspiring-darwin-4xajv8
+# Từ bộ cài ZIP — một lệnh làm cả hai bước dưới:
+unzip smartwatch-ceo-challenge-v*.zip && cd smartwatch-ceo-challenge-v*
+./install.sh --project YOUR_PROJECT_ID --admin you@university.edu
 
+# Từ một git checkout, hoặc nếu muốn chạy tách hai bước:
 ./scripts/gcp-setup.sh YOUR_PROJECT_ID asia-southeast1 you@university.edu
 ./scripts/deploy.sh
 ```

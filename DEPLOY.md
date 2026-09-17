@@ -8,12 +8,19 @@ quickest route by a wide margin: `gcloud` is already authenticated, `node`,
 Google-internal.
 
 ```bash
-git clone <your-repo-url> && cd smartwatch2
-git checkout claude/inspiring-darwin-4xajv8
+# From a release ZIP — one command does both steps below:
+unzip smartwatch-ceo-challenge-v*.zip && cd smartwatch-ceo-challenge-v*
+./install.sh --project YOUR_PROJECT_ID --admin you@university.edu
 
+# From a git checkout, or if you prefer the two steps separately:
 ./scripts/gcp-setup.sh YOUR_PROJECT_ID asia-southeast1 you@university.edu
 ./scripts/deploy.sh
 ```
+
+> Installing at a new institution? Read **`INSTALL.md`** (Vietnamese) or
+> **`INSTALL.en.md`** (English) instead of this file. They cover prerequisites,
+> costs, the two browser steps, troubleshooting and uninstalling. This document
+> is the developer-facing reference for the same machinery.
 
 `gcp-setup.sh` is **idempotent** — it enables the APIs, creates Firestore, the
 runtime service account with its three roles, the Artifact Registry repository

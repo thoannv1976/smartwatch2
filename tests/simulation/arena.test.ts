@@ -278,7 +278,13 @@ describe('arena scenario registration', () => {
     });
     const apple = solo.competitors.find((c) => c.key === 'apple');
     expect(apple?.start.brandAwareness).toBe(90);
-    expect(apple?.displayName).toBe('Apple Watch benchmark');
+    // Asserted as "not a bot label" rather than as a specific string: what this
+    // test guards is that building the arena config did not overwrite the solo
+    // one, and the solo display name is now an institution's choice (see
+    // USE_BRAND_NAMES). Pinning the literal made this fail when the shipped
+    // default changed, for a reason that had nothing to do with mutation.
+    expect(apple?.displayName).toBeTruthy();
+    expect(apple?.displayName).not.toMatch(/^Bot \d+$/);
   });
 
   it('is deterministic', () => {

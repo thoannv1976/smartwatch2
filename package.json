@@ -2,6 +2,8 @@
   "name": "smartwatch-ceo-challenge",
   "version": "1.0.0",
   "private": true,
+  "license": "SEE LICENSE IN LICENSE",
+  "author": "[FILL IN: your name or company]",
   "description": "Smartwatch CEO Challenge V1 - business strategy simulation for e-commerce / digital business courses",
   "scripts": {
     "dev": "next dev",
