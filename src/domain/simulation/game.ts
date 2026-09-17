@@ -87,7 +87,7 @@ export function playQuarter(
   config: GameConfig = getGameConfig(),
   previousDecisions: Record<string, QuarterDecision> | null = null,
 ): PlayedQuarter {
-  const event = getMarketEvent(quarter, config);
+  const event = getMarketEvent(quarter, config, seed);
   const contexts = buildCompetitorContexts(previousQuarters, config);
   const competitorDecisions = generateAllCompetitorDecisions(
     quarter,

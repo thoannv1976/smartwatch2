@@ -157,6 +157,17 @@ Trang chủ có mục **Chơi thử (Practice)**:
 Hãy chơi thử **trọn 6 quý ít nhất một lần** trước khi làm bài chính thức. Bài
 chính thức thường chỉ cho **1 lần làm** và **không thể hoàn tác**.
 
+**Thị trường ngẫu nhiên (chỉ khi luyện tập).** Khi lập công ty ở chế độ luyện tập
+có một ô tick: sáu sự kiện sẽ được **rút từ một bể 12 sự kiện** theo seed của ván,
+nên mỗi lần chơi thử là một thị trường khác. Ngoài sáu sự kiện quen thuộc còn có:
+kỳ vọng chất lượng tăng cao, khách đòi hỏi hậu mãi, cơn sốt thương hiệu, thiếu hụt
+nguồn cung, thị trường mở rộng, và bão hoà quảng cáo.
+
+> **Bài tập CHÍNH THỨC luôn dùng đúng sáu sự kiện cố định, theo đúng thứ tự cũ.**
+> Điều này là bắt buộc: điểm của hai sinh viên chỉ so sánh được với nhau nếu cả hai
+> gặp cùng một thị trường. Kịch bản ngẫu nhiên **không xuất hiện trong danh sách
+> giảng viên chọn được** khi tạo bài tập — không phải ẩn đi, mà là không hợp lệ.
+
 ### A4. Thành lập công ty
 
 Bấm **Bắt đầu chơi thử** (hoặc **Bắt đầu bài tập**), rồi điền:

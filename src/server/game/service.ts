@@ -2,6 +2,7 @@ import 'server-only';
 import {
   GOLDEN_STRATEGY_MAX_QUARTERS,
   PLAYER_COMPANY_KEY,
+  PRACTICE_SCENARIO_VERSIONS,
   SCENARIO_VERSION,
   analyseStrategy,
   computeFinalScoreBreakdown,
@@ -70,6 +71,15 @@ export interface CreateSessionInput {
   companyName: string;
   productName: string;
   positioning: Positioning;
+  /**
+   * PRACTICE only: which market to practise against.
+   *
+   * Ignored for an official attempt, where the scenario comes from the
+   * assignment — a student must never be able to choose the market they are
+   * graded on. Validated against `PRACTICE_SCENARIO_VERSIONS`, which is the
+   * only list the varied scenario appears in.
+   */
+  scenarioVersion?: string;
 }
 
 const MAX_NAME_LENGTH = 60;
@@ -103,6 +113,12 @@ export class GameService {
     let assignment: AssignmentDoc | null = null;
     let attemptNo = 1;
     let scenarioVersion = SCENARIO_VERSION;
+    if (input.mode === 'PRACTICE' && input.scenarioVersion) {
+      if (!PRACTICE_SCENARIO_VERSIONS.includes(input.scenarioVersion)) {
+        throw new GameError('scenarioNotAllowed');
+      }
+      scenarioVersion = input.scenarioVersion;
+    }
     let seed = practiceSeed(input.userId);
 
     if (input.mode === 'OFFICIAL') {
@@ -504,7 +520,7 @@ export class GameService {
 
     const facts = this.quarterFacts(quarters);
     return suggestStrategies(
-      getMarketEvent(quarter, config),
+      getMarketEvent(quarter, config, session.randomSeed),
       player,
       facts.map((f) => f.result),
       facts[facts.length - 1]?.decision ?? null,

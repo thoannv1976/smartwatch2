@@ -152,7 +152,7 @@ export function playArenaQuarter(
   config: GameConfig = getGameConfig(ARENA_SCENARIO_VERSION),
 ): ArenaPlayedQuarter {
   const { quarter, states, humanDecisions, previousQuarters, seed } = input;
-  const event = getMarketEvent(quarter, config);
+  const event = getMarketEvent(quarter, config, seed);
 
   // Generated for every seat, then overwritten by the humans. Generating all of
   // them regardless keeps the seeded stream identical whether a seat happens to

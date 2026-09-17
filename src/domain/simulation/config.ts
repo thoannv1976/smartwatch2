@@ -111,6 +111,19 @@ export interface GameConfig {
   defaultDemandWeights: DemandWeights;
   priceSensitiveDemandWeights: DemandWeights;
   shoppingPeakDemandWeights: DemandWeights;
+  qualityLedDemandWeights: DemandWeights;
+  serviceLedDemandWeights: DemandWeights;
+  brandLedDemandWeights: DemandWeights;
+  supplyConstrainedDemandWeights: DemandWeights;
+  /**
+   * How this scenario picks its six market events.
+   *
+   * ABSENT MEANS `FIXED`, and that default is load-bearing: every graded
+   * scenario must keep the same six events in the same order for ever, or two
+   * students' scores stop meaning the same thing. Only a practice scenario
+   * opts into `SEEDED_POOL`.
+   */
+  eventSelection?: 'FIXED' | 'SEEDED_POOL';
 
   // --- Distribution constraint (spec 5.8) ---
   fulfilmentBase: number;
@@ -209,6 +222,49 @@ const PRICE_SENSITIVE_DEMAND_WEIGHTS: DemandWeights = {
   brand: 0.15,
   marketing: 0.15,
   distribution: 0.1,
+  cx: 0.05,
+};
+
+/**
+ * Weights for the extra events in the practice-only pool.
+ *
+ * Each one is ORDINARY CONFIGURATION: it shifts where demand looks, and adds no
+ * formula. That constraint is what keeps every event explainable to a student
+ * in a single sentence, and it is why the pool costs nothing to reason about.
+ */
+const QUALITY_LED_DEMAND_WEIGHTS: DemandWeights = {
+  product: 0.4,
+  price: 0.15,
+  brand: 0.15,
+  marketing: 0.1,
+  distribution: 0.1,
+  cx: 0.1,
+};
+
+const SERVICE_LED_DEMAND_WEIGHTS: DemandWeights = {
+  product: 0.25,
+  price: 0.15,
+  brand: 0.15,
+  marketing: 0.1,
+  distribution: 0.15,
+  cx: 0.2,
+};
+
+const BRAND_LED_DEMAND_WEIGHTS: DemandWeights = {
+  product: 0.25,
+  price: 0.15,
+  brand: 0.35,
+  marketing: 0.15,
+  distribution: 0.05,
+  cx: 0.05,
+};
+
+const SUPPLY_CONSTRAINED_DEMAND_WEIGHTS: DemandWeights = {
+  product: 0.25,
+  price: 0.2,
+  brand: 0.15,
+  marketing: 0.1,
+  distribution: 0.25,
   cx: 0.05,
 };
 
@@ -418,6 +474,10 @@ export const smartwatchV1Config: GameConfig = {
   defaultDemandWeights: DEFAULT_DEMAND_WEIGHTS,
   priceSensitiveDemandWeights: PRICE_SENSITIVE_DEMAND_WEIGHTS,
   shoppingPeakDemandWeights: SHOPPING_PEAK_DEMAND_WEIGHTS,
+  qualityLedDemandWeights: QUALITY_LED_DEMAND_WEIGHTS,
+  serviceLedDemandWeights: SERVICE_LED_DEMAND_WEIGHTS,
+  brandLedDemandWeights: BRAND_LED_DEMAND_WEIGHTS,
+  supplyConstrainedDemandWeights: SUPPLY_CONSTRAINED_DEMAND_WEIGHTS,
 
   fulfilmentBase: 0.7,
   fulfilmentSlope: 0.003,
@@ -586,11 +646,38 @@ export const smartwatchV1ArenaConfig: GameConfig = {
   })),
 };
 
+export const VARIED_SCENARIO_VERSION = 'smartwatch-v1-varied';
+
+/**
+ * Practice with a market you have not already memorised.
+ *
+ * WHY. `getMarketEvent` is a hard-coded `switch (quarter)`: the same six
+ * events, in the same order, every single game. That is exactly right for a
+ * graded assignment — two students' scores only mean the same thing if they
+ * faced the same market — and it means a second practice run teaches almost
+ * nothing, because the student already knows quarter five rewards technology.
+ *
+ * So this scenario draws its six events FROM A POOL, seeded by the session, and
+ * is offered for practice only. Same coefficients, same formulas, same
+ * `engineVersion`, same starting row: the ONLY difference is which events come
+ * up and in what order.
+ *
+ * Results carry their own `scenarioVersion`, so a practice run here can never
+ * be compared with, or contaminate, an official one — the identical mechanism
+ * that has protected the challenger scenario since it was added.
+ */
+export const smartwatchV1VariedConfig: GameConfig = {
+  ...smartwatchV1Config,
+  scenarioVersion: VARIED_SCENARIO_VERSION,
+  eventSelection: 'SEEDED_POOL',
+};
+
 /** Registry of scenario configurations, keyed by scenario version. */
 export const gameConfigs: Record<string, GameConfig> = {
   [SCENARIO_VERSION]: smartwatchV1Config,
   [CHALLENGER_SCENARIO_VERSION]: smartwatchV1ChallengerConfig,
   [ARENA_SCENARIO_VERSION]: smartwatchV1ArenaConfig,
+  [VARIED_SCENARIO_VERSION]: smartwatchV1VariedConfig,
 };
 
 /**
@@ -604,6 +691,34 @@ export const gameConfigs: Record<string, GameConfig> = {
 export const SELECTABLE_SCENARIO_VERSIONS: readonly string[] = [
   SCENARIO_VERSION,
   CHALLENGER_SCENARIO_VERSION,
+] as const;
+
+/**
+ * Scenarios whose six events are drawn rather than fixed.
+ *
+ * Named so that a screen can warn an instructor before they set one as an
+ * official assignment: two students would face different markets and their
+ * scores would not be comparable. `PRACTICE_ONLY_SCENARIO_VERSIONS` is the
+ * enforcement point; this list is what it is built from.
+ */
+export const PRACTICE_ONLY_SCENARIO_VERSIONS: readonly string[] = [
+  VARIED_SCENARIO_VERSION,
+] as const;
+
+/**
+ * Scenarios a student may start a PRACTICE game with.
+ *
+ * A superset of the assignable ones. The varied scenario appears only here, and
+ * `SELECTABLE_SCENARIO_VERSIONS` — which is the zod enum the create-assignment
+ * action validates against — deliberately does not contain it. An instructor
+ * therefore cannot set it as coursework even by editing the request: two
+ * students would face different markets, and their marks would not mean the
+ * same thing.
+ */
+export const PRACTICE_SCENARIO_VERSIONS: readonly string[] = [
+  SCENARIO_VERSION,
+  CHALLENGER_SCENARIO_VERSION,
+  VARIED_SCENARIO_VERSION,
 ] as const;
 
 /**

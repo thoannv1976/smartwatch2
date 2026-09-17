@@ -59,7 +59,7 @@ export default async function GroupDecisionPage({
 
   const quarter = state.currentQuarter;
   const config = getGameConfig(state.game?.scenarioVersion ?? ARENA_SCENARIO_VERSION);
-  const event = getMarketEvent(quarter, config);
+  const event = getMarketEvent(quarter, config, state.game?.randomSeed ?? groupId);
 
   // The match is created lazily, on the first submission — so before quarter
   // one there are no stored companies. Derive them from the seat map instead of

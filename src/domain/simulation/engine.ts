@@ -200,7 +200,7 @@ export function simulateQuarter(
     throw new Error('simulateQuarter requires at least one company');
   }
 
-  const event = getMarketEvent(quarter, config);
+  const event = getMarketEvent(quarter, config, seed);
 
   // --- Steps 1-9: independent per company ---
   const pre: PreAllocation[] = companies.map((state) => {

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import {
   FORECAST_NOTE_MAX,
   POSITIONINGS,
+  PRACTICE_SCENARIO_VERSIONS,
   getGameConfig,
   type GoldenStrategy,
   type HindsightQuarter,
@@ -41,6 +42,8 @@ const createSessionSchema = z.object({
   companyName: z.string().trim().min(1).max(60),
   productName: z.string().trim().min(1).max(60),
   positioning: z.enum(POSITIONINGS as unknown as [string, ...string[]]),
+  /** PRACTICE only; the service rejects anything not on the practice list. */
+  scenarioVersion: z.enum(PRACTICE_SCENARIO_VERSIONS as unknown as [string, ...string[]]).optional(),
 });
 
 export async function createSessionAction(
@@ -60,6 +63,7 @@ export async function createSessionAction(
       companyName: parsed.companyName,
       productName: parsed.productName,
       positioning: parsed.positioning as (typeof POSITIONINGS)[number],
+      scenarioVersion: parsed.scenarioVersion,
     });
 
     revalidatePath('/home');

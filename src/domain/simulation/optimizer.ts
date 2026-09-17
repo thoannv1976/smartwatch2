@@ -203,7 +203,7 @@ export function findGoldenStrategy(
 
   // Generated ONCE: the AI decisions and the demand jitter do not depend on the
   // player's decision, so every candidate is scored against the same market.
-  const event = getMarketEvent(quarter, config);
+  const event = getMarketEvent(quarter, config, seed);
   const competitorDecisions = generateAllCompetitorDecisions(
     quarter,
     event,
@@ -356,7 +356,7 @@ export function replayDecision(
   decision: QuarterDecision,
   config: GameConfig = getGameConfig(),
 ): StrategyOutcome {
-  const event = getMarketEvent(input.quarter, config);
+  const event = getMarketEvent(input.quarter, config, input.seed);
   const competitorDecisions = generateAllCompetitorDecisions(
     input.quarter,
     event,

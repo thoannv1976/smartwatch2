@@ -15,6 +15,7 @@
 import {
   CHALLENGER_SCENARIO_VERSION,
   SCENARIO_VERSION,
+  VARIED_SCENARIO_VERSION,
   getGameConfig,
   repeatDecision,
   runFullGame,
@@ -386,7 +387,16 @@ function reportScenario(scenarioVersion: string, seeds: string[]): void {
   );
 
   const bestAchievableRank = Math.min(...summaries.map((s) => s.bestRank));
-  const expectedFlat = scenarioVersion === SCENARIO_VERSION;
+  // Flatness is a property of the STARTING PROFILE, not of a scenario's name:
+  // in `smartwatch-v1` the player begins so far behind the five benchmarks that
+  // no sampled strategy reaches the top six in six quarters, which is why the
+  // challenger scenario exists. Any scenario sharing that starting row inherits
+  // the same documented flatness — keying off the profile rather than off one
+  // hard-coded id keeps a later scenario from either failing this check
+  // spuriously or being quietly exempted from it.
+  const base = getGameConfig(SCENARIO_VERSION);
+  const expectedFlat =
+    JSON.stringify(config.playerStart) === JSON.stringify(base.playerStart);
   check(
     expectedFlat
       ? 'Game rank vs benchmarks is flat (documented for this scenario)'
@@ -402,6 +412,10 @@ function main(): void {
   const seeds = process.argv.slice(2).length > 0 ? process.argv.slice(2) : DEFAULT_SEEDS;
   reportScenario(SCENARIO_VERSION, seeds);
   reportScenario(CHALLENGER_SCENARIO_VERSION, seeds);
+  // The practice scenario draws its six events from a pool, so it is checked
+  // like any other: an event that breaks a balance rule would make a practice
+  // run teach a lesson the graded market never rewards.
+  reportScenario(VARIED_SCENARIO_VERSION, seeds);
 }
 
 main();

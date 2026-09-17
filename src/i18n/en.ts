@@ -99,6 +99,9 @@ export const en: Dictionary = {
     finalScore: 'Final Score',
   },
   newGame: {
+    variedMarket: 'Randomised market (practice only)',
+    variedMarketHint:
+      "Six events drawn from a pool of twelve, seeded by the session, so each practice run is a different market. Official assignments always use the fixed six, so the whole class's marks stay comparable.",
     title: 'Found your company',
     subtitle: 'You are the CEO of a new smartwatch brand. Name it and choose a positioning.',
     companyName: 'Company name',
@@ -421,7 +424,13 @@ export const en: Dictionary = {
     PRICE_COMPETITION: 'Price Competition',
     ECONOMIC_SLOWDOWN: 'Economic Slowdown',
     AI_SMARTWATCH_FEATURES: 'AI Smartwatch Features',
-    ONLINE_SHOPPING_PEAK: 'Online Shopping Peak',
+    ONLINE_SHOPPING_PEAK: 'Online shopping peak',
+    QUALITY_EXPECTATIONS: 'Quality expectations rise',
+    SERVICE_EXPECTATIONS: 'Service expectations rise',
+    BRAND_HYPE: 'Brand hype cycle',
+    SUPPLY_SHORTAGE: 'Component shortage',
+    MARKET_EXPANSION: 'Market expansion',
+    MARKETING_FATIGUE: 'Advertising fatigue',
   },
   eventDesc: {
     NORMAL_MARKET: 'No modifiers. Market size 500,000 units.',
@@ -435,6 +444,18 @@ export const en: Dictionary = {
       'AI features become decisive: the Technology contribution is multiplied by 1.40. Market size returns to 500,000 units.',
     ONLINE_SHOPPING_PEAK:
       'The market grows to 600,000 units (+20%), Marketing Strength is multiplied by 1.15 and Distribution matters more.',
+    QUALITY_EXPECTATIONS:
+      'A wave of reviews raises the bar. Product quality is 40% of the purchase decision — the quarter to harvest what you invested, not to start investing.',
+    SERVICE_EXPECTATIONS:
+      'After-sales becomes the differentiator: customer experience rises to 20% of the decision. Anyone who has neglected the CX box for several quarters pays here.',
+    BRAND_HYPE:
+      'A viral quarter: brand awareness carries 35% of the purchase decision and marketing works 10% harder. The rare quarter where the name sells the watch.',
+    SUPPLY_SHORTAGE:
+      'Components are scarce and the market shrinks to 450,000 units. Distribution rises to 25% — whoever can actually put stock in front of a customer takes this quarter.',
+    MARKET_EXPANSION:
+      'New buyers enter and the market reaches 650,000 units. They do not know the brands yet, so distribution reach matters more than usual.',
+    MARKETING_FATIGUE:
+      'Buyers have stopped listening to advertising: marketing strength falls to 80%. The quarter for whoever built something real rather than shouting about it.',
   },
   strategyLabels: {
     ACQUISITION_FOCUS: 'Customer acquisition / visibility focus',
@@ -994,6 +1015,7 @@ export const en: Dictionary = {
   },
 
   errors: {
+    scenarioNotAllowed: 'That scenario is not available for the mode you chose.',
     weakPassword: 'Password must be at least 8 characters',
     emailAlreadyExists: 'That email already has an account. Edit their row in the list instead.',
     accountUsesGoogle:

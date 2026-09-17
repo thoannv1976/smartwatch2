@@ -72,7 +72,7 @@ export default async function GameDashboardPage({
     redirect(`/report/${sessionId}`);
   }
 
-  const upcomingEvent = finished ? null : getMarketEvent(nextQuarter, config);
+  const upcomingEvent = finished ? null : getMarketEvent(nextQuarter, config, session.randomSeed);
   const playerState = session.companies.find((c) => c.companyKey === PLAYER_COMPANY_KEY);
 
   return (

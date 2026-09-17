@@ -2,7 +2,11 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { POSITIONINGS, type Positioning } from '@/domain/simulation';
+import {
+  POSITIONINGS,
+  VARIED_SCENARIO_VERSION,
+  type Positioning,
+} from '@/domain/simulation';
 import { createSessionAction } from '@/server/game/actions';
 import { useI18n } from '@/i18n/client';
 import { Card, CardTitle, ErrorNote, InfoNote } from '@/components/ui/primitives';
@@ -24,6 +28,9 @@ export function NewGameForm({
   const [companyName, setCompanyName] = useState('');
   const [productName, setProductName] = useState('');
   const [positioning, setPositioning] = useState<Positioning>('BALANCED');
+  // Practice only. An official attempt takes its scenario from the assignment:
+  // a student must never choose the market they are graded on.
+  const [varied, setVaried] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const submit = (event: React.FormEvent) => {
@@ -42,6 +49,7 @@ export function NewGameForm({
         companyName,
         productName,
         positioning,
+        scenarioVersion: mode === 'PRACTICE' && varied ? VARIED_SCENARIO_VERSION : undefined,
       });
       if (result.ok) router.replace(`/game/${result.data.sessionId}`);
       else setError(t.errors[result.error]);
@@ -109,6 +117,27 @@ export function NewGameForm({
           </div>
           <p className="mt-2 text-xs text-ink-500">{t.newGame.positioningHint}</p>
         </fieldset>
+
+        {/* Practice only, and absent entirely from an official attempt — the
+            market you are graded on is the assignment's, never your own pick. */}
+        {mode === 'PRACTICE' ? (
+          <label className="flex max-w-prose cursor-pointer items-start gap-3 rounded-lg border border-ink-700/60 bg-ink-900/50 p-4">
+            <input
+              type="checkbox"
+              checked={varied}
+              onChange={(e) => setVaried(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-brand-500"
+            />
+            <span>
+              <span className="block text-sm font-medium text-ink-100">
+                {t.newGame.variedMarket}
+              </span>
+              <span className="mt-0.5 block text-xs text-ink-400">
+                {t.newGame.variedMarketHint}
+              </span>
+            </span>
+          </label>
+        ) : null}
 
         {mode === 'OFFICIAL' ? <InfoNote>{t.home.officialDesc}</InfoNote> : null}
         {error ? <ErrorNote>{error}</ErrorNote> : null}

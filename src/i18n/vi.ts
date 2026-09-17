@@ -102,6 +102,9 @@ export const vi = {
     finalScore: 'Điểm tổng kết',
   },
   newGame: {
+    variedMarket: 'Thị trường ngẫu nhiên (chỉ khi luyện tập)',
+    variedMarketHint:
+      'Sáu sự kiện được rút từ một bể 12 sự kiện theo seed của ván, nên mỗi lần chơi thử là một thị trường khác. Bài tập chính thức luôn dùng đúng sáu sự kiện cố định để điểm của cả lớp so sánh được với nhau.',
     title: 'Thành lập công ty',
     subtitle: 'Bạn là CEO của một thương hiệu smartwatch mới. Hãy đặt tên và chọn định vị.',
     companyName: 'Tên công ty',
@@ -422,7 +425,13 @@ export const vi = {
     PRICE_COMPETITION: 'Cạnh tranh giá',
     ECONOMIC_SLOWDOWN: 'Kinh tế giảm tốc',
     AI_SMARTWATCH_FEATURES: 'Làn sóng tính năng AI',
-    ONLINE_SHOPPING_PEAK: 'Cao điểm mua sắm online',
+    ONLINE_SHOPPING_PEAK: 'Cao điểm mua sắm trực tuyến',
+    QUALITY_EXPECTATIONS: 'Kỳ vọng chất lượng tăng cao',
+    SERVICE_EXPECTATIONS: 'Khách đòi hỏi hậu mãi',
+    BRAND_HYPE: 'Cơn sốt thương hiệu',
+    SUPPLY_SHORTAGE: 'Thiếu hụt nguồn cung',
+    MARKET_EXPANSION: 'Thị trường mở rộng',
+    MARKETING_FATIGUE: 'Bão hoà quảng cáo',
   },
   eventDesc: {
     NORMAL_MARKET: 'Không có hệ số đặc biệt. Thị trường 500.000 chiếc.',
@@ -436,6 +445,18 @@ export const vi = {
       'Tính năng AI thành yếu tố quyết định: đóng góp của Công nghệ được nhân 1,40. Thị trường trở lại 500.000 chiếc.',
     ONLINE_SHOPPING_PEAK:
       'Thị trường tăng lên 600.000 chiếc (+20%), Sức mạnh marketing được nhân 1,15 và Phân phối quan trọng hơn.',
+    QUALITY_EXPECTATIONS:
+      'Một loạt bài đánh giá nâng chuẩn của người mua. Chất lượng sản phẩm chiếm tới 40% quyết định mua — quý để thu hoạch thứ bạn đã đầu tư, không phải quý để bắt đầu đầu tư.',
+    SERVICE_EXPECTATIONS:
+      'Hậu mãi trở thành điểm phân biệt: trải nghiệm khách hàng lên 20% quyết định mua. Ai bỏ quên ô CX suốt mấy quý sẽ trả giá ở đây.',
+    BRAND_HYPE:
+      'Một quý lan truyền: nhận biết thương hiệu chiếm 35% quyết định mua và marketing hiệu quả hơn 10%. Lần hiếm hoi cái tên tự bán hàng.',
+    SUPPLY_SHORTAGE:
+      'Linh kiện khan hiếm, thị trường co còn 450.000 chiếc. Phân phối lên 25% — ai thật sự đưa được hàng tới tay khách sẽ thắng quý này.',
+    MARKET_EXPANSION:
+      'Lớp khách hàng mới bước vào, thị trường đạt 650.000 chiếc. Họ chưa biết thương hiệu nào, nên độ phủ phân phối quan trọng hơn thường lệ.',
+    MARKETING_FATIGUE:
+      'Người mua đã ngừng nghe quảng cáo: sức mạnh marketing chỉ còn 80%. Quý dành cho ai đã xây thứ gì đó thật, thay vì hô to.',
   },
   strategyLabels: {
     ACQUISITION_FOCUS: 'Tập trung thu hút khách hàng / độ phủ truyền thông',
@@ -994,6 +1015,7 @@ export const vi = {
   },
 
   errors: {
+    scenarioNotAllowed: 'Kịch bản này không dùng được cho chế độ chơi bạn chọn.',
     weakPassword: 'Mật khẩu cần ít nhất 8 ký tự',
     emailAlreadyExists: 'Email này đã có tài khoản. Hãy sửa trực tiếp trên dòng của họ trong danh sách.',
     accountUsesGoogle:

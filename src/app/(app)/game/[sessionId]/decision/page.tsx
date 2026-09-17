@@ -40,7 +40,7 @@ export default async function DecisionPage({
   // Nothing left to decide.
   if (quarter > config.quarters) redirect(`/report/${sessionId}`);
 
-  const event = getMarketEvent(quarter, config);
+  const event = getMarketEvent(quarter, config, session.randomSeed);
   const player = session.companies.find((c) => c.companyKey === PLAYER_COMPANY_KEY);
   if (!player) notFound();
 

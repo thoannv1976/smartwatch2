@@ -40,12 +40,20 @@ export const POSITIONINGS: readonly Positioning[] = [
 ] as const;
 
 export type MarketEventKey =
+  // The fixed six, in the order every graded scenario plays them.
   | 'NORMAL_MARKET'
   | 'FITNESS_HEALTH_BOOM'
   | 'PRICE_COMPETITION'
   | 'ECONOMIC_SLOWDOWN'
   | 'AI_SMARTWATCH_FEATURES'
-  | 'ONLINE_SHOPPING_PEAK';
+  | 'ONLINE_SHOPPING_PEAK'
+  // Pool-only, drawn by a practice scenario. Never reachable from a graded one.
+  | 'QUALITY_EXPECTATIONS'
+  | 'SERVICE_EXPECTATIONS'
+  | 'BRAND_HYPE'
+  | 'SUPPLY_SHORTAGE'
+  | 'MARKET_EXPANSION'
+  | 'MARKETING_FATIGUE';
 
 /** The six customer choice factors that make up the demand score (spec 2.2 / 5.6). */
 export interface DemandWeights {
