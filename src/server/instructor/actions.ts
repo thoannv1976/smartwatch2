@@ -795,6 +795,7 @@ export async function renameGroupAction(
     await repos.groups.update(group.id, { name: parsed.name });
 
     revalidatePath(`/instructor/assignments/${group.assignmentId}`);
+    revalidatePath(`/instructor/groups/${group.id}`);
     return { ok: true, data: {} };
   } catch (error) {
     return { ok: false, error: toError(error) };
@@ -817,6 +818,7 @@ export async function setGroupArchivedAction(
     await repos.groups.setArchived(group.id, parsed.archived ? Date.now() : null);
 
     revalidatePath(`/instructor/assignments/${group.assignmentId}`);
+    revalidatePath(`/instructor/groups/${group.id}`);
     return { ok: true, data: {} };
   } catch (error) {
     return { ok: false, error: toError(error) };

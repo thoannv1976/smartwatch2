@@ -755,6 +755,22 @@ bổ điểm chính xác của cả 6 công ty**, cạnh nhau, theo từng quý.
 lời *"vì sao công ty kia thắng?"* trước lớp. Bản nộp mặc định được đánh dấu — đừng
 thảo luận nó như thể sinh viên đó đã tự chọn.
 
+Đầu trang chi tiết nhóm là bảng **Trạng thái nộp quyết định** của quý đang chạy —
+đúng những gì sinh viên thấy trong phòng chờ của các em, cộng thêm **giờ nộp**, và
+nút **Chạy vòng ngay** / **Gỡ khỏi nhóm** ngay tại đó. Bạn không phải quay lại tab
+Nhóm để xử lý một nhóm đang mở.
+
+> **Nội dung quyết định chỉ hiện SAU KHI quý đã chạy.** Trước đó bảng chỉ nói ai
+> đã nộp và lúc mấy giờ. Đây là chủ ý: giảng viên hay chiếu màn hình lên lớp, và
+> nếu hiện phân bổ của người nộp sớm thì cả phòng nhìn thấy — người nộp sau sẽ có
+> lợi thế mà chính chế độ nhóm sinh ra để loại bỏ.
+
+Bảng xếp hạng trên trang này ghi **"tạm tính"** cho tới khi đủ 6 quý. Chưa đủ 6 quý
+thì thứ hạng còn đổi — **đừng chấm điểm trên bảng tạm tính**.
+
+Trang này cũng **đổi tên nhóm** và **lưu trữ nhóm** được. Lưu trữ là xoá mềm: ván
+đấu đã chơi không bao giờ bị xoá thật, chỉ ẩn khỏi danh sách.
+
 **Chấm điểm.** Không có gì mới phải học: nhóm kết thúc sẽ ghi **6 dòng điểm bình
 thường**, nên bảng xếp hạng lớp, phần trăm vị trí và cả hai file CSV cũ chạy y
 nguyên. `Hạng trong game` **chính là hạng 1–6 trong nhóm**.

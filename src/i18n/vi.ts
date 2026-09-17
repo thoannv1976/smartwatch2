@@ -775,6 +775,21 @@ export const vi = {
       'Nhóm chưa tiến triển quá {days} ngày vì còn chờ quyết định. Không có hạn giờ tự động — hãy nhắc giảng viên phụ trách, hoặc dùng nút Chạy vòng ngay.',
     stalledNone: 'Không có nhóm nào đang kẹt.',
     stalledDays: '{days} ngày',
+    liveStatus: 'Trạng thái nộp quyết định · Quý {quarter}',
+    liveStatusHint:
+      'Đúng những gì sinh viên thấy trong phòng chờ. Nội dung quyết định chỉ hiện sau khi quý đã chạy — trước đó, chiếu màn hình lên lớp sẽ làm lộ bài của người nộp sớm.',
+    liveStatusDone: 'Nhóm đã chơi xong 6 quý.',
+    liveStatusNotStarted: 'Chưa ai nộp quyết định quý 1.',
+    submittedAt: 'Giờ nộp',
+    status: 'Trạng thái',
+    standingsProvisional: 'Xếp hạng tạm tính sau quý {quarter}',
+    standingsProvisionalHint:
+      'Chưa đủ 6 quý — đây KHÔNG phải điểm cuối để chấm. Thứ hạng còn đổi.',
+    renameGroup: 'Đổi tên nhóm',
+    renaming: 'Đang đổi…',
+    archiveGroup: 'Lưu trữ nhóm',
+    unarchiveGroup: 'Bỏ lưu trữ',
+    archiveGroupConfirm: 'Lưu trữ thật?',
   },
   rivals: {
     title: 'Đọc vị đối thủ',

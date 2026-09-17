@@ -775,6 +775,21 @@ export const en: Dictionary = {
       'Groups that have not advanced for more than {days} days because a decision is missing. There is no automatic deadline — nudge the instructor, or use Run the quarter now.',
     stalledNone: 'No groups are stalled.',
     stalledDays: '{days} days',
+    liveStatus: 'Decision status · Quarter {quarter}',
+    liveStatusHint:
+      'Exactly what students see in their waiting room. What they decided appears only once the quarter has run — before that, a projected screen would expose the early submitters.',
+    liveStatusDone: 'This group has played all six quarters.',
+    liveStatusNotStarted: 'Nobody has submitted for quarter 1 yet.',
+    submittedAt: 'Submitted at',
+    status: 'Status',
+    standingsProvisional: 'Provisional standings after quarter {quarter}',
+    standingsProvisionalHint:
+      'Fewer than six quarters played — these are NOT the final marks. Positions can still change.',
+    renameGroup: 'Rename group',
+    renaming: 'Renaming…',
+    archiveGroup: 'Archive group',
+    unarchiveGroup: 'Restore group',
+    archiveGroupConfirm: 'Archive it?',
   },
   rivals: {
     title: 'Reading the competition',

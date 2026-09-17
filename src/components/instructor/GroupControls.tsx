@@ -7,6 +7,8 @@ import {
   forceGroupQuarterAction,
   regenerateGroupCodeAction,
   releaseGroupSeatAction,
+  renameGroupAction,
+  setGroupArchivedAction,
 } from '@/server/instructor/actions';
 import { useI18n } from '@/i18n/client';
 import { interpolate } from '@/i18n';
@@ -162,5 +164,122 @@ export function ReleaseSeatButton({ groupId, uid }: { groupId: string; uid: stri
       />
       {error ? <span className="text-xs text-bad-400">{error}</span> : null}
     </span>
+  );
+}
+
+/**
+ * Renames one group.
+ *
+ * Groups are created in bulk as "Group 1..N", which is fine until a class
+ * names its own teams — and then the instructor is reading a progress table
+ * whose rows match nothing anyone says out loud.
+ */
+export function RenameGroupForm({ groupId, name }: { groupId: string; name: string }) {
+  const { t } = useI18n();
+  const { pending, error, setError, router, startTransition } = useAction();
+  const [value, setValue] = useState(name);
+
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const trimmed = value.trim();
+    if (trimmed.length === 0 || trimmed === name) return;
+    setError(null);
+    startTransition(async () => {
+      const result = await renameGroupAction({ groupId, name: trimmed });
+      if (result.ok) router.refresh();
+      else setError(t.errors[result.error as keyof typeof t.errors] ?? result.error);
+    });
+  };
+
+  return (
+    <form onSubmit={submit} className="flex flex-wrap items-center gap-2">
+      <input
+        value={value}
+        maxLength={60}
+        onChange={(e) => setValue(e.target.value)}
+        aria-label={t.groupAdmin.renameGroup}
+        className="w-44 rounded-md border border-ink-600 bg-ink-950 px-3 py-1.5 text-xs text-ink-100 focus:border-brand-500 focus:outline-none"
+      />
+      <button
+        type="submit"
+        disabled={pending || value.trim().length === 0 || value.trim() === name}
+        className="rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-700 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        {pending ? t.groupAdmin.renaming : t.groupAdmin.renameGroup}
+      </button>
+      {error ? <span className="text-xs text-bad-400">{error}</span> : null}
+    </form>
+  );
+}
+
+/** Soft delete, both ways. A played match is hidden, never destroyed. */
+export function ArchiveGroupButton({
+  groupId,
+  archived,
+}: {
+  groupId: string;
+  archived: boolean;
+}) {
+  const { t } = useI18n();
+  const { pending, error, setError, router, startTransition } = useAction();
+
+  const run = () => {
+    setError(null);
+    startTransition(async () => {
+      const result = await setGroupArchivedAction({ groupId, archived: !archived });
+      if (result.ok) router.refresh();
+      else setError(t.errors[result.error as keyof typeof t.errors] ?? result.error);
+    });
+  };
+
+  return (
+    <span className="flex flex-col gap-1">
+      {archived ? (
+        <button
+          type="button"
+          onClick={run}
+          disabled={pending}
+          className="rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-700 disabled:opacity-50"
+        >
+          {t.groupAdmin.unarchiveGroup}
+        </button>
+      ) : (
+        <ConfirmButton
+          label={t.groupAdmin.archiveGroup}
+          confirmLabel={t.groupAdmin.archiveGroupConfirm}
+          cancelLabel={t.common.cancel}
+          tone="warn"
+          disabled={pending}
+          onConfirm={run}
+        />
+      )}
+      {error ? <span className="text-xs text-bad-400">{error}</span> : null}
+    </span>
+  );
+}
+
+/**
+ * Re-reads the page.
+ *
+ * The instructor's status table is server-rendered, so it is a snapshot of the
+ * moment it loaded. An instructor watching a group decide in class needs to ask
+ * again without losing their place on the page — and unlike the students'
+ * button, this one only re-reads: it never advances the match, because the
+ * instructor already has an explicit button for that and the two should not be
+ * the same click.
+ */
+export function RefreshButton() {
+  const { t } = useI18n();
+  const { pending, router, startTransition } = useAction();
+
+  return (
+    <button
+      type="button"
+      onClick={() => startTransition(() => router.refresh())}
+      disabled={pending}
+      className="rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-700 disabled:opacity-50"
+    >
+      {pending ? t.group.refreshing : t.group.refresh}
+    </button>
   );
 }

@@ -1,22 +1,33 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ARENA_SEATS } from '@/domain/simulation';
+import { isArchived } from '@/db/models';
 import { requireRolePage } from '@/server/auth/guards';
 import { hasRole } from '@/server/auth/session';
 import { getRepositories } from '@/db/repositories/firestore';
 import { getGroupDetail } from '@/server/instructor/queries';
 import { getTranslations } from '@/i18n/server';
+import { interpolate } from '@/i18n';
+import {
+  ArchiveGroupButton,
+  ForceQuarterButton,
+  RefreshButton,
+  RenameGroupForm,
+  ReleaseSeatButton,
+} from '@/components/instructor/GroupControls';
 import {
   Badge,
   Card,
   CardTitle,
   EmptyState,
+  InfoNote,
   PageHeader,
   TableScroll,
   Td,
   Th,
+  WarningNote,
 } from '@/components/ui/primitives';
-import { formatDecimal, formatMoneyCompact, formatPercent } from '@/lib/format';
+import { formatDate, formatDecimal, formatMoneyCompact, formatPercent } from '@/lib/format';
 
 export const metadata = { title: 'Chi tiết nhóm — Smartwatch CEO Challenge' };
 
@@ -48,8 +59,22 @@ export default async function InstructorGroupPage({
     if (!course || course.instructorId !== user.uid) notFound();
   }
 
-  const { group, members, quarters, scores, defaults } = detail;
-  const bySeat = new Map(members.map((m) => [m.seatKey, m]));
+  const {
+    group,
+    members,
+    quarters,
+    scores,
+    defaults,
+    currentQuarter,
+    completed,
+    submittedSeats,
+    waitingOn,
+    submittedAt,
+    isFinal,
+  } = detail;
+  const bySeat = new Map(members.filter((m) => m.leftAt == null).map((m) => [m.seatKey, m]));
+  const submitted = new Set(submittedSeats);
+  const liveMembers = members.filter((m) => m.leftAt == null);
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
@@ -57,8 +82,10 @@ export default async function InstructorGroupPage({
         title={`${t.groupAdmin.detailTitle} · ${group.name}`}
         subtitle={t.groupAdmin.detailHint}
         right={
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center justify-end gap-2">
             <span className="font-mono text-sm tracking-widest text-ink-100">{group.joinCode}</span>
+            <RenameGroupForm groupId={group.id} name={group.name} />
+            <ArchiveGroupButton groupId={group.id} archived={isArchived(group)} />
             <Link
               href={`/instructor/assignments/${group.assignmentId}`}
               className="rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-700"
@@ -69,8 +96,52 @@ export default async function InstructorGroupPage({
         }
       />
 
+      {/* Roster AND live status in one table. The six seats are already listed
+          here in the students' own order, so a second table would repeat the
+          same six people; the status columns simply join them. What nobody sees
+          before the quarter runs is WHAT was submitted — see
+          `GroupService.listSubmissionStatus`. */}
       <Card>
-        <CardTitle>{t.groupAdmin.members}</CardTitle>
+        <CardTitle
+          hint={completed ? undefined : t.groupAdmin.liveStatusHint}
+          right={
+            completed ? null : (
+              <span className="flex flex-wrap items-center gap-2">
+                <RefreshButton />
+                <ForceQuarterButton groupId={group.id} disabled={liveMembers.length === 0} />
+              </span>
+            )
+          }
+        >
+          {completed || currentQuarter === null
+            ? t.groupAdmin.members
+            : interpolate(t.groupAdmin.liveStatus, { quarter: currentQuarter })}
+        </CardTitle>
+
+        {completed ? (
+          <div className="mb-4">
+            <InfoNote>{t.groupAdmin.liveStatusDone}</InfoNote>
+          </div>
+        ) : waitingOn.length === 0 ? (
+          <div className="mb-4">
+            <InfoNote>
+              {liveMembers.length === 0
+                ? t.groupAdmin.noGroups
+                : submitted.size === 0
+                  ? t.groupAdmin.liveStatusNotStarted
+                  : t.groupAdmin.allSubmitted}
+            </InfoNote>
+          </div>
+        ) : (
+          <div className="mb-4">
+            <WarningNote>
+              {interpolate(t.groupAdmin.waitingOn, {
+                names: waitingOn.map((w) => w.displayName).join(', '),
+              })}
+            </WarningNote>
+          </div>
+        )}
+
         <TableScroll>
           <table className="w-full border-collapse">
             <thead>
@@ -79,27 +150,44 @@ export default async function InstructorGroupPage({
                 <Th>{t.common.student}</Th>
                 <Th>{t.instructor.studentCode}</Th>
                 <Th>{t.newGame.positioning}</Th>
+                <Th>{t.groupAdmin.status}</Th>
+                <Th>{t.groupAdmin.submittedAt}</Th>
+                <Th align="right" />
               </tr>
             </thead>
             <tbody>
               {ARENA_SEATS.map((seatKey) => {
                 const member = bySeat.get(seatKey);
+                const hasSubmitted = submitted.has(seatKey);
+                const at = submittedAt.get(seatKey);
                 return (
                   <tr key={seatKey}>
                     <Td className="text-ink-100">{member?.companyName ?? '—'}</Td>
                     <Td className="text-ink-200">
-                      {member?.displayName ?? (
-                        <Badge tone="neutral">{t.group.botBadge}</Badge>
-                      )}
-                      {member?.leftAt != null ? (
-                        <span className="ml-2 align-middle">
-                          <Badge tone="warn">{t.instructorAdmin.removedStudent}</Badge>
-                        </span>
-                      ) : null}
+                      {member?.displayName ?? <Badge tone="neutral">{t.group.botBadge}</Badge>}
                     </Td>
                     <Td className="text-ink-400">{member?.studentCode ?? '—'}</Td>
                     <Td className="text-ink-400">
                       {member ? t.positioning[member.positioning] : '—'}
+                    </Td>
+                    <Td>
+                      {!member ? (
+                        <Badge tone="neutral">{t.group.botBadge}</Badge>
+                      ) : completed ? (
+                        <span className="text-xs text-ink-500">—</span>
+                      ) : (
+                        <Badge tone={hasSubmitted ? 'good' : 'warn'}>
+                          {hasSubmitted ? t.group.statusSubmitted : t.group.statusWaiting}
+                        </Badge>
+                      )}
+                    </Td>
+                    <Td className="text-ink-400">
+                      {member && !completed && at ? formatDate(at, locale) : '—'}
+                    </Td>
+                    <Td align="right">
+                      {member && !completed && !hasSubmitted ? (
+                        <ReleaseSeatButton groupId={group.id} uid={member.uid} />
+                      ) : null}
                     </Td>
                   </tr>
                 );
@@ -111,7 +199,15 @@ export default async function InstructorGroupPage({
 
       {scores.length > 0 ? (
         <Card>
-          <CardTitle>{t.groupAdmin.standings}</CardTitle>
+          {/* Never call a mid-match table "final". `computeGameFinalScores`
+              happily scores two quarters, and an instructor reading "final
+              standings" at quarter two would be reading marks that are still
+              going to move. */}
+          <CardTitle hint={isFinal ? undefined : t.groupAdmin.standingsProvisionalHint}>
+            {isFinal
+              ? t.groupAdmin.standings
+              : interpolate(t.groupAdmin.standingsProvisional, { quarter: quarters.length })}
+          </CardTitle>
           <TableScroll>
             <table className="w-full border-collapse">
               <thead>

@@ -73,6 +73,19 @@ export interface GroupState {
   completed: boolean;
 }
 
+/**
+ * One submitted decision, as the instructor's live view sees it.
+ *
+ * Carries no `decision` — see `GroupService.listSubmissionStatus`.
+ */
+export interface SubmissionStatus {
+  seatKey: CompanyKey;
+  uid: string;
+  submittedAt: number;
+  /** True when the system filled this in because the instructor forced the quarter. */
+  wasDefault: boolean;
+}
+
 export class GroupService {
   constructor(private readonly repos: Repositories) {}
 
@@ -260,7 +273,12 @@ export class GroupService {
       game,
       currentQuarter,
       submittedSeats,
-      waitingOnSeats: occupied.filter((seat) => !submittedSeats.includes(seat)),
+      // A finished match waits on nobody. Without this guard the filter below
+      // reports every occupied seat as a blocker, because `submittedSeats` is
+      // empty once there is no quarter left to submit for — which reads as
+      // "all six are late" on exactly the screen an instructor grades from.
+      waitingOnSeats:
+        currentQuarter === null ? [] : occupied.filter((seat) => !submittedSeats.includes(seat)),
       botSeats,
       started: round > 0,
       completed,
@@ -269,6 +287,34 @@ export class GroupService {
 
   async listQuarters(groupId: string): Promise<QuarterDoc[]> {
     return this.repos.groupGames.listQuarters(groupId);
+  }
+
+  /**
+   * Who has submitted for one quarter, and when — WITHOUT what they submitted.
+   *
+   * Feeds the instructor's live view of a quarter that has not run yet, and the
+   * omission of `decision` is the whole point rather than an oversight. An
+   * instructor watching a match in class usually has the screen projected; if
+   * this carried allocations, the room would see the decisions of whoever
+   * submitted first, and everyone still deciding would gain an advantage the
+   * mode is built to deny them. Once the quarter HAS run, the exact allocations
+   * of all six are staff-visible as before (spec 7.3) — on the played-quarter
+   * tables, where nobody is still deciding.
+   *
+   * A projection rather than a filter at the call site: a caller cannot forget
+   * to strip a field that was never handed to it. `tests/integration/
+   * group-instructor-status.test.ts` asserts the shape.
+   */
+  async listSubmissionStatus(groupId: string, quarter: number): Promise<SubmissionStatus[]> {
+    const submissions = await this.repos.groupGames.listSubmissions(groupId, quarter);
+    return submissions
+      .map((submission) => ({
+        seatKey: submission.seatKey,
+        uid: submission.uid,
+        submittedAt: submission.submittedAt,
+        wasDefault: submission.wasDefault,
+      }))
+      .sort((a, b) => ARENA_SEATS.indexOf(a.seatKey) - ARENA_SEATS.indexOf(b.seatKey));
   }
 
   // -- playing --------------------------------------------------------------

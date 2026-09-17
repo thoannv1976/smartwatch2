@@ -9,6 +9,7 @@ import {
 } from '@/domain/simulation';
 import { getRepositories } from '@/db/repositories/firestore';
 import { assignmentMode, isRemoved } from '@/db/models';
+import { createGroupService } from '@/server/group/service';
 import type {
   AssignmentDoc,
   CourseDoc,
@@ -278,13 +279,16 @@ export async function getGroupDetail(groupId: string) {
   const group = await repos.groups.get(groupId);
   if (!group) return null;
 
-  const [members, game, quarters] = await Promise.all([
-    repos.groups.listMembers(groupId),
-    repos.groupGames.get(groupId),
-    repos.groupGames.listQuarters(groupId),
-  ]);
+  // The live half of this screen comes from the SAME call that feeds the
+  // students' waiting room, rather than a second copy of "which quarter is this
+  // and has it finished". Two copies would eventually disagree, and an
+  // instructor and their class reading different answers off the same match is
+  // the worst failure this page could have.
+  const service = createGroupService(repos);
+  const state = await service.getState(groupId);
+  const quarters = await service.listQuarters(groupId);
 
-  const config = getGameConfig(game?.scenarioVersion ?? ARENA_SCENARIO_VERSION);
+  const config = getGameConfig(state.game?.scenarioVersion ?? ARENA_SCENARIO_VERSION);
   const scores =
     quarters.length > 0
       ? computeGameFinalScores(
@@ -302,7 +306,42 @@ export async function getGroupDetail(groupId: string) {
     }
   }
 
-  return { group, members, game, quarters, scores, defaults };
+  // Status of the quarter still being decided. Times only, never allocations —
+  // see `GroupService.listSubmissionStatus`.
+  const submissionStatus =
+    state.currentQuarter !== null
+      ? await service.listSubmissionStatus(groupId, state.currentQuarter)
+      : [];
+  const submittedAt = new Map(submissionStatus.map((s) => [s.seatKey, s.submittedAt]));
+
+  const byUid = new Map(state.members.map((m) => [m.uid, m]));
+  const waitingOn = state.waitingOnSeats.map((seatKey) => {
+    const uid = group.seats[seatKey] ?? '';
+    const member = byUid.get(uid);
+    return {
+      uid,
+      seatKey,
+      displayName: member?.displayName ?? uid,
+      companyName: member?.companyName ?? '',
+    };
+  });
+
+  return {
+    group,
+    members: state.members,
+    game: state.game,
+    quarters,
+    scores,
+    defaults,
+    // -- live, for the quarter nobody has seen the results of yet --
+    currentQuarter: state.currentQuarter,
+    completed: state.completed,
+    submittedSeats: state.submittedSeats,
+    waitingOn,
+    submittedAt,
+    /** True once all six quarters are in, so "final" is not a lie. */
+    isFinal: state.completed && quarters.length >= config.quarters,
+  };
 }
 
 /** A group that has been waiting on the same people for too long. */
