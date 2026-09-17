@@ -139,3 +139,29 @@ describe('the package carries what a buyer needs', () => {
     expect(pkg.private).toBe(true);
   });
 });
+
+describe('the ZIP unpacks into one directory, and the instructions match its name', () => {
+  // A flat ZIP is not a cosmetic problem. The documented first step is to run
+  // `unzip` in Cloud Shell, which is the customer's home directory: a flat
+  // archive empties 275 files into it, and the `cd` on the very next line then
+  // fails. The packager stages everything under `<name>-v<version>/`, and this
+  // pins that name to the one the documentation tells people to change into.
+  const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8')) as {
+    name: string;
+    version: string;
+  };
+  const stamp = `${pkg.name}-v${pkg.version}`;
+
+  it('stages under the stamped directory rather than zipping a bare tree', () => {
+    const script = readFileSync(path.join(ROOT, 'scripts/make-package.sh'), 'utf8');
+    expect(script).toContain('STAGE="dist/staging/${STAMP}"');
+    // `zip -qr ../X.zip .` is the flat form this test exists to prevent.
+    expect(script).toContain('zip -qr "../${STAMP}.zip" "$STAMP"');
+  });
+
+  for (const doc of ['INSTALL.md', 'INSTALL.en.md']) {
+    it(`${doc} tells the reader to cd into ${stamp}`, () => {
+      expect(readFileSync(path.join(ROOT, doc), 'utf8')).toContain(`cd ${stamp}`);
+    });
+  }
+});

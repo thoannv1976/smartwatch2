@@ -85,18 +85,23 @@ fi
 
 # --- Gate 3: archive only what is committed --------------------------------
 
+# Everything is staged UNDER a directory named after the package, so the ZIP
+# unpacks into one folder. A flat ZIP would spray 275 files across whatever
+# directory the customer happened to be in — in Cloud Shell, their home — and
+# the `cd smartwatch-ceo-challenge-v<version>` in INSTALL.md would then fail.
 step "Building the archive"
 rm -rf dist/staging "$OUT"
-mkdir -p dist/staging
+STAGE="dist/staging/${STAMP}"
+mkdir -p "$STAGE"
 
-git archive --format=tar HEAD | tar -x -C dist/staging
-ok "$(find dist/staging -type f | wc -l | tr -d ' ') committed files"
+git archive --format=tar HEAD | tar -x -C "$STAGE"
+ok "$(find "$STAGE" -type f | wc -l | tr -d ' ') committed files"
 
 # Belt and braces. `git archive` cannot include these, but a future change to
 # how the staging directory is assembled could — and by then nobody would be
 # looking. Cheap to check, catastrophic to miss.
 step "Checking the archive for anything that must never ship"
-LEAKS="$(find dist/staging \
+LEAKS="$(find "$STAGE" \
   \( -name '.env' -o -name '.env.local' -o -name '.deploy.env' \
      -o -name 'serviceAccount*.json' -o -name '*.pyc' -o -name '*-debug.log' \
      -o -name 'node_modules' -o -name '.next' \) -print)"
@@ -109,7 +114,7 @@ ok "no secrets, build output or bytecode"
 # --- Stamp it --------------------------------------------------------------
 
 step "Stamping the package"
-cat > dist/staging/VERSION <<STAMPFILE
+cat > "$STAGE/VERSION" <<STAMPFILE
 Smartwatch CEO Challenge
 version   ${VERSION}
 commit    ${COMMIT}
@@ -119,11 +124,11 @@ scenario  $(node -e "const s=require('fs').readFileSync('src/domain/simulation/c
 
 Quote the version and commit when reporting a problem.
 STAMPFILE
-sed 's/^/    /' dist/staging/VERSION
+sed 's/^/    /' "$STAGE/VERSION"
 
 step "Generating third-party notices"
 if [[ -d node_modules ]]; then
-  node scripts/third-party-notices.mjs "$PWD/dist/staging/THIRD_PARTY_NOTICES.md"
+  node scripts/third-party-notices.mjs "$PWD/$STAGE/THIRD_PARTY_NOTICES.md"
 else
   warn "node_modules is missing, so notices cannot be generated. Run npm ci first."
   die "refusing to ship a package without THIRD_PARTY_NOTICES.md"
@@ -131,13 +136,13 @@ fi
 
 # --- Legal placeholders, flagged loudly ------------------------------------
 
-PLACEHOLDERS="$(grep -c '\[FILL IN' dist/staging/LICENSE || true)"
-LAWYER="$(grep -c '\[LAWYER\]' dist/staging/LICENSE || true)"
+PLACEHOLDERS="$(grep -c '\[FILL IN' "$STAGE/LICENSE" || true)"
+LAWYER="$(grep -c '\[LAWYER\]' "$STAGE/LICENSE" || true)"
 
 # --- Zip it ----------------------------------------------------------------
 
 step "Writing $OUT"
-( cd dist/staging && zip -qr "../${STAMP}.zip" . -x '.git*' )
+( cd dist/staging && zip -qr "../${STAMP}.zip" "$STAMP" -x "${STAMP}/.git*" )
 rm -rf dist/staging
 
 SIZE="$(du -h "$OUT" | cut -f1)"
