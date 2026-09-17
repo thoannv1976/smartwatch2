@@ -16,7 +16,12 @@ export async function AppHeader({
 }) {
   const { t } = await getTranslations();
 
-  const links: { href: string; label: string }[] = [{ href: '/home', label: t.home.title }];
+  // The guide is for everyone: an instructor demonstrating the exercise needs
+  // to reach the same page their students read.
+  const links: { href: string; label: string }[] = [
+    { href: '/home', label: t.home.title },
+    { href: '/guide', label: t.guide.title },
+  ];
   if (role === 'INSTRUCTOR' || role === 'ADMIN') {
     links.push({ href: '/instructor', label: t.instructor.title });
     links.push({ href: '/sim-test', label: t.simTest.title });

@@ -4,7 +4,15 @@
  * Keep keys sorted by screen. KPI names keep the English term in parentheses so
  * students recognise the vocabulary used in the course material.
  */
+import { guideVi } from './guide.vi';
+
 export const vi = {
+  /**
+   * The student guide. Kept in its own file because it is long-form prose
+   * rather than interface strings — see `guide.vi.ts`.
+   */
+  guide: guideVi,
+
   common: {
     appName: 'Smartwatch CEO Challenge',
     tagline: 'Mô phỏng kinh doanh số: điều hành một hãng smartwatch qua 6 quý',

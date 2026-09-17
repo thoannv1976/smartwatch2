@@ -13,12 +13,23 @@ export default async function LandingPage() {
         <h1 className="mt-3 text-4xl font-bold tracking-tight sm:text-5xl">{t.common.appName}</h1>
         <p className="mt-4 text-lg text-ink-300">{t.common.tagline}</p>
       </div>
-      <Link
-        href="/login"
-        className="w-fit rounded-lg bg-brand-500 px-6 py-3 font-semibold text-ink-950 transition hover:bg-brand-400"
-      >
-        {t.auth.signIn}
-      </Link>
+      <div className="flex flex-wrap items-center gap-3">
+        <Link
+          href="/login"
+          className="w-fit rounded-lg bg-brand-500 px-6 py-3 font-semibold text-ink-950 transition hover:bg-brand-400"
+        >
+          {t.auth.signIn}
+        </Link>
+        {/* Before the sign-in wall on purpose: a student should be able to find
+            out what the exercise is before they have an account, and an
+            instructor should be able to put this link in a syllabus. */}
+        <Link
+          href="/guide"
+          className="w-fit rounded-lg border border-ink-600 bg-ink-900 px-6 py-3 font-semibold text-ink-100 transition hover:bg-ink-800"
+        >
+          {t.guide.title}
+        </Link>
+      </div>
     </main>
   );
 }

@@ -194,6 +194,18 @@ export default async function HomePage({
         )}
       </Card>
 
+      {/* Above the practice card, because the order a new student should meet
+          these in is: find out what this is, then play a practice game. */}
+      <Card>
+        <CardTitle hint={t.guide.subtitle}>{t.guide.title}</CardTitle>
+        <Link
+          href="/guide"
+          className="inline-block rounded-md border border-brand-600/50 bg-brand-500/10 px-4 py-2 text-sm font-semibold text-brand-400 transition hover:bg-brand-500/20"
+        >
+          {t.guide.title}
+        </Link>
+      </Card>
+
       <Card>
         <CardTitle hint={t.home.practiceDesc}>{t.home.practiceTitle}</CardTitle>
         <Link

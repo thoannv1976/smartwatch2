@@ -101,6 +101,19 @@ sinh viên của em."* Xong buổi đầu thì **tắt ghi danh** — từ đó 
 
 ## A. Hướng dẫn cho SINH VIÊN
 
+> **Sinh viên giờ có trang hướng dẫn ngay trong app: `/guide`.** Trang đó công khai — đọc được
+> **không cần đăng nhập** — và **song ngữ Việt/Anh**, nên bạn gửi link thẳng cho cả lớp hoặc đưa
+> vào đề cương môn học được. Nó có: giới thiệu game, giá trị bài tập đem lại, hướng dẫn chơi từng
+> bước cho cả hai phần, và **bài học rút ra sau phần 1 và phần 2**.
+>
+> Phần bài học được tách hai tầng có chủ ý: **câu hỏi luôn hiện**, còn **đáp án chỉ mở sau khi
+> sinh viên chơi xong** phần tương ứng. Đọc trước rằng "phân phối là điểm nghẽn" thì em ấy sẽ
+> không bao giờ tự vấp vào nó — mà tự vấp mới là thứ làm mô phỏng đáng giá hơn một bài đọc.
+> Ván **luyện tập cũng tính** là đã chơi xong.
+>
+> Mục A dưới đây vẫn giữ nguyên, chi tiết hơn, dành cho bạn khi cần tra cứu hoặc giảng trên lớp.
+
+
 ### A1. Đăng nhập
 
 1. Mở link app do giảng viên cung cấp.

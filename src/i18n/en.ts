@@ -1,7 +1,10 @@
 import type { Dictionary } from './vi';
+import { guideEn } from './guide.en';
 
 /** English dictionary. Must stay structurally identical to `vi` (enforced by the type). */
 export const en: Dictionary = {
+  guide: guideEn,
+
   common: {
     appName: 'Smartwatch CEO Challenge',
     tagline: 'Digital business simulation: run a smartwatch brand for six quarters',
