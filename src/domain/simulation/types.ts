@@ -100,6 +100,25 @@ export interface QuarterDecision {
   priceIndex: number;
 }
 
+/**
+ * What the student expects to happen, recorded BEFORE the market runs.
+ *
+ * Travels with the decision and is stored beside it, so it is impossible to
+ * write one after seeing the result — which is the only property that makes it
+ * worth collecting. It never reaches the engine and never affects a score;
+ * `forecast.ts` reads it back afterwards to judge calibration.
+ *
+ * Only the rank is required. See `ForecastInputs` for why the other two are not.
+ */
+export interface QuarterForecast {
+  /** Where the student thinks they will place, 1-6. */
+  predictedRank: number;
+  /** Expected market share as a fraction, e.g. 0.18. Optional. */
+  predictedShare?: number | null;
+  /** One line of reasoning in the student's own words. Optional. */
+  note?: string | null;
+}
+
 /** The five investment areas, in the canonical order used everywhere in the UI. */
 export const INVESTMENT_FIELDS = [
   'productPoints',

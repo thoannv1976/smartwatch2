@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import { PLAYER_COMPANY_KEY } from '@/domain/simulation';
 import { requireRolePage } from '@/server/auth/guards';
 import { getRepositories } from '@/db/repositories/firestore';
-import { goldenUsedQuarters } from '@/db/models';
+import { goldenUsedQuarters, quarterForecast } from '@/db/models';
 import { hasRole } from '@/server/auth/session';
 import { createGameService } from '@/server/game/service';
 import { getStudentDetail } from '@/server/instructor/queries';
@@ -158,6 +158,11 @@ export default async function StudentDetailPage({
                     <Th align="right">{t.kpi.netProfit}</Th>
                     <Th align="right">{t.kpi.marketShare}</Th>
                     <Th align="center">{t.kpi.rank}</Th>
+                    {/* Prediction beside outcome: this is the column that shows
+                        whether the student understood the market or was carried
+                        by it. Not part of any score. */}
+                    <Th align="center">{t.forecast.youSaid}</Th>
+                    <Th>{t.forecast.yourReason}</Th>
                   </tr>
                 </thead>
                 <tbody>
@@ -194,6 +199,16 @@ export default async function StudentDetailPage({
                           {row ? formatPercent(row.marketShare, locale) : '—'}
                         </Td>
                         <Td numeric align="center">{row?.rank ?? '—'}</Td>
+                        <Td numeric align="center" className="text-ink-300">
+                          {quarterForecast(quarter)?.predictedRank ?? '—'}
+                        </Td>
+                        <Td className="max-w-xs text-ink-300">
+                          {quarterForecast(quarter)?.note ? (
+                            <span className="italic">{quarterForecast(quarter)!.note}</span>
+                          ) : (
+                            '—'
+                          )}
+                        </Td>
                       </tr>
                     );
                   })}

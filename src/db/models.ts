@@ -7,6 +7,7 @@ import type {
   MarketEventKey,
   Positioning,
   QuarterDecision,
+  QuarterForecast,
 } from '@/domain/simulation';
 
 /**
@@ -229,6 +230,29 @@ export interface QuarterDoc {
   ranking: CompanyKey[];
   intel: CompetitorIntel[];
   simulatedAt: number;
+  /**
+   * What the student predicted before this quarter ran. OPTIONAL, and absent
+   * from every quarter played before the field existed — read it through
+   * `quarterForecast()`, never directly.
+   *
+   * It lives here rather than in its own document because in solo play
+   * submitting a decision and simulating the quarter are the same request, so
+   * the prediction is already in hand when this document is assembled. That is
+   * also what makes it trustworthy: there is no moment at which a student could
+   * write one after seeing the result.
+   */
+  forecast?: QuarterForecast | null;
+}
+
+/**
+ * The prediction stored on a quarter, or null when there is none.
+ *
+ * A quarter with no forecast is not a wrong forecast: predictions were added
+ * partway through this app's life, so most stored quarters have none, and
+ * `forecastAccuracy` skips them rather than scoring them zero.
+ */
+export function quarterForecast(doc: Pick<QuarterDoc, 'forecast'>): QuarterForecast | null {
+  return doc.forecast ?? null;
 }
 
 /**
@@ -420,4 +444,10 @@ export interface GroupSubmissionDoc {
    * marked on a decision they did not make without that being visible.
    */
   wasDefault: boolean;
+  /**
+   * What this student predicted, recorded with their decision. OPTIONAL — read
+   * it through `quarterForecast()`. A default submission carries none, because
+   * the system has no belief about the market to record.
+   */
+  forecast?: QuarterForecast | null;
 }

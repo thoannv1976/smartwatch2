@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import {
+  FORECAST_NOTE_MAX,
   POSITIONINGS,
   getGameConfig,
   type GoldenStrategy,
@@ -79,6 +80,18 @@ const submitSchema = z.object({
     cxPoints: z.number().int().min(0).max(100),
     priceIndex: z.number().int().min(80).max(120),
   }),
+  /**
+   * The student's prediction, sent with the decision. Optional at the boundary
+   * as well as in storage: an older client, or a browser that failed to send
+   * it, must still be able to submit a quarter.
+   */
+  forecast: z
+    .object({
+      predictedRank: z.number().int().min(1).max(6),
+      predictedShare: z.number().min(0).max(1).nullish(),
+      note: z.string().trim().max(FORECAST_NOTE_MAX).nullish(),
+    })
+    .nullish(),
 });
 
 /**
@@ -102,6 +115,7 @@ export async function submitQuarterAction(
       user.uid,
       parsed.quarter,
       parsed.decision,
+      parsed.forecast ?? null,
     );
 
     const config = getGameConfig(result.session.scenarioVersion);

@@ -1,8 +1,14 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { PLAYER_COMPANY_KEY, classPercentile, getGameConfig } from '@/domain/simulation';
+import {
+  PLAYER_COMPANY_KEY,
+  classPercentile,
+  forecastAccuracy,
+  getGameConfig,
+} from '@/domain/simulation';
 import { requireUserPage } from '@/server/auth/guards';
 import { getRepositories } from '@/db/repositories/firestore';
+import { quarterForecast } from '@/db/models';
 import { createGameService } from '@/server/game/service';
 import { isGameError } from '@/server/game/errors';
 import { getClassRank } from '@/server/game/queries';
@@ -11,6 +17,7 @@ import { interpolate } from '@/i18n';
 import { BarChart } from '@/components/charts/BarChart';
 import { HindsightPanel } from '@/components/game/HindsightPanel';
 import { TenureReviewCard } from '@/components/game/TenureReview';
+import { ForecastAccuracyCard } from '@/components/game/ForecastReview';
 import { PrintButton } from '@/components/ui/PrintButton';
 import { seriesColor } from '@/components/charts/series';
 import {
@@ -87,6 +94,17 @@ export default async function ReportPage({
   const percentile = classRank ? classPercentile(classRank.rank, classRank.total) : null;
 
   const lastQuarter = quarters[quarters.length - 1]!;
+
+  // Quarters played before predictions existed carry none, and are skipped
+  // rather than scored as misses — see `forecastAccuracy`.
+  const forecast = forecastAccuracy(
+    quarters
+      .map((q) => {
+        const result = q.results.find((r) => r.companyKey === PLAYER_COMPANY_KEY);
+        return result ? { forecast: quarterForecast(q), result } : null;
+      })
+      .filter((entry): entry is NonNullable<typeof entry> => entry !== null),
+  );
 
   return (
     <main className="mx-auto flex max-w-5xl flex-col gap-6 px-4 py-8 sm:px-6">
@@ -172,6 +190,13 @@ export default async function ReportPage({
       {/* The verdict on all six quarters, above the three spec lessons — which
           stay exactly as they were. */}
       <TenureReviewCard t={t} locale={locale} review={tenure} />
+
+      {/* Intent beside outcome. Placed straight after the tenure verdict, while
+          the student is still reading about how they played, rather than at the
+          bottom where a printed report buries it. */}
+      {forecast ? (
+        <ForecastAccuracyCard t={t} accuracy={forecast} totalQuarters={config.quarters} />
+      ) : null}
 
       {/* Score breakdown: the weights are shown so a student can see what drove it */}
       <Card>

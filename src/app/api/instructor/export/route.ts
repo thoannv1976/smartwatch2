@@ -67,6 +67,7 @@ export async function GET(request: Request) {
             companyName: member.companyName,
           })),
           defaults: detail.defaults,
+          forecasts: detail.forecasts,
         })),
     );
   } else if (type === 'quarters') {

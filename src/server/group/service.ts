@@ -6,6 +6,7 @@ import {
   createArenaCompanies,
   defaultDecisionFor,
   getGameConfig,
+  isValidForecast,
   groupResultsByCompany,
   playArenaQuarter,
   validateDecision,
@@ -13,6 +14,7 @@ import {
   type CompanyKey,
   type CompanyState,
   type QuarterDecision,
+  type QuarterForecast,
   type QuarterSimulationResult,
 } from '@/domain/simulation';
 import { assignmentMode, hasLeftGroup } from '@/db/models';
@@ -333,6 +335,12 @@ export class GroupService {
     uid: string;
     quarter: number;
     decision: QuarterDecision;
+    /**
+     * The student's own prediction, recorded with their decision and never
+     * shown to the other five — see `src/server/group/queries.ts`, which is the
+     * boundary that decides what leaves the server.
+     */
+    forecast?: QuarterForecast | null;
   }): Promise<{ submitted: boolean; ran: boolean; state: GroupState }> {
     const group = await this.getGroup(input.groupId);
     const member = await this.repos.groups.getMember(group.id, input.uid);
@@ -353,12 +361,20 @@ export class GroupService {
     const errors = validateDecision(input.decision, config);
     if (errors.length > 0) throw new GroupError(errors[0]!);
 
+    // Dropped rather than rejected if malformed: five classmates are waiting on
+    // this submission, and a bad prediction is no reason to hold them up.
+    const forecast =
+      input.forecast && isValidForecast(input.forecast, ARENA_SEATS.length)
+        ? input.forecast
+        : null;
+
     const outcome = await this.repos.groupGames.submitDecision(group.id, {
       quarter,
       seatKey: member.seatKey,
       uid: input.uid,
       decision: input.decision,
       wasDefault: false,
+      forecast,
     });
 
     const ran = await this.advanceIfReady(group.id);

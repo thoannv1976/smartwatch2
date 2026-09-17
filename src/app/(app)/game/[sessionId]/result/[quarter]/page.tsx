@@ -1,14 +1,21 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { PLAYER_COMPANY_KEY, getGameConfig, reviewQuarter } from '@/domain/simulation';
+import {
+  PLAYER_COMPANY_KEY,
+  getGameConfig,
+  reviewQuarter,
+  scoreForecast,
+} from '@/domain/simulation';
 import { requireUserPage } from '@/server/auth/guards';
 import { getRepositories } from '@/db/repositories/firestore';
+import { quarterForecast } from '@/db/models';
 import { createGameService } from '@/server/game/service';
 import { isGameError } from '@/server/game/errors';
 import { getTranslations } from '@/i18n/server';
 import { interpolate } from '@/i18n';
 import { RankingTable } from '@/components/game/RankingTable';
 import { QuarterReviewCard } from '@/components/game/QuarterReview';
+import { ForecastReviewCard } from '@/components/game/ForecastReview';
 import {
   Badge,
   Card,
@@ -66,6 +73,11 @@ export default async function QuarterResultPage({
 
   const previousResult = previous?.results.find((r) => r.companyKey === PLAYER_COMPANY_KEY) ?? null;
   const decision = current.decisions[PLAYER_COMPANY_KEY];
+
+  // Absent for every quarter played before predictions existed, so the card is
+  // simply not rendered rather than showing a miss the student never made.
+  const forecast = quarterForecast(current);
+  const forecastScore = forecast ? scoreForecast(forecast, result) : null;
 
   const revenueChange = previousResult ? relativeChange(result.revenue, previousResult.revenue) : null;
   const profitChange = previousResult
@@ -230,6 +242,8 @@ export default async function QuarterResultPage({
 
       {/* The rule-based review of this quarter's decision, directly below the
           competitor intelligence. */}
+      {forecastScore ? <ForecastReviewCard t={t} score={forecastScore} /> : null}
+
       <QuarterReviewCard t={t} notes={reviewNotes} />
 
       <div className="flex flex-wrap gap-3">

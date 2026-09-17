@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
-import { POSITIONINGS } from '@/domain/simulation';
+import { FORECAST_NOTE_MAX, POSITIONINGS } from '@/domain/simulation';
 import { getRepositories } from '@/db/repositories/firestore';
 import { AuthorizationError, requireUser } from '@/server/auth/session';
 import { GroupError, type GroupErrorKey } from './errors';
@@ -72,6 +72,13 @@ const submitSchema = z.object({
     cxPoints: z.number().int().min(0).max(100),
     priceIndex: z.number().int().min(80).max(120),
   }),
+  forecast: z
+    .object({
+      predictedRank: z.number().int().min(1).max(6),
+      predictedShare: z.number().min(0).max(1).nullish(),
+      note: z.string().trim().max(FORECAST_NOTE_MAX).nullish(),
+    })
+    .nullish(),
 });
 
 /**
@@ -96,6 +103,7 @@ export async function submitGroupDecisionAction(
       uid: user.uid,
       quarter: parsed.quarter,
       decision: parsed.decision,
+      forecast: parsed.forecast ?? null,
     });
 
     revalidatePath(`/group/${parsed.groupId}`);

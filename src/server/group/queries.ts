@@ -5,16 +5,22 @@ import {
   computeGameFinalScores,
   getGameConfig,
   groupResultsByCompany,
+  forecastAccuracy,
   reviewQuarter,
+  scoreForecast,
   tenureReview,
   type CompanyFinalScore,
   type CompanyKey,
   type CompanyQuarterResult,
   type CompetitorIntel,
+  type ForecastAccuracy,
+  type ForecastScore,
   type QuarterDecision,
+  type QuarterForecast,
   type ReviewNote,
   type TenureReview,
 } from '@/domain/simulation';
+import { quarterForecast } from '@/db/models';
 import type { GroupDoc, GroupGameDoc, GroupMemberDoc, QuarterDoc } from '@/db/models';
 import type { Repositories } from '@/db/repositories/types';
 
@@ -65,6 +71,14 @@ export interface QuarterView {
   reviewNotes: ReviewNote[];
   /** True when this quarter was forced through with a decision made for you. */
   yourDecisionWasDefault: boolean;
+  /**
+   * The viewer's OWN prediction judged against their own result. Null when they
+   * made none. A classmate's prediction — and the sentence of reasoning that
+   * goes with it — never appears in this view, which is why the forecast is
+   * passed in already narrowed to one seat rather than as the full submission
+   * list: a caller cannot leak a field it was never handed.
+   */
+  yourForecast: ForecastScore | null;
 }
 
 export interface GroupReportView {
@@ -78,6 +92,8 @@ export interface GroupReportView {
   resultsByQuarter: { quarter: number; results: CompanyQuarterResult[] }[];
   /** Quarters where a decision was made on the viewer's behalf. */
   defaultedQuarters: number[];
+  /** The viewer's own calibration across the match. Null if they never predicted. */
+  forecast: ForecastAccuracy | null;
 }
 
 /**
@@ -94,6 +110,8 @@ export function buildQuarterView(input: {
   /** Seats currently held by a student; everything else is bot-driven. */
   occupiedSeats: CompanyKey[];
   yourDecisionWasDefault: boolean;
+  /** The VIEWER's own prediction, already separated from the other five. */
+  yourForecast?: QuarterForecast | null;
 }): QuarterView | null {
   const { viewerSeat, quarter, previousQuarter, game, occupiedSeats } = input;
 
@@ -148,6 +166,7 @@ export function buildQuarterView(input: {
       previousResult,
     ),
     yourDecisionWasDefault: input.yourDecisionWasDefault,
+    yourForecast: input.yourForecast ? scoreForecast(input.yourForecast, yourResult) : null,
   };
 }
 
@@ -181,6 +200,11 @@ export async function getQuarterView(
     occupiedSeats: ARENA_SEATS.filter((seat) => group.seats[seat] != null),
     yourDecisionWasDefault:
       submissions.find((s) => s.seatKey === viewerSeat)?.wasDefault ?? false,
+    // Narrowed to the viewer's seat HERE, at the read, so nothing downstream is
+    // ever holding five other people's predictions.
+    yourForecast: quarterForecast(
+      submissions.find((s) => s.seatKey === viewerSeat) ?? { forecast: null },
+    ),
   });
 }
 
@@ -219,11 +243,16 @@ export async function getGroupReportView(
     .filter((fact): fact is NonNullable<typeof fact> => fact !== null);
 
   const defaultedQuarters: number[] = [];
+  const forecastEntries: { forecast: QuarterForecast | null; result: CompanyQuarterResult }[] = [];
   for (const q of quarters) {
     const submissions = await repos.groupGames.listSubmissions(groupId, q.quarter);
-    if (submissions.find((s) => s.seatKey === member.seatKey)?.wasDefault) {
-      defaultedQuarters.push(q.quarter);
-    }
+    const yours = submissions.find((s) => s.seatKey === member.seatKey);
+    if (yours?.wasDefault) defaultedQuarters.push(q.quarter);
+
+    const result = q.results.find((r) => r.companyKey === member.seatKey);
+    // Only this student's own prediction is collected, and only against their
+    // own result row.
+    if (result) forecastEntries.push({ forecast: quarterForecast(yours ?? { forecast: null }), result });
   }
 
   return {
@@ -234,5 +263,6 @@ export async function getGroupReportView(
     tenure: tenureReview(facts, yourScore.finalScore),
     resultsByQuarter: quarters.map((q) => ({ quarter: q.quarter, results: q.results })),
     defaultedQuarters,
+    forecast: forecastAccuracy(forecastEntries),
   };
 }

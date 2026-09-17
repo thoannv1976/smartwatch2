@@ -256,7 +256,21 @@ lĩnh vực nhiều quý liền…), app nêu **cơ chế** dẫn tới rủi ro
 nút gửi. Đây là **cảnh báo, không phải chặn** — nút gửi vẫn bật, quyết định vẫn
 là của bạn.
 
-**Bước 7 — Bấm "Chốt quyết định và mô phỏng thị trường".**
+**Bước 7 — Dự đoán của bạn (bắt buộc một cú bấm).**
+
+Trước khi chốt, app hỏi: **"Bạn nghĩ mình sẽ về hạng mấy quý này?"** — bấm một
+trong sáu số. Thêm hai ô **không bắt buộc**: thị phần bạn kỳ vọng, và **một câu
+lý do** bạn chọn cách làm đó.
+
+> **Vì sao bắt buộc phải dự đoán.** Dự đoán **không ảnh hưởng kết quả và không
+> tính vào điểm** — nó không hề đi vào công thức mô phỏng. Nhưng nếu không phải
+> cam kết một phán đoán, bạn có thể đi trọn 6 quý mà không bao giờ biết mình
+> *hiểu* thị trường hay chỉ *may*. Sai một điều mình đã tự gọi tên là cách học
+> nhớ lâu nhất mà game này làm được.
+>
+> Chỉ hạng là bắt buộc — một cú bấm. Hai ô kia dành cho ai muốn nghĩ sâu hơn.
+
+**Bước 8 — Bấm "Chốt quyết định và mô phỏng thị trường".**
 
 > Quyết định **bị khoá sau khi gửi và không thể sửa lại**. Hệ thống cố tình
 > không cho xem trước lợi nhuận.
@@ -265,6 +279,8 @@ là của bạn.
 
 Sau khi mô phỏng, bạn thấy **Kết quả quý**:
 
+- **Dự đoán so với thực tế** — *"Bạn dự đoán hạng 3 → thực tế hạng 2"*, kèm câu
+  lý do bạn vừa viết, đặt ngay cạnh kết quả nó tạo ra.
 - Toàn bộ KPI, kèm **mức thay đổi so với quý trước**.
 - **Bối cảnh sự kiện** — sự kiện quý này đã tác động thế nào.
 - **Cầu tiềm năng chưa được đáp ứng** — nếu có. Đây là số khách đã muốn mua mà
@@ -349,6 +365,14 @@ gặp**, kèm khoảng cách lợi nhuận từng quý và tổng cả nhiệm k
 tự chuyển sang **nền trắng chữ đen**, bỏ hết nút bấm, không ngắt trang giữa một
 khối, và thêm dòng đầu trang ghi họ tên, công ty, mã phiên, phiên bản kịch bản /
 engine và các quý đã dùng Chiến lược vàng — đủ để nộp bản giấy.
+
+**Đọc thị trường** — một chỉ số 0–100 cho biết bạn phán đoán vị trí của mình sát
+tới đâu qua 6 quý, kèm bảng **Ý ĐỊNH cạnh KẾT QUẢ**: mỗi quý bạn dự đoán hạng
+mấy, thực tế hạng mấy, và câu lý do bạn đã ghi.
+
+> Chỉ số này **KHÔNG nằm trong điểm 100**. Nó trả lời một câu hỏi khác: bạn ra
+> quyết định tốt, nhưng bạn có *biết vì sao* nó tốt không? Quý nào bạn không dự
+> đoán thì được **bỏ qua**, không bị coi là dự đoán sai.
 
 ### A10. Bảng xếp hạng lớp
 

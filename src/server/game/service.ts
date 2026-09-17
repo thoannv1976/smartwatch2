@@ -15,6 +15,7 @@ import {
   playQuarter,
   suggestStrategies,
   tenureReview,
+  isValidForecast,
   validateDecision,
   type CompanyFinalScore,
   type CompanyQuarterResult,
@@ -23,6 +24,7 @@ import {
   type OptimizerInput,
   type Positioning,
   type QuarterDecision,
+  type QuarterForecast,
   type QuarterFacts,
   type QuarterSimulationResult,
   type StrategyAnalysis,
@@ -253,6 +255,14 @@ export class GameService {
     userId: string,
     quarter: number,
     decision: QuarterDecision,
+    /**
+     * What the student expects to happen. Recorded, never acted on: it does not
+     * reach the engine and cannot change a single number in the result. It is
+     * accepted HERE, on the same request that runs the market, which is exactly
+     * why it can be trusted — there is no later moment at which it could be
+     * written with the answer already on screen.
+     */
+    forecast: QuarterForecast | null = null,
   ): Promise<{ quarter: QuarterDoc; session: GameSessionDoc; replayed: boolean }> {
     const session = await this.loadOwnedSession(sessionId, userId);
     const config = getGameConfig(session.scenarioVersion);
@@ -279,6 +289,11 @@ export class GameService {
 
     const errors = validateDecision(decision, config);
     if (errors.length > 0) throw new GameError(errors[0]!);
+
+    // A malformed prediction must never cost a student their quarter: the
+    // decision is the thing being graded. So it is dropped rather than raised.
+    const storedForecast =
+      forecast && isValidForecast(forecast, config.competitors.length + 1) ? forecast : null;
 
     if (session.mode === 'OFFICIAL' && session.assignmentId) {
       const assignment = await this.repos.assignments.get(session.assignmentId);
@@ -312,6 +327,7 @@ export class GameService {
       ranking: played.simulation.ranking,
       intel: played.intel,
       simulatedAt: Date.now(),
+      forecast: storedForecast,
     };
 
     const outcome = await this.repos.sessions.saveQuarter(

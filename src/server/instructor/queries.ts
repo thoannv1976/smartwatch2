@@ -6,9 +6,10 @@ import {
   getGameConfig,
   groupResultsByCompany,
   type CompanyKey,
+  type QuarterForecast,
 } from '@/domain/simulation';
 import { getRepositories } from '@/db/repositories/firestore';
-import { assignmentMode, isRemoved } from '@/db/models';
+import { assignmentMode, isRemoved, quarterForecast } from '@/db/models';
 import { createGroupService } from '@/server/group/service';
 import type {
   AssignmentDoc,
@@ -297,12 +298,16 @@ export async function getGroupDetail(groupId: string) {
         )
       : [];
 
-  // Which decisions were supplied by the system rather than by the student.
+  // Which decisions were supplied by the system rather than by the student, and
+  // what each student predicted — both read in the same pass over submissions.
   const defaults = new Map<string, boolean>();
+  const forecasts = new Map<string, QuarterForecast>();
   for (const quarter of quarters) {
     const submissions = await repos.groupGames.listSubmissions(groupId, quarter.quarter);
     for (const submission of submissions) {
       defaults.set(`${quarter.quarter}_${submission.seatKey}`, submission.wasDefault);
+      const forecast = quarterForecast(submission);
+      if (forecast) forecasts.set(`${quarter.quarter}_${submission.seatKey}`, forecast);
     }
   }
 
@@ -333,6 +338,7 @@ export async function getGroupDetail(groupId: string) {
     quarters,
     scores,
     defaults,
+    forecasts,
     // -- live, for the quarter nobody has seen the results of yet --
     currentQuarter: state.currentQuarter,
     completed: state.completed,

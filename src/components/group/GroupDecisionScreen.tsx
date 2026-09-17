@@ -9,6 +9,7 @@ import {
   type CompanyState,
   type PositionPoint,
   type QuarterDecision,
+  type QuarterForecast,
   type RivalNote,
   type StrategySuggestion,
 } from '@/domain/simulation';
@@ -17,6 +18,7 @@ import { useI18n } from '@/i18n/client';
 import { interpolate } from '@/i18n';
 import { DecisionInputs, type CapabilitySnapshot } from '@/components/game/DecisionInputs';
 import { RiskWarningList } from '@/components/game/StrategyCoach';
+import { ForecastInputs } from '@/components/game/ForecastInputs';
 import { GroupSuggestions } from './GroupSuggestions';
 import { PositioningMap, RivalNotes, SandboxPanel } from './RivalPanel';
 import { Card, CardTitle, ErrorNote, InfoNote, WarningNote } from '@/components/ui/primitives';
@@ -71,9 +73,10 @@ export function GroupDecisionScreen({
     priceIndex: 100,
   });
   const [error, setError] = useState<string | null>(null);
+  const [forecast, setForecast] = useState<QuarterForecast | null>(null);
 
   const total = INVESTMENT_FIELDS.reduce((sum, field) => sum + decision[field], 0);
-  const canSubmit = total === config.strategyPoints && !pending;
+  const canSubmit = total === config.strategyPoints && forecast !== null && !pending;
 
   // Recomputed on every keystroke. Advisory only — never touches canSubmit.
   const risks = riskWarnings(decision, playerState, previousDecisions, config);
@@ -82,7 +85,7 @@ export function GroupDecisionScreen({
     if (!canSubmit) return;
     setError(null);
     startTransition(async () => {
-      const result = await submitGroupDecisionAction({ groupId, quarter, decision });
+      const result = await submitGroupDecisionAction({ groupId, quarter, decision, forecast });
       if (!result.ok) {
         setError(t.errors[result.error]);
         return;
@@ -147,6 +150,16 @@ export function GroupDecisionScreen({
       />
 
       <RiskWarningList warnings={risks} />
+
+      {/* In group mode this is the sharper question: predicting your rank means
+          predicting five classmates, and the bench upstairs deliberately cannot
+          tell you what they will do. */}
+      <ForecastInputs
+        value={forecast}
+        onChange={setForecast}
+        companyCount={config.competitors.length + 1}
+        disabled={pending}
+      />
 
       <WarningNote>
         {t.decision.lockedWarning} {interpolate(t.group.quarterRunning, { quarter })}

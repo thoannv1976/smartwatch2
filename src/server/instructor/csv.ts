@@ -1,6 +1,30 @@
-import { goldenUsedQuarters } from '@/db/models';
+import { goldenUsedQuarters, quarterForecast } from '@/db/models';
 import type { FinalResultDoc, QuarterDoc } from '@/db/models';
-import { PLAYER_COMPANY_KEY, type CompanyKey } from '@/domain/simulation';
+import {
+  PLAYER_COMPANY_KEY,
+  scoreForecast,
+  type CompanyKey,
+  type CompanyQuarterResult,
+  type QuarterForecast,
+} from '@/domain/simulation';
+
+/**
+ * The four prediction columns, or four blanks.
+ *
+ * A quarter with no prediction exports empty cells rather than zeros: a zero in
+ * a gradebook reads as a mark, and nobody predicted zero. `escapeCell` already
+ * neutralises a reason beginning with `=`, `+`, `-` or `@`, which matters here
+ * more than anywhere else in the file — this is the one column a student writes
+ * in free text.
+ */
+function forecastCells(
+  forecast: QuarterForecast | null,
+  result: CompanyQuarterResult,
+): (string | number | null)[] {
+  if (!forecast) return [null, null, null, null];
+  const score = scoreForecast(forecast, result);
+  return [score.predictedRank, score.predictedShare, score.rankGap, score.note];
+}
 
 /**
  * CSV export of official results (spec 9.3, 17 item 14).
@@ -144,6 +168,13 @@ const QUARTER_HEADERS = [
   'customer_satisfaction',
   // 1 when the Golden Strategy was used for THIS quarter, 0 otherwise.
   'golden_strategy',
+  // What the student predicted BEFORE this quarter ran. Empty for quarters
+  // played before predictions existed, and for anyone who skipped the optional
+  // fields. Never part of the score — the instructor decides what it is worth.
+  'predicted_rank',
+  'predicted_share',
+  'rank_gap',
+  'student_reason',
 ];
 
 /**
@@ -209,6 +240,7 @@ export function quartersToCsv(
         result.customerExperience,
         result.customerSatisfaction,
         goldenUsedQuarters(entry).includes(quarter.quarter) ? 1 : 0,
+        ...forecastCells(quarterForecast(quarter), result),
       ]);
     }
   }
@@ -247,6 +279,10 @@ const GROUP_HEADERS = [
   'distribution',
   'customer_experience',
   'customer_satisfaction',
+  'predicted_rank',
+  'predicted_share',
+  'rank_gap',
+  'student_reason',
 ];
 
 /**
@@ -273,6 +309,14 @@ export function groupsToCsv(
     }[];
     /** `${quarter}_${seatKey}` -> whether the decision was supplied by the system. */
     defaults: Map<string, boolean>;
+    /**
+     * `${quarter}_${seatKey}` -> what that student predicted.
+     *
+     * Keyed the same way as `defaults` rather than read off the quarter,
+     * because in a group match the prediction lives on each student's own
+     * submission, not on the shared quarter document.
+     */
+    forecasts?: Map<string, QuarterForecast>;
   }[],
 ): string {
   const rows: (string | number | null)[][] = [];
@@ -315,6 +359,10 @@ export function groupsToCsv(
           result.distribution,
           result.customerExperience,
           result.customerSatisfaction,
+          ...forecastCells(
+            group.forecasts?.get(`${quarter.quarter}_${result.companyKey}`) ?? null,
+            result,
+          ),
         ]);
       }
     }

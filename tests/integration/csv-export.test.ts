@@ -242,9 +242,36 @@ describe('Golden Strategy columns', () => {
         goldenUsedQuarters: [2, 4],
       },
     ]);
-    const rows = quarterCsv.trim().split('\r\n').slice(1);
+    const lines = quarterCsv.trim().split('\r\n');
+    // Addressed BY HEADER NAME, not as "the last column". Every later feature
+    // that appends a column would otherwise break this assertion while the
+    // behaviour it checks was still correct — which is what happened when the
+    // prediction columns arrived.
+    const header = lines[0]!.split(',');
+    const goldenAt = header.indexOf('golden_strategy');
+    expect(goldenAt).toBeGreaterThan(-1);
+
+    const rows = lines.slice(1);
     // One flag per quarter row, in quarter order: only Q2 and Q4 are marked.
-    expect(rows.map((row) => row.split(',').at(-1))).toEqual(['0', '1', '0', '1', '0', '0']);
+    expect(rows.map((row) => row.split(',')[goldenAt])).toEqual(['0', '1', '0', '1', '0', '0']);
+  });
+
+  it('appends new per-quarter columns AFTER golden_strategy, never before it', async () => {
+    // Pins the convention the sibling test documents for the graded export:
+    // existing column positions do not move, so a gradebook built on this file
+    // keeps working. New columns go on the end.
+    const { session } = await playOfficialGame();
+    const quarters = await repos.sessions.listQuarters(session.id);
+    const header = quartersToCsv([
+      { studentCode: 'SV001', displayName: STUDENT.displayName, companyName: 'NovaTime', quarters },
+    ])
+      .trim()
+      .split('\r\n')[0]!
+      .split(',');
+
+    expect(header[0]).toBe('student_code');
+    expect(header[3]).toBe('quarter');
+    expect(header.indexOf('predicted_rank')).toBeGreaterThan(header.indexOf('golden_strategy'));
   });
 });
 

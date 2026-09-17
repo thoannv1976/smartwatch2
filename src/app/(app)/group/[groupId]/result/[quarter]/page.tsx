@@ -10,6 +10,7 @@ import { getTranslations } from '@/i18n/server';
 import { interpolate } from '@/i18n';
 import { RankingTable } from '@/components/game/RankingTable';
 import { QuarterReviewCard } from '@/components/game/QuarterReview';
+import { ForecastReviewCard } from '@/components/game/ForecastReview';
 import {
   Badge,
   Card,
@@ -204,6 +205,8 @@ export default async function GroupQuarterResultPage({
           })}
         </ul>
       </Card>
+
+      {view.yourForecast ? <ForecastReviewCard t={t} score={view.yourForecast} /> : null}
 
       <QuarterReviewCard t={t} notes={view.reviewNotes} />
 

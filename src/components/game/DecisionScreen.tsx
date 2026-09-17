@@ -8,9 +8,11 @@ import {
   riskWarnings,
   type CompanyState,
   type QuarterDecision,
+  type QuarterForecast,
   type StrategySuggestion,
 } from '@/domain/simulation';
 import { submitQuarterAction } from '@/server/game/actions';
+import { ForecastInputs } from './ForecastInputs';
 import { useI18n } from '@/i18n/client';
 import { DecisionInputs, type CapabilitySnapshot } from './DecisionInputs';
 import { RiskWarningList, StrategyCoach } from './StrategyCoach';
@@ -65,9 +67,13 @@ export function DecisionScreen({
     priceIndex: 100,
   });
   const [error, setError] = useState<string | null>(null);
+  const [forecast, setForecast] = useState<QuarterForecast | null>(null);
 
   const total = INVESTMENT_FIELDS.reduce((sum, field) => sum + decision[field], 0);
-  const canSubmit = total === config.strategyPoints && !pending;
+  // The prediction gates the submit alongside the point total. That is the
+  // whole mechanism: a judgement made after seeing the result is worthless, so
+  // it has to be made before the only moment at which it can be made.
+  const canSubmit = total === config.strategyPoints && forecast !== null && !pending;
 
   // Recomputed on every keystroke. Advisory only — it never touches canSubmit.
   const risks = riskWarnings(decision, playerState, previousDecisions, config);
@@ -76,7 +82,7 @@ export function DecisionScreen({
     if (!canSubmit) return;
     setError(null);
     startTransition(async () => {
-      const result = await submitQuarterAction({ sessionId, quarter, decision });
+      const result = await submitQuarterAction({ sessionId, quarter, decision, forecast });
       if (result.ok) {
         router.replace(`/game/${sessionId}/result/${result.data.quarter}`);
       } else {
@@ -133,6 +139,15 @@ export function DecisionScreen({
       />
 
       <RiskWarningList warnings={risks} />
+
+      {/* Last thing before the button: the coach has said its piece, the risks
+          are on screen, and now the student commits to a call of their own. */}
+      <ForecastInputs
+        value={forecast}
+        onChange={setForecast}
+        companyCount={config.competitors.length + 1}
+        disabled={pending}
+      />
 
       {isOfficial ? <WarningNote>{t.decision.lockedWarning}</WarningNote> : null}
       {error ? <ErrorNote>{error}</ErrorNote> : null}
