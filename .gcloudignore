@@ -1,0 +1,42 @@
+# What `gcloud builds submit` uploads to Cloud Build.
+#
+# WITHOUT this file gcloud falls back to .gitignore — and a release package
+# unpacked from the ZIP has no .gitignore and no .git at all. INSTALL.md tells
+# the installer to run `npm ci` before seeding demo data, so the fallback would
+# then upload the entire node_modules tree on the next ./scripts/deploy.sh.
+#
+# Being explicit also means a developer checkout and a customer's installation
+# upload byte-for-byte the same build context.
+#
+# This is NOT .dockerignore. This decides what leaves the machine; .dockerignore
+# decides what docker then sees. tests/ and scripts/ must survive BOTH, because
+# the `tester` stage typechecks and runs the suite inside the image.
+
+.git/
+.gcloudignore
+
+node_modules/
+.next/
+out/
+build/
+dist/
+coverage/
+
+# Never upload an installation's own configuration or anyone's credentials.
+.env
+.env.local
+.env*.local
+.deploy.env
+serviceAccount*.json
+
+.firebase/
+firebase-debug.log
+*-debug.log
+
+__pycache__/
+*.pyc
+
+.DS_Store
+.idea/
+.vscode/
+*.tsbuildinfo

@@ -142,7 +142,9 @@ LAWYER="$(grep -c '\[LAWYER\]' "$STAGE/LICENSE" || true)"
 # --- Zip it ----------------------------------------------------------------
 
 step "Writing $OUT"
-( cd dist/staging && zip -qr "../${STAMP}.zip" "$STAMP" -x "${STAMP}/.git*" )
+# No -x: `git archive` never emits .git/, and .gitignore is worth shipping —
+# it is what `gcloud builds submit` falls back to if .gcloudignore is ever lost.
+( cd dist/staging && zip -qr "../${STAMP}.zip" "$STAMP" )
 rm -rf dist/staging
 
 SIZE="$(du -h "$OUT" | cut -f1)"
