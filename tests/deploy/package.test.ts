@@ -1,84 +1,124 @@
 import { describe, expect, it } from 'vitest';
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 /**
- * The boundary of the distributed package.
+ * The boundary of the distributed package. EVERY SUITE HERE IS REPOSITORY-ONLY,
+ * and that single rule is the result of breaking two customer builds in a row.
  *
- * `scripts/make-package.sh` builds the ZIP with `git archive`, which writes
- * only COMMITTED files. That is what makes it structurally impossible to ship a
+ * What the suite guards
+ * ---------------------
+ * `scripts/make-package.sh` builds the ZIP with `git archive`, which writes only
+ * COMMITTED files. That is what makes it structurally impossible to ship a
  * customer somebody's `.env.local`, a service-account key, `node_modules` or a
- * stale `.pyc` — even when those files are sitting in the working directory of
- * whoever is building the release.
+ * stale `.pyc` — even when those files sit in the working directory of whoever
+ * builds the release. Two things can quietly break that guarantee and show up
+ * nowhere else: a secret-shaped file getting committed, and `.gitignore` losing
+ * a rule so the next `git add .` commits one.
  *
- * Two things can quietly break that guarantee, and neither shows up anywhere
- * else: a secret-shaped file getting committed, and `.gitignore` losing a rule
- * so the next `git add .` commits one. Both are checked here, because the cost
- * of finding out later is a customer holding a file they should never have had.
+ * Why it refuses to run anywhere but a checkout
+ * ---------------------------------------------
+ * `npm test` runs in three environments, and only the first can answer any of
+ * these questions:
  *
- * WHY HALF OF THIS FILE CAN SKIP ITSELF, AND WHY THAT IS NOT A LOOPHOLE.
+ *   1. a developer checkout — a git repository with every file present;
+ *   2. an unpacked release — a plain directory, no `.git`, no history;
+ *   3. the Docker `tester` stage of every install — an unpacked release with
+ *      `.dockerignore` applied, which deliberately strips every *.md except
+ *      README and the Dockerfile itself.
  *
- * The suite runs in two very different places. In the source repository it is
- * the guard described above. But the same suite is also run by the customer:
- * `npm test` is the Docker `tester` stage of every install, and there the
- * questions above have no answer — a released package is a plain directory with
- * no `.git` and no `.gitignore`. An earlier version of this file called
- * `git ls-files` unconditionally, which threw at import time and failed the
- * first build of every install. The guard has to hold where the question means
- * something and stand aside where it does not.
+ * Version one called `git ls-files` at import and failed (3) outright. Version
+ * two switched to `existsSync` so the checks would "also run for the customer",
+ * and failed (3) again — asking a filtered build context to prove it contains
+ * the documentation that the filter exists to remove. Both broke the first
+ * build of an install, which is the worst possible place to learn this.
  *
- * The moment that matters is not CI, it is `scripts/make-package.sh`, which
- * refuses to run without git and runs `npm test` immediately before building
- * the archive. So the repository checks always execute on the one machine and
- * at the one instant they exist to protect.
+ * So: this file asks questions about a source repository, and stands aside
+ * when there is no source repository. That costs nothing, because the moment
+ * that matters is not CI — it is `scripts/make-package.sh`, which refuses to
+ * run without git and runs `npm test` immediately before building the archive.
+ * The checks always execute on the one machine, at the one instant, where they
+ * protect anything.
  *
- * Everything that can be asked of a bare directory is asked of one, so the
- * customer's build still verifies that what they received is complete.
+ * "Is the package complete?" is a real question, but it belongs to the packager,
+ * which checks the staged archive directly. The final suite below keeps that
+ * list honest from this side.
  */
 
 const ROOT = path.resolve(__dirname, '../..');
 
-/** True in a developer checkout, false inside an unpacked release. */
+/** True in a developer checkout, false in an unpacked release or a build context. */
 const inRepository = (() => {
+  // scripts/make-package.sh sets this to replay the exact conditions of a
+  // customer's build without needing one. Collection under `repo === null` is
+  // the failure mode that shipped twice; now it is checked before every release.
+  if (process.env.SMARTWATCH_ASSUME_NO_REPO === '1') return false;
   try {
     execFileSync('git', ['rev-parse', '--is-inside-work-tree'], { cwd: ROOT, stdio: 'ignore' });
     return true;
   } catch {
+    // Either this is not a repository, or git is not installed at all — the
+    // node:22-alpine image the tester stage runs in has no git.
     return false;
   }
 })();
 
-function git(...args: string[]): string {
-  return execFileSync('git', args, { cwd: ROOT, encoding: 'utf8' });
+/**
+ * Every input is read HERE, at module level, behind the one condition.
+ *
+ * `describe.skipIf` skips the TESTS, not the suite body: vitest still runs the
+ * factory to collect them. So NOTHING may touch `repo` outside an `it()` — not
+ * a read, and not a helper computed at the top of a suite. Both forms throw
+ * during collection and fail the whole file. Everything derived lives in here,
+ * where the single condition covers it.
+ */
+function readRepository() {
+  const read = (file: string) => readFileSync(path.join(ROOT, file), 'utf8');
+  const packager = read('scripts/make-package.sh');
+  return {
+    tracked: execFileSync('git', ['ls-files'], { cwd: ROOT, encoding: 'utf8' })
+      .split('\n')
+      .filter(Boolean),
+    gitignore: read('.gitignore'),
+    gcloudignore: read('.gcloudignore'),
+    packager,
+    /** The REQUIRED_IN_PACKAGE array the packager checks the staged archive against. */
+    declared: (/REQUIRED_IN_PACKAGE=\(([^)]*)\)/.exec(packager)?.[1] ?? '')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0 && !line.startsWith('#')),
+    installVi: read('INSTALL.md'),
+    installEn: read('INSTALL.en.md'),
+    pkg: JSON.parse(read('package.json')) as {
+      name: string;
+      version: string;
+      license?: string;
+      private?: boolean;
+    },
+    lock: JSON.parse(read('package-lock.json')) as { lockfileVersion: number },
+  };
 }
 
-/**
- * Both repository-only inputs are read HERE, outside any `describe`.
- *
- * `describe.skipIf` skips the tests, not the suite body: vitest still runs the
- * factory to collect them. Reading a repository-only file inside one therefore
- * throws during collection and fails the whole file — which is exactly the way
- * the first version of this suite broke every customer's install.
- */
-const tracked = inRepository ? git('ls-files').split('\n').filter(Boolean) : [];
-const gitignore = inRepository ? readFileSync(path.join(ROOT, '.gitignore'), 'utf8') : '';
+const repo = inRepository ? readRepository() : null;
 
-describe.skipIf(!inRepository)('nothing secret is committed, so nothing secret can be packaged', () => {
+const describeRepo = describe.skipIf(!repo);
+
+describeRepo('nothing secret is committed, so nothing secret can be packaged', () => {
   it('tracks no environment file except the example', () => {
-    const envFiles = tracked.filter((file) => path.basename(file).startsWith('.env'));
+    const envFiles = repo!.tracked.filter((file) => path.basename(file).startsWith('.env'));
     expect(envFiles).toEqual(['.env.example']);
   });
 
   it('tracks no deployment configuration', () => {
     // `.deploy.env` holds a real project id and its Firebase web config. It is
-    // per-installation, and it is written by the setup script, never committed.
-    expect(tracked).not.toContain('.deploy.env');
-    expect(tracked).toContain('.deploy.env.example');
+    // per-installation, written by the setup script, and never committed.
+    expect(repo!.tracked).not.toContain('.deploy.env');
+    expect(repo!.tracked).toContain('.deploy.env.example');
   });
 
   it('tracks no credential, key or debug log', () => {
-    const suspicious = tracked.filter((file) =>
+    const suspicious = repo!.tracked.filter((file) =>
       /(^|\/)(serviceAccount.*\.json|.*-debug\.log|.*\.pem|.*\.key|.*credentials.*\.json)$/i.test(
         file,
       ),
@@ -87,17 +127,19 @@ describe.skipIf(!inRepository)('nothing secret is committed, so nothing secret c
   });
 
   it('tracks no build output or bytecode', () => {
-    const generated = tracked.filter((file) =>
-      /(^|\/)(node_modules|\.next|dist|coverage|__pycache__)\//.test(file) || file.endsWith('.pyc'),
+    const generated = repo!.tracked.filter(
+      (file) =>
+        /(^|\/)(node_modules|\.next|dist|coverage|__pycache__)\//.test(file) ||
+        file.endsWith('.pyc'),
     );
     expect(generated).toEqual([]);
   });
 });
 
-describe.skipIf(!inRepository)('.gitignore keeps it that way', () => {
+describeRepo('.gitignore keeps it that way', () => {
   // Each entry is something that HAS existed in this working tree, or would be
   // created by a documented command. A missing rule means the next `git add .`
-  // commits it, and the test above only fails afterwards.
+  // commits it, and the suite above only fails afterwards.
   const required = [
     'node_modules/',
     '.next/',
@@ -111,7 +153,7 @@ describe.skipIf(!inRepository)('.gitignore keeps it that way', () => {
 
   for (const rule of required) {
     it(`ignores ${rule}`, () => {
-      const lines = gitignore.split('\n').map((line) => line.trim());
+      const lines = repo!.gitignore.split('\n').map((line) => line.trim());
       expect(lines).toContain(rule);
     });
   }
@@ -133,90 +175,17 @@ describe.skipIf(!inRepository)('.gitignore keeps it that way', () => {
   });
 });
 
-describe('the package carries what a buyer needs', () => {
-  // Checked on disk rather than through git, so this runs inside the customer's
-  // own build too: there it stops an install whose package arrived incomplete.
-  const required = [
-    'install.sh',
-    'INSTALL.md',
-    'INSTALL.en.md',
-    'LICENSE',
-    'HUONG_DAN.md',
-    'README.md',
-    '.env.example',
-    '.deploy.env.example',
-    '.gcloudignore',
-    'scripts/gcp-setup.sh',
-    'scripts/deploy.sh',
-    'scripts/uninstall.sh',
-    'scripts/make-package.sh',
-    'scripts/third-party-notices.mjs',
-    'scripts/firebase_setup.py',
-    'firestore.rules',
-    'firestore.indexes.json',
-    'cloudbuild.yaml',
-    'Dockerfile',
-    'package.json',
-    'package-lock.json',
-  ];
-
-  for (const file of required) {
-    it(`ships ${file}`, () => {
-      expect(existsSync(path.join(ROOT, file)), file).toBe(true);
-    });
-  }
-
-  it('has a package-lock, so the buyer builds the same dependency tree we tested', () => {
-    const lock = JSON.parse(readFileSync(path.join(ROOT, 'package-lock.json'), 'utf8'));
-    expect(lock.lockfileVersion).toBeGreaterThanOrEqual(2);
-  });
-
-  it('declares a licence rather than leaving it undefined', () => {
-    const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8'));
-    expect(pkg.license).toBeTruthy();
-    expect(pkg.private).toBe(true);
-  });
-});
-
-describe('the ZIP unpacks into one directory, and the instructions match its name', () => {
-  // A flat ZIP is not a cosmetic problem. The documented first step is to run
-  // `unzip` in Cloud Shell, which is the customer's home directory: a flat
-  // archive empties 275 files into it, and the `cd` on the very next line would
-  // then fail. The packager stages everything under `<name>-v<version>/`, and
-  // this pins that name to the one the documentation says to change into.
-  const pkg = JSON.parse(readFileSync(path.join(ROOT, 'package.json'), 'utf8')) as {
-    name: string;
-    version: string;
-  };
-  const stamp = `${pkg.name}-v${pkg.version}`;
-
-  it('stages under the stamped directory rather than zipping a bare tree', () => {
-    const script = readFileSync(path.join(ROOT, 'scripts/make-package.sh'), 'utf8');
-    expect(script).toContain('STAGE="dist/staging/${STAMP}"');
-    // `zip -qr ../X.zip .` is the flat form this test exists to prevent.
-    expect(script).toContain('zip -qr "../${STAMP}.zip" "$STAMP"');
-  });
-
-  for (const doc of ['INSTALL.md', 'INSTALL.en.md']) {
-    it(`${doc} tells the reader to cd into ${stamp}`, () => {
-      expect(readFileSync(path.join(ROOT, doc), 'utf8')).toContain(`cd ${stamp}`);
-    });
-  }
-});
-
-describe('the upload to Cloud Build is filtered explicitly', () => {
+describeRepo('the upload to Cloud Build is filtered explicitly', () => {
   // `gcloud builds submit` falls back to .gitignore when no .gcloudignore
-  // exists — and a released package has no .gitignore. INSTALL.md tells the
-  // installer to run `npm ci` for the demo data, so without this file the next
-  // `./scripts/deploy.sh` would upload the whole node_modules tree to Cloud
-  // Build. Being explicit also means the dev checkout and the customer's
-  // installation upload exactly the same thing.
-  const gcloudignore = readFileSync(path.join(ROOT, '.gcloudignore'), 'utf8');
-  const lines = gcloudignore.split('\n').map((line) => line.trim());
+  // exists. INSTALL.md tells the installer to run `npm ci` before seeding demo
+  // data, so a package without this file would upload the whole node_modules
+  // tree on the next ./scripts/deploy.sh. Being explicit also means a developer
+  // checkout and a customer's installation upload the same build context.
+  const lines = () => repo!.gcloudignore.split('\n').map((line) => line.trim());
 
   for (const rule of ['node_modules/', '.next/', 'dist/', '.git/', '.deploy.env', '__pycache__/']) {
     it(`keeps ${rule} out of the build upload`, () => {
-      expect(lines).toContain(rule);
+      expect(lines()).toContain(rule);
     });
   }
 
@@ -225,8 +194,86 @@ describe('the upload to Cloud Build is filtered explicitly', () => {
     // must reach the build context. Excluding them would turn the correctness
     // gate into a no-op without anything failing.
     for (const needed of ['src', 'tests', 'scripts', 'public', 'package.json']) {
-      expect(lines).not.toContain(needed);
-      expect(lines).not.toContain(`${needed}/`);
+      expect(lines()).not.toContain(needed);
+      expect(lines()).not.toContain(`${needed}/`);
     }
+  });
+});
+
+describeRepo('the ZIP unpacks into one directory, and the instructions match its name', () => {
+  // A flat ZIP is not a cosmetic problem. The documented first step runs
+  // `unzip` in Cloud Shell, which is the customer's home directory: a flat
+  // archive empties 275 files into it, and the `cd` on the very next line then
+  // fails. The packager stages everything under `<name>-v<version>/`.
+  const stamp = () => `${repo!.pkg.name}-v${repo!.pkg.version}`;
+
+  it('stages under the stamped directory rather than zipping a bare tree', () => {
+    expect(repo!.packager).toContain('STAGE="dist/staging/${STAMP}"');
+    // `zip -qr ../X.zip .` is the flat form this test exists to prevent.
+    expect(repo!.packager).toContain('zip -qr "../${STAMP}.zip" "$STAMP"');
+  });
+
+  it('INSTALL.md tells the reader to cd into the directory that appears', () => {
+    expect(repo!.installVi).toContain(`cd ${stamp()}`);
+  });
+
+  it('INSTALL.en.md tells the reader to cd into the directory that appears', () => {
+    expect(repo!.installEn).toContain(`cd ${stamp()}`);
+  });
+});
+
+describeRepo("the packager's completeness list stays honest", () => {
+  /**
+   * The packager checks the staged archive for these files. It cannot know
+   * whether they are things this repository actually produces — so that half is
+   * checked from here. Between the two, a file cannot be promised to a customer
+   * and then quietly stop shipping, in either direction.
+   */
+  /** Written into the staging directory by the packager, so never in git. */
+  const generated = ['VERSION', 'THIRD_PARTY_NOTICES.md'];
+
+  it('has a list at all, so a silent regex change cannot empty it', () => {
+    expect(repo!.declared.length).toBeGreaterThan(15);
+  });
+
+  it('promises nothing this repository does not produce', () => {
+    const phantom = repo!.declared.filter(
+      (file) => !generated.includes(file) && !repo!.tracked.includes(file),
+    );
+    expect(phantom).toEqual([]);
+  });
+
+  it('covers everything the documentation sends the customer to', () => {
+    // These are named in INSTALL.md, install.sh or the licence section. Losing
+    // one from the archive is a broken instruction in a paid product.
+    const documented = [
+      'install.sh',
+      'INSTALL.md',
+      'INSTALL.en.md',
+      'HUONG_DAN.md',
+      'LICENSE',
+      'THIRD_PARTY_NOTICES.md',
+      'VERSION',
+      '.deploy.env.example',
+      'scripts/gcp-setup.sh',
+      'scripts/deploy.sh',
+      'scripts/uninstall.sh',
+      'scripts/firebase_setup.py',
+      'cloudbuild.yaml',
+      'Dockerfile',
+      'package-lock.json',
+    ];
+    for (const file of documented) {
+      expect(repo!.declared, file).toContain(file);
+    }
+  });
+
+  it('has a package-lock, so the buyer builds the dependency tree we tested', () => {
+    expect(repo!.lock.lockfileVersion).toBeGreaterThanOrEqual(2);
+  });
+
+  it('declares a licence rather than leaving it undefined', () => {
+    expect(repo!.pkg.license).toBeTruthy();
+    expect(repo!.pkg.private).toBe(true);
   });
 });

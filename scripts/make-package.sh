@@ -71,6 +71,14 @@ else
   ok "typecheck"
   npm test            || die "tests failed"
   ok "tests"
+  # The package suite has to survive being run where there is no repository:
+  # `npm test` is also the Docker `tester` stage of every customer install, and
+  # a file that throws while COLLECTING there fails their very first build. Two
+  # releases went out with that bug. One second, replayed before every release.
+  SMARTWATCH_ASSUME_NO_REPO=1 npx vitest run tests/deploy/package.test.ts >/dev/null 2>&1 \
+    || die "tests/deploy/package.test.ts does not survive a repository-less run.
+       That is what a customer's Docker build is. Nothing may touch \`repo\` outside an it()."
+  ok "package suite survives a repository-less run"
   npm run lint        || die "lint failed"
   ok "lint"
   npm run balance > /tmp/balance-$$.txt 2>&1 || die "balance script failed"
@@ -133,6 +141,52 @@ else
   warn "node_modules is missing, so notices cannot be generated. Run npm ci first."
   die "refusing to ship a package without THIRD_PARTY_NOTICES.md"
 fi
+
+# --- Completeness: does the archive really contain what we promise? --------
+#
+# This check lives HERE, in the packager, and not in the test suite — which is
+# where it was first written, and where it broke two customer builds.
+#
+# `npm test` also runs inside the Docker `tester` stage, and .dockerignore
+# deliberately strips every *.md but README, plus the Dockerfile itself, from
+# that build context. A test asserting "INSTALL.md ships" therefore FAILS on a
+# perfectly good package. The staged archive is the only place where the claim
+# is both meaningful and true, and this is the last moment before it is sealed.
+
+step "Checking the archive is complete"
+REQUIRED_IN_PACKAGE=(
+  VERSION
+  LICENSE
+  THIRD_PARTY_NOTICES.md
+  README.md
+  INSTALL.md
+  INSTALL.en.md
+  HUONG_DAN.md
+  install.sh
+  .env.example
+  .deploy.env.example
+  .gcloudignore
+  .gitignore
+  scripts/gcp-setup.sh
+  scripts/deploy.sh
+  scripts/uninstall.sh
+  scripts/firebase_setup.py
+  firestore.rules
+  firestore.indexes.json
+  cloudbuild.yaml
+  Dockerfile
+  package.json
+  package-lock.json
+)
+MISSING=()
+for required_file in "${REQUIRED_IN_PACKAGE[@]}"; do
+  [[ -e "$STAGE/$required_file" ]] || MISSING+=("$required_file")
+done
+if [[ ${#MISSING[@]} -gt 0 ]]; then
+  printf '    missing: %s\n' "${MISSING[@]}"
+  die "the staged package is missing files the documentation tells the customer to use"
+fi
+ok "${#REQUIRED_IN_PACKAGE[@]} required files present"
 
 # --- Legal placeholders, flagged loudly ------------------------------------
 
