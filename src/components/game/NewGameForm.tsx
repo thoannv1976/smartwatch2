@@ -71,7 +71,7 @@ export function NewGameForm({
             onChange={(e) => setCompanyName(e.target.value)}
             placeholder={t.newGame.companyNamePlaceholder}
             maxLength={60}
-            className="rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:outline-none"
+            className="rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
           />
         </label>
 
@@ -82,7 +82,7 @@ export function NewGameForm({
             onChange={(e) => setProductName(e.target.value)}
             placeholder={t.newGame.productNamePlaceholder}
             maxLength={60}
-            className="rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:outline-none"
+            className="rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
           />
         </label>
 
@@ -145,7 +145,7 @@ export function NewGameForm({
         <button
           type="submit"
           disabled={pending}
-          className="w-fit rounded-md bg-brand-500 px-5 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-brand-400 disabled:opacity-50"
+          className="w-fit rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-400 disabled:opacity-50"
         >
           {pending ? t.common.loading : t.newGame.startGame}
         </button>

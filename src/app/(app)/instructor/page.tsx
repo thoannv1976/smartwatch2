@@ -50,7 +50,7 @@ export default async function InstructorPage() {
                 right={
                   <Link
                     href={`/instructor/courses/${course.id}`}
-                    className="rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-xs font-semibold text-ink-100 transition hover:bg-ink-700"
+                    className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-3 py-1.5 text-xs font-semibold text-ink-100 transition hover:bg-ink-900"
                   >
                     {t.instructor.members} · {t.instructor.newAssignment}
                   </Link>

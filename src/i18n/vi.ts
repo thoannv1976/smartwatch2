@@ -46,6 +46,46 @@ export const vi = {
     you: 'Bạn',
     unknown: '—',
   },
+  landing: {
+    badge: 'Mô phỏng chiến lược thương mại điện tử',
+    title: 'Trở thành CEO của một thương hiệu smartwatch',
+    subtitle:
+      'Điều hành công ty qua 6 quý, cạnh tranh với 5 hãng lớn, ra quyết định về sản phẩm, công nghệ, marketing, phân phối và giá — rồi xem thị trường phản hồi.',
+    start: 'Đăng nhập để bắt đầu',
+    learnMore: 'Giới thiệu & Hướng dẫn',
+    facts: [
+      { value: '6 quý', label: 'Thời gian điều hành' },
+      { value: '100 điểm', label: 'Ngân sách chiến lược mỗi quý' },
+      { value: '5 hãng', label: 'Đối thủ cạnh tranh' },
+      { value: '$5 triệu', label: 'Vốn khởi đầu' },
+    ],
+    rolesTitle: 'Dành cho ai?',
+    roles: [
+      {
+        key: 'student',
+        title: 'Sinh viên (CEO)',
+        text: 'Thành lập công ty, ra quyết định từng quý, xem báo cáo và bảng xếp hạng lớp.',
+      },
+      {
+        key: 'instructor',
+        title: 'Giảng viên',
+        text: 'Mở lớp, giao bài chính thức, theo dõi tiến độ và kết quả của từng sinh viên.',
+      },
+      {
+        key: 'admin',
+        title: 'Quản trị viên',
+        text: 'Quản lý tài khoản, cấp quyền giảng viên và cấu hình hệ thống.',
+      },
+    ],
+    stepsTitle: 'Cách chơi',
+    steps: [
+      'Đăng nhập bằng Google hoặc email.',
+      'Tham gia lớp và mở bài tập (hoặc chơi thử).',
+      'Mỗi quý: đọc sự kiện thị trường, phân bổ 100 điểm và chọn giá.',
+      'Sau 6 quý: xem báo cáo tổng kết, điểm và xếp hạng.',
+    ],
+  },
+
   roles: {
     STUDENT: 'Sinh viên',
     INSTRUCTOR: 'Giảng viên',
@@ -108,6 +148,9 @@ export const vi = {
     modeOfficial: 'Chính thức',
     startedAt: 'Bắt đầu',
     finalScore: 'Điểm tổng kết',
+    statAssignments: 'Bài tập được giao',
+    statGames: 'Lượt đã chơi',
+    statCompleted: 'Đã hoàn thành',
   },
   newGame: {
     variedMarket: 'Thị trường ngẫu nhiên (chỉ khi luyện tập)',
@@ -146,6 +189,7 @@ export const vi = {
     BALANCED: 'Không nghiêng hẳn về hướng nào',
   },
   dashboard: {
+    progress: 'Tiến độ nhiệm kỳ',
     title: 'Bảng điều khiển CEO',
     currentQuarter: 'Quý hiện tại',
     marketEvent: 'Sự kiện thị trường',

@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react';
 
 /**
- * Shared presentational primitives. Deliberately plain: the game's value is in
- * the simulation and the explanations, so the UI aims for legibility and
- * consistent KPI formatting rather than decoration.
+ * Shared presentational primitives: white cards on a light page, clear headings
+ * and consistent KPI formatting, so every screen reads the same way.
  */
 
 export function Card({
@@ -17,7 +16,7 @@ export function Card({
 }) {
   return (
     <Tag
-      className={`rounded-xl border border-ink-700/70 bg-ink-850/80 p-5 shadow-lg shadow-ink-950/30 ${className}`}
+      className={`rounded-2xl border border-ink-700 bg-ink-850 p-5 shadow-sm shadow-slate-200/70 sm:p-6 ${className}`}
     >
       {children}
     </Tag>
@@ -36,8 +35,11 @@ export function CardTitle({
   return (
     <div className="mb-4 flex items-start justify-between gap-4">
       <div>
-        <h2 className="text-sm font-semibold tracking-wide text-ink-200 uppercase">{children}</h2>
-        {hint ? <p className="mt-1 max-w-prose text-xs text-ink-400">{hint}</p> : null}
+        <h2 className="flex items-center gap-2 text-base font-bold text-ink-100">
+          <span aria-hidden className="h-4 w-1 rounded-full bg-brand-500 shadow-sm shadow-brand-500/25" />
+          {children}
+        </h2>
+        {hint ? <p className="mt-1 max-w-prose text-sm text-ink-400">{hint}</p> : null}
       </div>
       {right}
     </div>
@@ -56,8 +58,8 @@ export function PageHeader({
   return (
     <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
-        {subtitle ? <p className="mt-1 max-w-prose text-sm text-ink-300">{subtitle}</p> : null}
+        <h1 className="text-2xl font-extrabold tracking-tight text-ink-100 sm:text-3xl">{title}</h1>
+        {subtitle ? <p className="mt-1 max-w-prose text-sm text-ink-400">{subtitle}</p> : null}
       </div>
       {right}
     </div>
@@ -67,12 +69,12 @@ export function PageHeader({
 type BadgeTone = 'neutral' | 'brand' | 'good' | 'bad' | 'warn' | 'info';
 
 const badgeTones: Record<BadgeTone, string> = {
-  neutral: 'bg-ink-700/60 text-ink-200 border-ink-600',
-  brand: 'bg-brand-500/15 text-brand-400 border-brand-600/50',
-  good: 'bg-good-500/15 text-good-400 border-good-500/40',
-  bad: 'bg-bad-500/15 text-bad-400 border-bad-500/40',
-  warn: 'bg-warn-500/15 text-warn-500 border-warn-500/40',
-  info: 'bg-info-500/15 text-info-400 border-info-500/40',
+  neutral: 'bg-ink-800 text-ink-300 border-ink-700',
+  brand: 'bg-brand-50 text-brand-400 border-brand-100',
+  good: 'bg-good-500/10 text-good-400 border-good-500/30',
+  bad: 'bg-bad-500/10 text-bad-400 border-bad-500/30',
+  warn: 'bg-warn-500/10 text-warn-500 border-warn-500/30',
+  info: 'bg-info-500/10 text-info-400 border-info-500/30',
 };
 
 export function Badge({
@@ -86,7 +88,7 @@ export function Badge({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${badgeTones[tone]} ${className}`}
+      className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-semibold ${badgeTones[tone]} ${className}`}
     >
       {children}
     </span>
@@ -97,6 +99,17 @@ export function Badge({
  * A KPI tile. `delta` carries its own pre-formatted sign and unit so the caller
  * decides whether a change is expressed in %, pp or dollars.
  */
+export type TileAccent = 'indigo' | 'emerald' | 'sky' | 'amber' | 'rose' | 'violet';
+
+const tileAccents: Record<TileAccent, { box: string; icon: string }> = {
+  indigo: { box: 'border-indigo-100 bg-indigo-50/70', icon: 'bg-indigo-100 text-indigo-600' },
+  emerald: { box: 'border-emerald-100 bg-emerald-50/70', icon: 'bg-emerald-100 text-emerald-600' },
+  sky: { box: 'border-sky-100 bg-sky-50/70', icon: 'bg-sky-100 text-sky-600' },
+  amber: { box: 'border-amber-100 bg-amber-50/70', icon: 'bg-amber-100 text-amber-600' },
+  rose: { box: 'border-rose-100 bg-rose-50/70', icon: 'bg-rose-100 text-rose-600' },
+  violet: { box: 'border-violet-100 bg-violet-50/70', icon: 'bg-violet-100 text-violet-600' },
+};
+
 export function StatTile({
   label,
   value,
@@ -104,6 +117,8 @@ export function StatTile({
   deltaTone = 'neutral',
   hint,
   emphasis = false,
+  accent,
+  icon,
 }: {
   label: ReactNode;
   value: ReactNode;
@@ -111,18 +126,33 @@ export function StatTile({
   deltaTone?: 'neutral' | 'good' | 'bad';
   hint?: ReactNode;
   emphasis?: boolean;
+  /** Pastel colour for the tile; overrides `emphasis`. */
+  accent?: TileAccent;
+  icon?: ReactNode;
 }) {
   const deltaClass =
     deltaTone === 'good' ? 'text-good-400' : deltaTone === 'bad' ? 'text-bad-400' : 'text-ink-400';
+  const box = accent
+    ? tileAccents[accent].box
+    : emphasis
+      ? 'border-brand-100 bg-brand-50'
+      : 'border-ink-700 bg-ink-850 shadow-sm shadow-slate-200/60';
 
   return (
-    <div
-      className={`rounded-lg border p-4 ${
-        emphasis ? 'border-brand-600/50 bg-brand-500/5' : 'border-ink-700/60 bg-ink-900/50'
-      }`}
-    >
-      <p className="text-xs leading-snug text-ink-400">{label}</p>
-      <p className="tnum mt-1.5 text-xl font-semibold text-ink-100">{value}</p>
+    <div className={`rounded-xl border p-4 ${box}`}>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-xs leading-snug font-semibold text-ink-400">{label}</p>
+        {icon ? (
+          <span
+            className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+              accent ? tileAccents[accent].icon : 'bg-ink-800 text-ink-400'
+            }`}
+          >
+            {icon}
+          </span>
+        ) : null}
+      </div>
+      <p className="tnum mt-1.5 text-2xl font-extrabold text-ink-100">{value}</p>
       {delta !== undefined ? <p className={`tnum mt-1 text-xs ${deltaClass}`}>{delta}</p> : null}
       {hint ? <p className="mt-1 text-xs text-ink-500">{hint}</p> : null}
     </div>
@@ -158,7 +188,7 @@ export function CapabilityBar({
           ) : null}
         </span>
       </div>
-      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-ink-700">
+      <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-ink-800">
         <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
       </div>
     </div>
@@ -167,7 +197,7 @@ export function CapabilityBar({
 
 export function EmptyState({ children }: { children: ReactNode }) {
   return (
-    <p className="rounded-lg border border-dashed border-ink-700 bg-ink-900/40 p-6 text-center text-sm text-ink-400">
+    <p className="rounded-xl border border-dashed border-ink-600 bg-ink-900 p-6 text-center text-sm text-ink-400">
       {children}
     </p>
   );
@@ -215,7 +245,7 @@ export function Th({
     align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left';
   return (
     <th
-      className={`border-b border-ink-700 px-3 py-2 text-xs font-semibold whitespace-nowrap text-ink-300 ${alignClass} ${className}`}
+      className={`border-b border-ink-700 bg-ink-800 px-3 py-2.5 text-xs font-bold tracking-wide whitespace-nowrap text-ink-400 uppercase first:rounded-tl-lg last:rounded-tr-lg ${alignClass} ${className}`}
     >
       {children}
     </th>
@@ -237,7 +267,7 @@ export function Td({
     align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left';
   return (
     <td
-      className={`border-b border-ink-800 px-3 py-2 text-sm whitespace-nowrap ${alignClass} ${
+      className={`border-b border-ink-700 px-3 py-2.5 text-sm whitespace-nowrap ${alignClass} ${
         numeric ? 'tnum' : ''
       } ${className}`}
     >

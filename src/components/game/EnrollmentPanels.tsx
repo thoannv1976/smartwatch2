@@ -101,7 +101,7 @@ function LeaveButton({ courseId, canLeave }: { courseId: string; canLeave: boole
               setError(null);
               setArmed(true);
             }}
-            className="rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-xs text-ink-200 transition hover:bg-ink-700"
+            className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-3 py-1.5 text-xs text-ink-200 transition hover:bg-ink-900"
           >
             {t.enroll.leave}
           </button>
@@ -174,13 +174,13 @@ function JoinRow({ row }: { row: JoinableCourse }) {
               onChange={(e) => setStudentCode(e.target.value)}
               placeholder={t.enroll.studentCodePlaceholder}
               maxLength={40}
-              className="w-56 rounded-md border border-ink-600 bg-ink-950 px-3 py-2 font-mono text-sm text-ink-100 focus:border-brand-500 focus:outline-none"
+              className="w-56 rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 font-mono text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
             />
           </label>
           <button
             type="submit"
             disabled={pending || !studentCode.trim()}
-            className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-ink-950 transition hover:bg-brand-400 disabled:opacity-50"
+            className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400 disabled:opacity-50"
           >
             {pending ? t.enroll.joining : t.enroll.join}
           </button>

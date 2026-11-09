@@ -103,7 +103,7 @@ export default async function AssignmentDetailPage({
             />
             <Link
               href="/instructor"
-              className="rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-700"
+              className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-900"
             >
               {t.instructor.title}
             </Link>
@@ -163,13 +163,13 @@ export default async function AssignmentDetailPage({
         <div className="mt-4 flex flex-wrap gap-2">
           <a
             href={`/api/instructor/export?assignmentId=${assignment.id}&type=results`}
-            className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-ink-950 transition hover:bg-brand-400"
+            className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400"
           >
             {t.common.export} · {t.report.scores}
           </a>
           <a
             href={`/api/instructor/export?assignmentId=${assignment.id}&type=quarters`}
-            className="rounded-md border border-ink-600 bg-ink-800 px-4 py-2 text-sm font-semibold text-ink-100 transition hover:bg-ink-700"
+            className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-4 py-2 text-sm font-semibold text-ink-100 transition hover:bg-ink-900"
           >
             {t.common.export} · {t.history.decisionsTable}
           </a>
@@ -178,7 +178,7 @@ export default async function AssignmentDetailPage({
           {mode === 'GROUP' ? (
             <a
               href={`/api/instructor/export?assignmentId=${assignment.id}&type=groups`}
-              className="rounded-md border border-ink-600 bg-ink-800 px-4 py-2 text-sm font-semibold text-ink-100 transition hover:bg-ink-700"
+              className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-4 py-2 text-sm font-semibold text-ink-100 transition hover:bg-ink-900"
             >
               {t.groupAdmin.exportGroups}
             </a>
@@ -366,7 +366,7 @@ export default async function AssignmentDetailPage({
                         {row.completed ? (
                           <Link
                             href={`/instructor/groups/${row.group.id}`}
-                            className="rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-700"
+                            className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-900"
                           >
                             {t.groupAdmin.viewGroup}
                           </Link>

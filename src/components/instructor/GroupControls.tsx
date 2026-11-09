@@ -59,13 +59,13 @@ export function AddGroupsForm({ assignmentId }: { assignmentId: string }) {
           max={50}
           value={count}
           onChange={(e) => setCount(Math.max(1, Math.min(50, Number(e.target.value) || 1)))}
-          className="w-24 rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:outline-none"
+          className="w-24 rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
         />
       </label>
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-ink-950 transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50"
+        className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {pending ? t.groupAdmin.adding : t.groupAdmin.addGroups}
       </button>
@@ -198,12 +198,12 @@ export function RenameGroupForm({ groupId, name }: { groupId: string; name: stri
         maxLength={60}
         onChange={(e) => setValue(e.target.value)}
         aria-label={t.groupAdmin.renameGroup}
-        className="w-44 rounded-md border border-ink-600 bg-ink-950 px-3 py-1.5 text-xs text-ink-100 focus:border-brand-500 focus:outline-none"
+        className="w-44 rounded-lg border border-ink-600 bg-ink-850 px-3 py-1.5 text-xs text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
       />
       <button
         type="submit"
         disabled={pending || value.trim().length === 0 || value.trim() === name}
-        className="rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-700 disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-900 disabled:cursor-not-allowed disabled:opacity-40"
       >
         {pending ? t.groupAdmin.renaming : t.groupAdmin.renameGroup}
       </button>
@@ -239,7 +239,7 @@ export function ArchiveGroupButton({
           type="button"
           onClick={run}
           disabled={pending}
-          className="rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-700 disabled:opacity-50"
+          className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-900 disabled:opacity-50"
         >
           {t.groupAdmin.unarchiveGroup}
         </button>
@@ -277,7 +277,7 @@ export function RefreshButton() {
       type="button"
       onClick={() => startTransition(() => router.refresh())}
       disabled={pending}
-      className="rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-700 disabled:opacity-50"
+      className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-900 disabled:opacity-50"
     >
       {pending ? t.group.refreshing : t.group.refresh}
     </button>

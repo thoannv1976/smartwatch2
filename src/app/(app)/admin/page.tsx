@@ -98,7 +98,7 @@ export default async function AdminPage() {
           right={
             <Link
               href="/admin/users"
-              className="rounded-md bg-brand-500 px-3 py-1.5 text-xs font-semibold text-ink-950 transition hover:bg-brand-400"
+              className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-brand-400"
             >
               {t.common.edit}
             </Link>

@@ -88,7 +88,7 @@ export default async function InstructorGroupPage({
             <ArchiveGroupButton groupId={group.id} archived={isArchived(group)} />
             <Link
               href={`/instructor/assignments/${group.assignmentId}`}
-              className="rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-700"
+              className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-900"
             >
               {t.instructor.assignments}
             </Link>

@@ -1,3 +1,4 @@
+import { Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
@@ -75,7 +76,7 @@ export default async function ReportPage({
         <EmptyState>{t.report.notCompleted}</EmptyState>
         <Link
           href={`/game/${sessionId}`}
-          className="w-fit rounded-md bg-brand-500 px-5 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-brand-400"
+          className="w-fit rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-400"
         >
           {t.home.continueGame}
         </Link>
@@ -160,28 +161,37 @@ export default async function ReportPage({
       />
 
       {/* The headline number */}
-      <Card className="border-brand-600/50 bg-brand-500/5">
-        <div className="flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-xs font-semibold tracking-wide text-brand-400 uppercase">
-              {t.report.finalScore}
-            </p>
-            <p className="tnum mt-1 text-5xl font-bold text-ink-100">
-              {formatDecimal(playerScore.finalScore, locale, 2)}
-              <span className="ml-2 text-xl font-normal text-ink-400">/ 100</span>
-            </p>
-          </div>
-          <div className="flex gap-6 text-right">
+      <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-night-900 via-night-800 to-brand-500 p-6 text-white shadow-xl shadow-brand-500/20 sm:p-8">
+        <div
+          aria-hidden
+          className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-violet-400/30 blur-3xl"
+        />
+        <div className="relative flex flex-wrap items-end justify-between gap-6">
+          <div className="flex items-center gap-4">
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15">
+              <Trophy className="h-7 w-7 text-amber-300" aria-hidden />
+            </span>
             <div>
-              <p className="text-xs text-ink-400">{t.report.gameRank}</p>
-              <p className="tnum text-2xl font-bold text-ink-100">
+              <p className="text-xs font-bold tracking-wide text-indigo-200 uppercase">
+                {t.report.finalScore}
+              </p>
+              <p className="tnum mt-1 text-5xl font-extrabold">
+                {formatDecimal(playerScore.finalScore, locale, 2)}
+                <span className="ml-2 text-xl font-normal text-indigo-200">/ 100</span>
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-3">
+            <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-center">
+              <p className="text-xs text-indigo-100">{t.report.gameRank}</p>
+              <p className="tnum text-2xl font-extrabold">
                 {playerScore.gameRank} / {scores.length}
               </p>
             </div>
             {classRank ? (
-              <div>
-                <p className="text-xs text-ink-400">{t.report.classRank}</p>
-                <p className="tnum text-2xl font-bold text-ink-100">
+              <div className="rounded-2xl border border-white/15 bg-white/10 px-4 py-3 text-center">
+                <p className="text-xs text-indigo-100">{t.report.classRank}</p>
+                <p className="tnum text-2xl font-extrabold">
                   {classRank.rank} / {classRank.total}
                 </p>
               </div>
@@ -190,21 +200,21 @@ export default async function ReportPage({
         </div>
 
         {classRank ? (
-          <div className="mt-4 border-t border-brand-600/20 pt-4">
-            <p className="text-xs font-semibold tracking-wide text-brand-400 uppercase">
+          <div className="relative mt-5 border-t border-white/15 pt-4">
+            <p className="text-xs font-bold tracking-wide text-indigo-200 uppercase">
               {t.percentile.title}
             </p>
             {percentile ? (
-              <p className="mt-1 text-sm text-ink-200">
+              <p className="mt-1 text-sm text-white">
                 <span className="font-semibold">{t.percentile[percentile.band]}</span> ·{' '}
                 {interpolate(t.percentile.youBeat, { value: percentile.percentile })}
               </p>
             ) : (
-              <p className="mt-1 text-sm text-ink-400">{t.percentile.tooSmall}</p>
+              <p className="mt-1 text-sm text-indigo-100">{t.percentile.tooSmall}</p>
             )}
           </div>
         ) : null}
-      </Card>
+      </section>
 
       {/* The verdict on all six quarters, above the three spec lessons — which
           stay exactly as they were. */}
@@ -424,13 +434,13 @@ export default async function ReportPage({
         <PrintButton />
         <Link
           href={`/report/${sessionId}/certificate`}
-          className="rounded-md border border-brand-600/50 bg-brand-500/10 px-5 py-2.5 text-sm font-semibold text-brand-400 transition hover:bg-brand-500/20"
+          className="rounded-lg border border-brand-600/50 bg-brand-500/10 px-5 py-2.5 text-sm font-semibold text-brand-400 transition hover:bg-brand-500/20"
         >
           {t.certificate.open}
         </Link>
         <Link
           href={`/game/${sessionId}/history`}
-          className="rounded-md border border-ink-600 bg-ink-800 px-5 py-2.5 text-sm text-ink-100 transition hover:bg-ink-700"
+          className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-5 py-2.5 text-sm font-semibold text-ink-100 transition hover:bg-ink-900"
         >
           {t.dashboard.viewHistory}
         </Link>

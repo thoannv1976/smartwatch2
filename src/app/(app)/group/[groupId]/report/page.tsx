@@ -65,7 +65,7 @@ export default async function GroupReportPage({
         <EmptyState>{t.report.notCompleted}</EmptyState>
         <Link
           href={`/group/${groupId}`}
-          className="w-fit rounded-md bg-brand-500 px-5 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-brand-400"
+          className="w-fit rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-400"
         >
           {t.group.lobbyTitle}
         </Link>
@@ -228,7 +228,7 @@ export default async function GroupReportPage({
         <PrintButton />
         <Link
           href={`/group/${groupId}`}
-          className="rounded-md border border-ink-600 bg-ink-800 px-5 py-2.5 text-sm text-ink-100 transition hover:bg-ink-700"
+          className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-5 py-2.5 text-sm font-semibold text-ink-100 transition hover:bg-ink-900"
         >
           {t.group.lobbyTitle}
         </Link>

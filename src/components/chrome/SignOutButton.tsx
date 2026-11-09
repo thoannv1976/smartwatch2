@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { LogOut } from 'lucide-react';
 import { signOut } from 'firebase/auth';
 import { getFirebaseAuth, isFirebaseClientConfigured } from '@/lib/firebase-client';
 
@@ -24,9 +25,11 @@ export function SignOutButton({ label }: { label: string }) {
     <button
       type="button"
       onClick={handleSignOut}
-      className="rounded-md border border-ink-700 px-2.5 py-1 text-xs text-ink-300 transition hover:border-ink-600 hover:text-ink-100"
+      className="flex items-center gap-1.5 rounded-lg border border-ink-700 bg-ink-850 px-2.5 py-1.5 text-xs font-semibold text-ink-400 transition hover:border-bad-500/40 hover:text-bad-400"
+      title={label}
     >
-      {label}
+      <LogOut className="h-3.5 w-3.5" aria-hidden />
+      <span className="hidden sm:inline">{label}</span>
     </button>
   );
 }

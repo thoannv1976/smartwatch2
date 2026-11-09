@@ -1,34 +1,45 @@
 @import 'tailwindcss';
 
 /*
- * Design tokens. One dark-navy "operations console" palette so KPI colours mean
- * the same thing on every screen: amber = your company, slate = competitors,
- * emerald = good delta, rose = bad delta.
+ * Design tokens. A light, friendly palette so KPI colours mean the same thing on
+ * every screen: indigo = your company, slate = competitors, emerald = good
+ * delta, rose = bad delta.
+ *
+ * The "ink" scale is named by role, not by lightness: 950/900 are the page
+ * background, 850 is a card, 800 a subtle fill, 700/600 borders, 500–300
+ * secondary text and 200/100 headings and body text. Every screen uses these
+ * roles, so the whole app follows this one block.
  */
 @theme {
-  --color-ink-950: #080d1a;
-  --color-ink-900: #0d1526;
-  --color-ink-850: #111c33;
-  --color-ink-800: #16233d;
-  --color-ink-700: #1f3050;
-  --color-ink-600: #2c4168;
-  --color-ink-500: #40587f;
-  --color-ink-400: #6b82a8;
-  --color-ink-300: #9aabc7;
-  --color-ink-200: #c5d0e2;
-  --color-ink-100: #e6ebf4;
+  --color-ink-950: #f4f6fb;
+  --color-ink-900: #eef1f8;
+  --color-ink-850: #ffffff;
+  --color-ink-800: #f1f4fa;
+  --color-ink-700: #e2e8f0;
+  --color-ink-600: #cbd5e1;
+  --color-ink-500: #94a3b8;
+  --color-ink-400: #64748b;
+  --color-ink-300: #475569;
+  --color-ink-200: #334155;
+  --color-ink-100: #0f172a;
 
-  --color-brand-500: #f0a819;
-  --color-brand-400: #f7bd44;
-  --color-brand-600: #cf8a0a;
+  --color-brand-500: #4f46e5;
+  --color-brand-400: #4338ca;
+  --color-brand-600: #3730a3;
+  --color-brand-100: #e0e7ff;
+  --color-brand-50: #eef2ff;
 
-  --color-good-500: #2fbf82;
-  --color-good-400: #56d49f;
-  --color-bad-500: #f1607a;
-  --color-bad-400: #f78399;
-  --color-info-500: #4aa8f0;
-  --color-info-400: #78c1f6;
-  --color-warn-500: #f0913f;
+  --color-good-500: #10b981;
+  --color-good-400: #047857;
+  --color-bad-500: #f43f5e;
+  --color-bad-400: #be123c;
+  --color-info-500: #3b82f6;
+  --color-info-400: #1d4ed8;
+  --color-warn-500: #d97706;
+
+  /* The one dark surface left: hero banners and the header logo tile. */
+  --color-night-900: #1e1b4b;
+  --color-night-800: #312e81;
 }
 
 html,
@@ -38,8 +49,8 @@ body {
 
 body {
   background:
-    radial-gradient(1100px 620px at 12% -12%, #16233d 0%, transparent 62%),
-    radial-gradient(900px 520px at 92% 4%, #1a2b49 0%, transparent 58%),
+    radial-gradient(1000px 520px at 10% -10%, #e0e7ff 0%, transparent 60%),
+    radial-gradient(800px 460px at 95% 0%, #f3e8ff 0%, transparent 55%),
     var(--color-ink-950);
   color: var(--color-ink-100);
   font-family:
@@ -51,6 +62,15 @@ body {
 /* Numeric columns should line up; tabular figures make KPI tables readable. */
 .tnum {
   font-variant-numeric: tabular-nums;
+}
+
+/* Tables: highlight the row under the pointer so long rankings are easy to follow. */
+tbody tr {
+  transition: background-color 120ms ease;
+}
+
+tbody tr:hover {
+  background-color: var(--color-ink-900);
 }
 
 /* Range inputs: the decision screen lives on these, so they get real styling. */
@@ -76,9 +96,9 @@ input[type='range']::-webkit-slider-thumb {
   width: 1.125rem;
   height: 1.125rem;
   border-radius: 999px;
-  background: var(--color-brand-500);
-  border: 2px solid var(--color-ink-950);
-  box-shadow: 0 0 0 1px var(--color-brand-600);
+  background: var(--range-color, var(--color-brand-500));
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.3), 0 0 0 1px var(--color-brand-600);
 }
 
 input[type='range']::-moz-range-track {
@@ -90,9 +110,9 @@ input[type='range']::-moz-range-track {
 input[type='range']::-moz-range-thumb {
   width: 1.125rem;
   height: 1.125rem;
-  border: 2px solid var(--color-ink-950);
+  border: 2px solid #ffffff;
   border-radius: 999px;
-  background: var(--color-brand-500);
+  background: var(--range-color, var(--color-brand-500));
 }
 
 input[type='range']:focus-visible::-webkit-slider-thumb {
@@ -106,16 +126,15 @@ input[type='range']:disabled {
 }
 
 ::selection {
-  background: var(--color-brand-500);
-  color: var(--color-ink-950);
+  background: var(--color-brand-100);
+  color: var(--color-ink-100);
 }
 
 /*
  * Print / "Save as PDF".
  *
- * The app is a dark console; printing it as-is produces an unreadable, ink-
- * flooding page. Everything below forces a light document for paper only — the
- * screen is untouched.
+ * The screen uses tinted cards and coloured text; everything below forces a
+ * plain black-on-white document for paper only — the screen is untouched.
  *
  * `!important` is used throughout on purpose: Tailwind utility classes are
  * already applied on the elements being overridden, and a print sheet has to
@@ -199,12 +218,6 @@ input[type='range']:disabled {
   td,
   th {
     border: 1px solid #ccc !important;
-  }
-
-  /* A chart drawn with light-on-dark strokes is unreadable on paper, and the
-     numbers behind it are always on the page as well. */
-  svg {
-    filter: invert(1) hue-rotate(180deg);
   }
 
   a[href]::after {

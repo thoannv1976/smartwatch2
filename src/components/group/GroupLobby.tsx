@@ -125,14 +125,14 @@ export function GroupLobby({
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
               href={`/group/${groupId}/report`}
-              className="rounded-md bg-brand-500 px-5 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-brand-400"
+              className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-400"
             >
               {t.group.viewReport}
             </Link>
             {lastPlayedQuarter ? (
               <Link
                 href={`/group/${groupId}/result/${lastPlayedQuarter}`}
-                className="rounded-md border border-ink-600 bg-ink-800 px-5 py-2.5 text-sm text-ink-100 transition hover:bg-ink-700"
+                className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-5 py-2.5 text-sm font-semibold text-ink-100 transition hover:bg-ink-900"
               >
                 {interpolate(t.group.viewResult, { quarter: lastPlayedQuarter })}
               </Link>
@@ -163,7 +163,7 @@ export function GroupLobby({
             ) : (
               <Link
                 href={`/group/${groupId}/decision`}
-                className="rounded-md bg-brand-500 px-5 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-brand-400"
+                className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-400"
               >
                 {t.group.goDecide}
               </Link>
@@ -172,7 +172,7 @@ export function GroupLobby({
               type="button"
               onClick={refresh}
               disabled={pending}
-              className="rounded-md border border-ink-600 bg-ink-800 px-5 py-2.5 text-sm text-ink-100 transition hover:bg-ink-700 disabled:cursor-not-allowed disabled:opacity-50"
+              className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-5 py-2.5 text-sm font-semibold text-ink-100 transition hover:bg-ink-900 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {pending ? t.group.refreshing : t.group.refresh}
             </button>

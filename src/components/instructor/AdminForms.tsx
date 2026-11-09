@@ -51,7 +51,7 @@ export function InviteRoleForm() {
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-64 rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
+          className="w-64 rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
         />
       </label>
       <label className="flex flex-col gap-1 text-xs text-ink-300">
@@ -60,7 +60,7 @@ export function InviteRoleForm() {
           id="invite-role"
           value={role}
           onChange={(e) => setRole(e.target.value as Role)}
-          className="rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
+          className="rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
         >
           {ROLES.map((option) => (
             <option key={option} value={option}>
@@ -72,7 +72,7 @@ export function InviteRoleForm() {
       <button
         type="submit"
         disabled={pending || !email.trim()}
-        className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-ink-950 transition hover:bg-brand-400 disabled:opacity-50"
+        className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400 disabled:opacity-50"
       >
         {t.instructorAdmin.inviteAdd}
       </button>
@@ -179,7 +179,7 @@ export function CreateUserForm() {
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-56 rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
+            className="w-56 rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
           />
         </label>
         <label className="flex flex-col gap-1 text-xs text-ink-300">
@@ -190,7 +190,7 @@ export function CreateUserForm() {
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             maxLength={80}
-            className="w-48 rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
+            className="w-48 rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
           />
         </label>
         <label className="flex flex-col gap-1 text-xs text-ink-300">
@@ -199,7 +199,7 @@ export function CreateUserForm() {
             id="new-user-role"
             value={role}
             onChange={(e) => setRole(e.target.value as Role)}
-            className="rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
+            className="rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
           >
             {ROLES.map((option) => (
               <option key={option} value={option}>
@@ -217,13 +217,13 @@ export function CreateUserForm() {
             onChange={(e) => setPassword(e.target.value)}
             placeholder={t.account.passwordRule}
             autoComplete="off"
-            className="w-48 rounded-md border border-ink-600 bg-ink-950 px-3 py-2 font-mono text-sm text-ink-100"
+            className="w-48 rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 font-mono text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
           />
         </label>
         <button
           type="submit"
           disabled={pending || !email.trim() || !displayName.trim() || password.length < 8}
-          className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-ink-950 transition hover:bg-brand-400 disabled:opacity-50"
+          className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400 disabled:opacity-50"
         >
           {pending ? t.account.creating : t.account.create}
         </button>
@@ -292,7 +292,7 @@ export function PasswordControls({ uid }: { uid: string }) {
               setLink(null);
               setError(null);
             }}
-            className="rounded-md border border-ink-600 bg-ink-800 px-2.5 py-1 text-xs text-ink-200 transition hover:bg-ink-700"
+            className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-2.5 py-1 text-xs text-ink-200 transition hover:bg-ink-900"
           >
             {t.account.setPassword}
           </button>
@@ -325,7 +325,7 @@ export function PasswordControls({ uid }: { uid: string }) {
             }}
             placeholder={t.account.passwordRule}
             autoComplete="off"
-            className="w-44 rounded-md border border-ink-600 bg-ink-950 px-2 py-1 font-mono text-xs text-ink-100"
+            className="w-44 rounded-lg border border-ink-600 bg-ink-850 px-2 py-1 font-mono text-xs text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
           />
           {needsGoogleConfirm ? (
             <button
@@ -341,7 +341,7 @@ export function PasswordControls({ uid }: { uid: string }) {
               type="button"
               disabled={pending || password.length < 8}
               onClick={() => apply(false)}
-              className="rounded-md bg-brand-500 px-2.5 py-1 text-xs font-semibold text-ink-950 disabled:opacity-50"
+              className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50"
             >
               {t.common.save}
             </button>
@@ -374,7 +374,7 @@ export function PasswordControls({ uid }: { uid: string }) {
             value={link}
             rows={3}
             onFocus={(e) => e.currentTarget.select()}
-            className="mt-1 w-full rounded-md border border-ink-600 bg-ink-950 px-2 py-1 font-mono text-[10px] text-ink-200"
+            className="mt-1 w-full rounded-lg border border-ink-600 bg-ink-850 px-2 py-1 font-mono text-[10px] text-ink-200 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
           />
         </div>
       ) : null}

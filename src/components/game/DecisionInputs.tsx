@@ -4,6 +4,19 @@ import { INVESTMENT_FIELDS, type GameConfig, type InvestmentField, type QuarterD
 import { useI18n } from '@/i18n/client';
 import { formatMoney, formatScore } from '@/lib/format';
 import { seriesColor } from '@/components/charts/series';
+import {
+  Cpu,
+  Lightbulb,
+  Megaphone,
+  Package,
+  RotateCcw,
+  Scale,
+  Smile,
+  Tag,
+  TrendingUp,
+  Truck,
+  type LucideIcon,
+} from 'lucide-react';
 
 /**
  * The five investment sliders plus the price index control (spec 12.1).
@@ -28,6 +41,15 @@ const FIELD_LABEL_KEYS: Record<InvestmentField, 'product' | 'technology' | 'mark
   marketingPoints: 'marketing',
   distributionPoints: 'distribution',
   cxPoints: 'cx',
+};
+
+/** Each area gets its own colour and icon so the five sliders are easy to tell apart. */
+const FIELD_STYLE: Record<InvestmentField, { icon: LucideIcon; color: string; tile: string }> = {
+  productPoints: { icon: Package, color: '#6366f1', tile: 'bg-indigo-100 text-indigo-600' },
+  technologyPoints: { icon: Cpu, color: '#0ea5e9', tile: 'bg-sky-100 text-sky-600' },
+  marketingPoints: { icon: Megaphone, color: '#f43f5e', tile: 'bg-rose-100 text-rose-600' },
+  distributionPoints: { icon: Truck, color: '#f59e0b', tile: 'bg-amber-100 text-amber-600' },
+  cxPoints: { icon: Smile, color: '#10b981', tile: 'bg-emerald-100 text-emerald-600' },
 };
 
 /** Which accumulating capability each investment area feeds, for context display. */
@@ -71,35 +93,49 @@ export function DecisionInputs({
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Points remaining, in real time */}
+      {/* Points remaining, in real time; stays in view while scrolling the sliders */}
       <div
-        className={`flex flex-wrap items-center justify-between gap-3 rounded-lg border px-4 py-3 ${
+        className={`sticky top-16 z-10 rounded-xl border px-4 py-3 shadow-sm backdrop-blur ${
           exact
-            ? 'border-good-500/40 bg-good-500/10'
-            : 'border-warn-500/40 bg-warn-500/10'
+            ? 'border-good-500/40 bg-emerald-50/95'
+            : 'border-warn-500/40 bg-amber-50/95'
         }`}
       >
-        <div>
-          <p className="text-xs text-ink-300">
-            {t.decision.pointsUsed}: <span className="tnum font-semibold text-ink-100">{used}</span>{' '}
-            / {config.strategyPoints}
-          </p>
-          <p
-            className={`tnum text-lg font-bold ${exact ? 'text-good-400' : 'text-warn-500'}`}
-            aria-live="polite"
-          >
-            {t.decision.pointsRemaining}: {remaining}
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-medium text-ink-300">
+              {t.decision.pointsUsed}:{' '}
+              <span className="tnum font-bold text-ink-100">{used}</span> / {config.strategyPoints}
+            </p>
+            <p
+              className={`tnum text-xl font-extrabold ${exact ? 'text-good-400' : 'text-warn-500'}`}
+              aria-live="polite"
+            >
+              {t.decision.pointsRemaining}: {remaining}
+            </p>
+          </div>
+          <p className={`text-xs font-semibold ${exact ? 'text-good-400' : 'text-warn-500'}`}>
+            {exact ? t.decision.pointsOk : t.decision.pointsMustEqual}
           </p>
         </div>
-        <p className={`text-xs ${exact ? 'text-good-400' : 'text-warn-500'}`}>
-          {exact ? t.decision.pointsOk : t.decision.pointsMustEqual}
-        </p>
+        <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/80">
+          <div
+            className={`h-full rounded-full transition-all ${
+              used > config.strategyPoints ? 'bg-bad-500' : exact ? 'bg-good-500' : 'bg-warn-500'
+            }`}
+            style={{ width: `${Math.min(100, (used / config.strategyPoints) * 100)}%` }}
+          />
+        </div>
       </div>
 
       {/* Quick presets */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs text-ink-400">{t.decision.presetTitle}:</span>
+      <div>
+        <p className="mb-2 text-xs font-bold tracking-wide text-ink-400 uppercase">
+          {t.decision.presetTitle}
+        </p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <PresetButton
+          icon={Scale}
           label={t.decision.presetBalanced}
           disabled={disabled}
           onClick={() =>
@@ -113,6 +149,7 @@ export function DecisionInputs({
           }
         />
         <PresetButton
+          icon={Lightbulb}
           label={t.decision.presetInnovation}
           disabled={disabled}
           onClick={() =>
@@ -126,6 +163,7 @@ export function DecisionInputs({
           }
         />
         <PresetButton
+          icon={TrendingUp}
           label={t.decision.presetGrowth}
           disabled={disabled}
           onClick={() =>
@@ -139,6 +177,7 @@ export function DecisionInputs({
           }
         />
         <PresetButton
+          icon={RotateCcw}
           label={t.decision.presetReset}
           disabled={disabled}
           onClick={() =>
@@ -151,6 +190,7 @@ export function DecisionInputs({
             })
           }
         />
+        </div>
       </div>
 
       {/* The five investment areas */}
@@ -160,11 +200,23 @@ export function DecisionInputs({
           const capabilityKey = FIELD_CAPABILITY[field];
           const current =
             capabilities && capabilityKey ? capabilities[capabilityKey] : null;
+          const style = FIELD_STYLE[field];
+          const Icon = style.icon;
 
           return (
-            <div key={field} className="rounded-lg border border-ink-700/60 bg-ink-900/40 p-3">
-              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                <div>
+            <div
+              key={field}
+              className="rounded-xl border border-ink-700 bg-ink-850 p-4 shadow-sm shadow-slate-200/60"
+              style={{ borderLeft: `4px solid ${style.color}` }}
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <span
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${style.tile}`}
+                  >
+                    <Icon className="h-5 w-5" aria-hidden />
+                  </span>
+                  <div>
                   <label
                     htmlFor={`decision-${field}`}
                     className="text-sm font-semibold text-ink-100"
@@ -172,6 +224,7 @@ export function DecisionInputs({
                     {t.decision[labelKey]}
                   </label>
                   <p className="mt-0.5 text-xs text-ink-400">{t.decision[`${labelKey}Desc`]}</p>
+                  </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {current !== null ? (
@@ -190,7 +243,7 @@ export function DecisionInputs({
                     disabled={disabled}
                     onChange={(e) => setField(field, Number(e.target.value))}
                     aria-label={`${t.decision[labelKey]} (0-100)`}
-                    className="tnum w-16 rounded-md border border-ink-600 bg-ink-950 px-2 py-1 text-right text-sm text-ink-100 disabled:opacity-50"
+                    className="tnum w-16 rounded-lg border border-ink-600 bg-ink-850 px-2 py-1.5 text-right text-base font-bold text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none disabled:opacity-50"
                   />
                 </div>
               </div>
@@ -203,7 +256,8 @@ export function DecisionInputs({
                 value={value[field]}
                 disabled={disabled}
                 onChange={(e) => setField(field, Number(e.target.value))}
-                className="mt-2"
+                className="mt-3"
+                style={{ ['--range-color' as string]: style.color }}
                 aria-label={t.decision[labelKey]}
               />
             </div>
@@ -212,16 +266,21 @@ export function DecisionInputs({
       </div>
 
       {/* Price index — deliberately separate: it is not part of the 100 points */}
-      <div className="rounded-lg border border-brand-600/40 bg-brand-500/5 p-4">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <div>
-            <label htmlFor="decision-price" className="text-sm font-semibold text-ink-100">
-              {t.decision.priceIndex}
-            </label>
-            <p className="mt-0.5 max-w-prose text-xs text-ink-400">{t.decision.priceIndexDesc}</p>
+      <div className="rounded-xl border border-brand-100 bg-brand-50 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-brand-500">
+              <Tag className="h-5 w-5" aria-hidden />
+            </span>
+            <div>
+              <label htmlFor="decision-price" className="text-sm font-semibold text-ink-100">
+                {t.decision.priceIndex}
+              </label>
+              <p className="mt-0.5 max-w-prose text-xs text-ink-400">{t.decision.priceIndexDesc}</p>
+            </div>
           </div>
           <div className="text-right">
-            <p className="tnum text-lg font-bold text-brand-400">{value.priceIndex}</p>
+            <p className="tnum text-2xl font-extrabold text-brand-400">{value.priceIndex}</p>
             <p className="tnum text-xs text-ink-300">
               {t.decision.estimatedPrice}: {formatMoney(price, locale)}
             </p>
@@ -259,10 +318,12 @@ export function DecisionInputs({
 
 function PresetButton({
   label,
+  icon: Icon,
   onClick,
   disabled,
 }: {
   label: string;
+  icon: LucideIcon;
   onClick: () => void;
   disabled?: boolean;
 }) {
@@ -271,8 +332,9 @@ function PresetButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="rounded-md border border-ink-600 bg-ink-800 px-2.5 py-1 text-xs text-ink-200 transition hover:border-ink-500 hover:bg-ink-700 disabled:cursor-not-allowed disabled:opacity-50"
+      className="flex items-center justify-center gap-2 rounded-xl border border-ink-700 bg-ink-850 px-3 py-2.5 text-sm font-semibold text-ink-200 shadow-sm transition hover:border-brand-500 hover:bg-brand-50 hover:text-brand-400 disabled:cursor-not-allowed disabled:opacity-50"
     >
+      <Icon className="h-4 w-4" aria-hidden />
       {label}
     </button>
   );

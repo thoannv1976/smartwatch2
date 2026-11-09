@@ -35,7 +35,7 @@ export function RoleSelect({
             else setError(t.errors[result.error]);
           });
         }}
-        className="rounded-md border border-ink-600 bg-ink-950 px-2 py-1 text-xs text-ink-100 disabled:opacity-50"
+        className="rounded-lg border border-ink-600 bg-ink-850 px-2 py-1 text-xs text-ink-100 disabled:opacity-50 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
         // An admin changing their own role could remove the last admin.
         title={isSelf ? t.admin.cannotDemoteSelf : undefined}
       >

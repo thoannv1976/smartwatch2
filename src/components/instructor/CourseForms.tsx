@@ -64,7 +64,7 @@ export function CreateCourseForm() {
         <button
           type="submit"
           disabled={pending || !courseName.trim() || !semester.trim()}
-          className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-ink-950 transition hover:bg-brand-400 disabled:opacity-50"
+          className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400 disabled:opacity-50"
         >
           {t.common.create}
         </button>
@@ -110,7 +110,7 @@ export function AddMemberForm({ courseId }: { courseId: string }) {
       <button
         type="submit"
         disabled={pending || !email.trim() || !studentCode.trim()}
-        className="rounded-md border border-ink-600 bg-ink-800 px-4 py-2 text-sm font-semibold text-ink-100 transition hover:bg-ink-700 disabled:opacity-50"
+        className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-4 py-2 text-sm font-semibold text-ink-100 transition hover:bg-ink-900 disabled:opacity-50"
       >
         {t.instructor.addMember}
       </button>
@@ -173,7 +173,7 @@ export function CreateAssignmentForm({ courseId }: { courseId: string }) {
             <select
               value={mode}
               onChange={(e) => setMode(e.target.value as 'SOLO' | 'GROUP')}
-              className="rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
+              className="rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
             >
               <option value="SOLO">{t.groupAdmin.modeSolo}</option>
               <option value="GROUP">{t.groupAdmin.modeGroup}</option>
@@ -190,7 +190,7 @@ export function CreateAssignmentForm({ courseId }: { courseId: string }) {
                 onChange={(e) =>
                   setGroupCount(Math.max(1, Math.min(50, Number(e.target.value) || 1)))
                 }
-                className="tnum w-24 rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
+                className="tnum w-24 rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
               />
             </label>
           ) : null}
@@ -204,7 +204,7 @@ export function CreateAssignmentForm({ courseId }: { courseId: string }) {
               type="datetime-local"
               value={startAt}
               onChange={(e) => setStartAt(e.target.value)}
-              className="rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
+              className="rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
             />
           </label>
           <label className="flex flex-col gap-1 text-xs text-ink-300">
@@ -213,7 +213,7 @@ export function CreateAssignmentForm({ courseId }: { courseId: string }) {
               type="datetime-local"
               value={deadline}
               onChange={(e) => setDeadline(e.target.value)}
-              className="rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
+              className="rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
             />
           </label>
           {/* A group assignment is one shared match, so attempts do not apply. */}
@@ -226,7 +226,7 @@ export function CreateAssignmentForm({ courseId }: { courseId: string }) {
                 max={10}
                 value={maxAttempts}
                 onChange={(e) => setMaxAttempts(Number(e.target.value))}
-                className="tnum w-20 rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
+                className="tnum w-20 rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
               />
             </label>
           )}
@@ -243,7 +243,7 @@ export function CreateAssignmentForm({ courseId }: { courseId: string }) {
               <select
                 value={scenarioVersion}
                 onChange={(e) => setScenarioVersion(e.target.value)}
-                className="rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
+                className="rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
               >
                 {SELECTABLE_SCENARIO_VERSIONS.map((version) => (
                   <option key={version} value={version}>
@@ -272,7 +272,7 @@ export function CreateAssignmentForm({ courseId }: { courseId: string }) {
           <button
             type="submit"
             disabled={pending || !title.trim()}
-            className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-ink-950 transition hover:bg-brand-400 disabled:opacity-50"
+            className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400 disabled:opacity-50"
           >
             {t.common.create}
           </button>
@@ -351,7 +351,7 @@ function Field({
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={`${width} rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100 ${
+        className={`${width} rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none ${
           mono ? 'font-mono' : ''
         }`}
       />
@@ -425,7 +425,7 @@ export function EditCourseForm({
         <button
           type="submit"
           disabled={pending || !name.trim() || !term.trim()}
-          className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-ink-950 transition hover:bg-brand-400 disabled:opacity-50"
+          className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400 disabled:opacity-50"
         >
           {t.common.save}
         </button>
@@ -496,12 +496,12 @@ export function MemberRowActions({
             value={code}
             onChange={(e) => setCode(e.target.value)}
             maxLength={40}
-            className="w-36 rounded-md border border-ink-600 bg-ink-950 px-2 py-1 font-mono text-xs text-ink-100"
+            className="w-36 rounded-lg border border-ink-600 bg-ink-850 px-2 py-1 font-mono text-xs text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
           />
           <button
             type="submit"
             disabled={pending || !code.trim()}
-            className="rounded-md bg-brand-500 px-2.5 py-1 text-xs font-semibold text-ink-950 disabled:opacity-50"
+            className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-2.5 py-1 text-xs font-semibold text-white disabled:opacity-50"
           >
             {t.common.save}
           </button>
@@ -522,7 +522,7 @@ export function MemberRowActions({
           <button
             type="button"
             onClick={() => setEditing(true)}
-            className="rounded-md border border-ink-600 bg-ink-800 px-2.5 py-1 text-xs text-ink-200 transition hover:bg-ink-700"
+            className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-2.5 py-1 text-xs text-ink-200 transition hover:bg-ink-900"
           >
             {t.common.edit}
           </button>
