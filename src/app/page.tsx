@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { LocaleSwitcher } from '@/components/chrome/LocaleSwitcher';
+import { HeroArt } from '@/components/illustrations/Illustrations';
 import { getTranslations } from '@/i18n/server';
 
 const ROLE_ICONS: Record<string, { icon: LucideIcon; tone: string }> = {
@@ -43,34 +44,37 @@ export default async function LandingPage() {
             aria-hidden
             className="absolute -top-24 -right-24 h-72 w-72 rounded-full bg-violet-400/30 blur-3xl"
           />
-          <div className="relative max-w-2xl">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold">
-              <Sparkles className="h-3.5 w-3.5" aria-hidden />
-              {l.badge}
-            </span>
-            <h1 className="mt-4 text-3xl leading-tight font-extrabold tracking-tight sm:text-5xl">
-              {l.title}
-            </h1>
-            <p className="mt-4 text-base text-indigo-100 sm:text-lg">{l.subtitle}</p>
-            <div className="mt-8 flex flex-wrap gap-3">
-              <Link
-                href="/login"
-                className="flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-bold text-brand-500 shadow-lg transition hover:bg-indigo-50"
-              >
-                {l.start}
-                <ArrowRight className="h-4 w-4" aria-hidden />
-              </Link>
-              {/* Before the sign-in wall on purpose: a student should be able to find
+          <div className="relative flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-2xl">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold">
+                <Sparkles className="h-3.5 w-3.5" aria-hidden />
+                {l.badge}
+              </span>
+              <h1 className="mt-4 text-3xl leading-tight font-extrabold tracking-tight sm:text-5xl">
+                {l.title}
+              </h1>
+              <p className="mt-4 text-base text-indigo-100 sm:text-lg">{l.subtitle}</p>
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link
+                  href="/login"
+                  className="flex items-center gap-2 rounded-xl bg-white px-6 py-3 font-bold text-brand-500 shadow-lg transition hover:bg-indigo-50"
+                >
+                  {l.start}
+                  <ArrowRight className="h-4 w-4" aria-hidden />
+                </Link>
+                {/* Before the sign-in wall on purpose: a student should be able to find
                   out what the exercise is before they have an account, and an
                   instructor should be able to put this link in a syllabus. */}
-              <Link
-                href="/guide"
-                className="flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/20"
-              >
-                <BookOpen className="h-4 w-4" aria-hidden />
-                {l.learnMore}
-              </Link>
+                <Link
+                  href="/guide"
+                  className="flex items-center gap-2 rounded-xl border border-white/30 bg-white/10 px-6 py-3 font-semibold text-white transition hover:bg-white/20"
+                >
+                  <BookOpen className="h-4 w-4" aria-hidden />
+                  {l.learnMore}
+                </Link>
+              </div>
             </div>
+            <HeroArt className="mx-auto h-auto w-60 shrink-0 sm:w-72 lg:mx-0 lg:w-80" />
           </div>
         </section>
 

@@ -1,4 +1,5 @@
 import { Banknote, PieChart, TrendingUp, Trophy } from 'lucide-react';
+import { EventArt, PodiumArt } from '@/components/illustrations/Illustrations';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
@@ -110,7 +111,9 @@ export default async function QuarterResultPage({
       )
     : null;
 
-  const revenueChange = previousResult ? relativeChange(result.revenue, previousResult.revenue) : null;
+  const revenueChange = previousResult
+    ? relativeChange(result.revenue, previousResult.revenue)
+    : null;
   const profitChange = previousResult
     ? relativeChange(result.netProfit, previousResult.netProfit)
     : null;
@@ -137,11 +140,18 @@ export default async function QuarterResultPage({
       />
 
       <Card>
-        <CardTitle>{t.result.eventContext}</CardTitle>
-        <p className="max-w-prose text-sm text-ink-300">{t.eventDesc[current.eventKey]}</p>
-        <p className="tnum mt-2 text-xs text-ink-400">
-          {t.dashboard.marketSize}: {formatInteger(current.marketUnits, locale)} {t.dashboard.units}
-        </p>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <EventArt eventKey={current.eventKey} className="h-auto w-40 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <CardTitle>{t.result.eventContext}</CardTitle>
+            <p className="max-w-prose text-sm text-ink-300">{t.eventDesc[current.eventKey]}</p>
+            <p className="tnum mt-2 text-xs text-ink-400">
+              {t.dashboard.marketSize}: {formatInteger(current.marketUnits, locale)}{' '}
+              {t.dashboard.units}
+            </p>
+          </div>
+          <PodiumArt rank={result.rank} className="hidden h-auto w-32 shrink-0 sm:block" />
+        </div>
       </Card>
 
       <Card>
@@ -240,12 +250,24 @@ export default async function QuarterResultPage({
               </thead>
               <tbody>
                 <tr>
-                  <Td numeric align="right">{decision.productPoints}</Td>
-                  <Td numeric align="right">{decision.technologyPoints}</Td>
-                  <Td numeric align="right">{decision.marketingPoints}</Td>
-                  <Td numeric align="right">{decision.distributionPoints}</Td>
-                  <Td numeric align="right">{decision.cxPoints}</Td>
-                  <Td numeric align="right">{decision.priceIndex}</Td>
+                  <Td numeric align="right">
+                    {decision.productPoints}
+                  </Td>
+                  <Td numeric align="right">
+                    {decision.technologyPoints}
+                  </Td>
+                  <Td numeric align="right">
+                    {decision.marketingPoints}
+                  </Td>
+                  <Td numeric align="right">
+                    {decision.distributionPoints}
+                  </Td>
+                  <Td numeric align="right">
+                    {decision.cxPoints}
+                  </Td>
+                  <Td numeric align="right">
+                    {decision.priceIndex}
+                  </Td>
                 </tr>
               </tbody>
             </table>

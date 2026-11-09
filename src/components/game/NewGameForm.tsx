@@ -2,14 +2,11 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  POSITIONINGS,
-  VARIED_SCENARIO_VERSION,
-  type Positioning,
-} from '@/domain/simulation';
+import { POSITIONINGS, VARIED_SCENARIO_VERSION, type Positioning } from '@/domain/simulation';
 import { createSessionAction } from '@/server/game/actions';
 import { useI18n } from '@/i18n/client';
 import { Card, CardTitle, ErrorNote, InfoNote } from '@/components/ui/primitives';
+import { PositioningArt } from '@/components/illustrations/Illustrations';
 
 /** Create Company screen (spec 3.2, 12). */
 export function NewGameForm({
@@ -92,7 +89,7 @@ export function NewGameForm({
             {POSITIONINGS.map((option) => (
               <label
                 key={option}
-                className={`cursor-pointer rounded-lg border p-3 transition ${
+                className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${
                   positioning === option
                     ? 'border-brand-600 bg-brand-500/10'
                     : 'border-ink-700 bg-ink-900/50 hover:border-ink-600'
@@ -106,11 +103,14 @@ export function NewGameForm({
                   onChange={() => setPositioning(option)}
                   className="sr-only"
                 />
-                <span className="block text-sm font-semibold text-ink-100">
-                  {t.positioning[option]}
-                </span>
-                <span className="mt-0.5 block text-xs text-ink-400">
-                  {t.positioningDesc[option]}
+                <PositioningArt positioning={option} className="h-12 w-12 shrink-0" />
+                <span className="min-w-0">
+                  <span className="block text-sm font-semibold text-ink-100">
+                    {t.positioning[option]}
+                  </span>
+                  <span className="mt-0.5 block text-xs text-ink-400">
+                    {t.positioningDesc[option]}
+                  </span>
                 </span>
               </label>
             ))}

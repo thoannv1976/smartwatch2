@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { EmptyArt } from '@/components/illustrations/Illustrations';
 
 /**
  * Shared presentational primitives: white cards on a light page, clear headings
@@ -36,7 +37,10 @@ export function CardTitle({
     <div className="mb-4 flex items-start justify-between gap-4">
       <div>
         <h2 className="flex items-center gap-2 text-base font-bold text-ink-100">
-          <span aria-hidden className="h-4 w-1 rounded-full bg-brand-500 shadow-sm shadow-brand-500/25" />
+          <span
+            aria-hidden
+            className="h-4 w-1 rounded-full bg-brand-500 shadow-sm shadow-brand-500/25"
+          />
           {children}
         </h2>
         {hint ? <p className="mt-1 max-w-prose text-sm text-ink-400">{hint}</p> : null}
@@ -198,6 +202,7 @@ export function CapabilityBar({
 export function EmptyState({ children }: { children: ReactNode }) {
   return (
     <p className="rounded-xl border border-dashed border-ink-600 bg-ink-900 p-6 text-center text-sm text-ink-400">
+      <EmptyArt className="mx-auto mb-2 block h-auto w-28" />
       {children}
     </p>
   );
@@ -275,4 +280,3 @@ export function Td({
     </td>
   );
 }
-
