@@ -78,6 +78,48 @@ export const en: Dictionary = {
     ],
   },
 
+  lti: {
+    launchTitle: 'Opening the activity from Moodle…',
+    launchSigningIn: 'Signing you in to Smartwatch CEO Challenge…',
+    launchFailedTitle: 'Could not open the activity',
+    backToLms: 'Back to Moodle',
+    goHome: 'Go to home',
+    errors: {
+      noTicket: 'The link from Moodle is incomplete. Please go back to Moodle and open the activity again.',
+      notConfigured: 'The Moodle connection is not turned on for this app.',
+      ticketInvalid: 'The launch from Moodle has expired or was already used. Please go back to Moodle and open the activity again.',
+      tenantNotAllowed: 'Your institution is not allowed to use this app yet.',
+      noContext: 'The activity must be inside a Moodle course.',
+      notLinked: 'Your instructor has not linked this activity to an assignment yet. Please try again later.',
+      linkExpired: 'The linking step has expired. Please open the activity from Moodle again.',
+      forbidden: 'You do not have access to this assignment.',
+      assignmentNotFound: 'The linked assignment no longer exists. Please tell your instructor.',
+      generic: 'Something went wrong while opening the activity. Please try again.',
+    },
+    linkTitle: 'Link a Moodle activity to an assignment',
+    linkIntro: 'The activity “{activity}” in the course “{course}” is not linked to an assignment yet. Choose one option:',
+    linkNewTitle: 'Create a new assignment (recommended)',
+    linkNewDesc:
+      'Creates a course and one official assignment (1 attempt, open for 120 days) just for this Moodle activity. You can change the deadline and attempts later.',
+    linkNewButton: 'Create and link',
+    linkExistingTitle: 'Use an existing assignment',
+    linkExistingButton: 'Link to this assignment',
+    linkExistingNone: 'You have no solo assignments to link.',
+    linking: 'Linking…',
+    panelTitle: 'Moodle connection (LMS)',
+    panelNone:
+      'This assignment is not linked to a Moodle activity. Open the Smartwatch activity from Moodle with an instructor account to link it.',
+    panelLinked: 'Linked to Moodle activity:',
+    panelAuto:
+      'When a student opens the assignment from Moodle and finishes the official game, the score (out of 100) is sent to the Moodle gradebook automatically.',
+    panelNoColumn: 'This activity has no gradebook column in Moodle yet, so class grades cannot be sent.',
+    sendButton: 'Send class grades to Moodle',
+    sending: 'Sending…',
+    sendDone: 'Sent the grades of {rows} students to Moodle.',
+    sendNone: 'No student has finished the official game yet.',
+    sendFailed: 'Sending grades failed: {error}',
+  },
+
   roles: {
     STUDENT: 'Student',
     INSTRUCTOR: 'Instructor',

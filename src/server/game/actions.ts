@@ -15,6 +15,7 @@ import { AuthorizationError, requireUser } from '@/server/auth/session';
 import { GameError, type GameErrorKey } from './errors';
 import { createEnrollmentService } from './enrollment';
 import { createGameService } from './service';
+import { sendGradeQuietly } from '@/server/lti/runtime';
 
 /**
  * Server actions used by the student screens.
@@ -124,13 +125,19 @@ export async function submitQuarterAction(
 
     const config = getGameConfig(result.session.scenarioVersion);
     revalidatePath(`/game/${parsed.sessionId}`);
+    const completed = result.quarter.quarter >= config.quarters;
+
+    // A finished official game opened from the LMS goes to its gradebook.
+    // Awaited (Cloud Run may pause the instance after the response) but never
+    // allowed to fail the submission.
+    if (completed) await sendGradeQuietly(parsed.sessionId);
 
     return {
       ok: true,
       data: {
         quarter: result.quarter.quarter,
         replayed: result.replayed,
-        completed: result.quarter.quarter >= config.quarters,
+        completed,
       },
     };
   } catch (error) {
@@ -198,6 +205,7 @@ export async function finalizeSessionAction(
     const parsed = finalizeSchema.parse(input);
     const service = createGameService(getRepositories());
     await service.finalize(parsed.sessionId, user.uid);
+    await sendGradeQuietly(parsed.sessionId);
     revalidatePath(`/report/${parsed.sessionId}`);
     return { ok: true, data: { sessionId: parsed.sessionId } };
   } catch (error) {

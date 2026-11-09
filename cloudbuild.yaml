@@ -135,7 +135,10 @@ steps:
       # The service account needs roles/datastore.user; Firebase Admin picks it
       # up through Application Default Credentials, so no key file exists.
       - '--service-account=${_SERVICE}@${PROJECT_ID}.iam.gserviceaccount.com'
-      - '--set-env-vars=GOOGLE_CLOUD_PROJECT=${PROJECT_ID},BOOTSTRAP_ADMIN_EMAIL=${_BOOTSTRAP_ADMIN_EMAIL}'
+      # --update (not --set): settings added to the service by hand, such as the
+      # LMS connection (LTI_* variables and the LTI_GAME_SECRET secret), must
+      # survive every redeploy. --set-env-vars would silently erase them.
+      - '--update-env-vars=GOOGLE_CLOUD_PROJECT=${PROJECT_ID},BOOTSTRAP_ADMIN_EMAIL=${_BOOTSTRAP_ADMIN_EMAIL}'
       - '--cpu=1'
       - '--memory=512Mi'
       # Scale to zero between classes; a small max keeps a runaway cost impossible.

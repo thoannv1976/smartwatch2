@@ -12,6 +12,7 @@ import {
 } from '@/server/instructor/queries';
 import { getTranslations } from '@/i18n/server';
 import { interpolate } from '@/i18n';
+import { LtiAssignmentPanel } from '@/components/lti/LtiAssignmentPanel';
 import { AssignmentArchiveButton, AssignmentToggle } from '@/components/instructor/CourseForms';
 import {
   AddGroupsForm,
@@ -110,6 +111,8 @@ export default async function AssignmentDetailPage({
           </div>
         }
       />
+
+      <LtiAssignmentPanel assignmentId={assignment.id} />
 
       <Card>
         <CardTitle hint={t.instructor.seedHint}>

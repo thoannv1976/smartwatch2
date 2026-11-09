@@ -86,6 +86,48 @@ export const vi = {
     ],
   },
 
+  lti: {
+    launchTitle: 'Đang mở hoạt động từ Moodle…',
+    launchSigningIn: 'Đang đăng nhập vào Smartwatch CEO Challenge…',
+    launchFailedTitle: 'Không mở được hoạt động',
+    backToLms: 'Quay lại Moodle',
+    goHome: 'Về trang chủ',
+    errors: {
+      noTicket: 'Liên kết mở từ Moodle không đầy đủ. Vui lòng quay lại Moodle và mở lại hoạt động.',
+      notConfigured: 'Ứng dụng chưa bật kết nối Moodle.',
+      ticketInvalid: 'Phiên mở từ Moodle đã hết hạn hoặc đã được dùng. Vui lòng quay lại Moodle và mở lại hoạt động.',
+      tenantNotAllowed: 'Trường của bạn chưa được phép dùng ứng dụng này.',
+      noContext: 'Hoạt động phải nằm trong một khóa học Moodle.',
+      notLinked: 'Giảng viên chưa gắn hoạt động này với bài tập. Vui lòng quay lại sau.',
+      linkExpired: 'Phiên gắn bài tập đã hết hạn. Vui lòng mở lại hoạt động từ Moodle.',
+      forbidden: 'Bạn không có quyền với bài tập này.',
+      assignmentNotFound: 'Bài tập được gắn không còn tồn tại. Vui lòng báo giảng viên.',
+      generic: 'Có lỗi khi mở hoạt động. Vui lòng thử lại.',
+    },
+    linkTitle: 'Gắn hoạt động Moodle với một bài tập',
+    linkIntro: 'Hoạt động “{activity}” trong khóa “{course}” chưa được gắn với bài tập nào. Chọn một trong hai cách:',
+    linkNewTitle: 'Tạo bài tập mới (khuyên dùng)',
+    linkNewDesc:
+      'Tạo một khóa học và một bài tập chính thức (1 lượt, mở 120 ngày) dành riêng cho hoạt động Moodle này. Bạn có thể sửa hạn và số lượt sau.',
+    linkNewButton: 'Tạo và gắn',
+    linkExistingTitle: 'Dùng bài tập đã có',
+    linkExistingButton: 'Gắn vào bài tập này',
+    linkExistingNone: 'Bạn chưa có bài tập cá nhân (SOLO) nào để gắn.',
+    linking: 'Đang gắn…',
+    panelTitle: 'Kết nối Moodle (LMS)',
+    panelNone:
+      'Bài tập này chưa gắn với hoạt động Moodle nào. Mở hoạt động Smartwatch từ Moodle bằng tài khoản giảng viên để gắn.',
+    panelLinked: 'Đang gắn với hoạt động Moodle:',
+    panelAuto:
+      'Khi sinh viên mở bài từ Moodle và hoàn thành lượt chính thức, điểm (thang 100) được gửi tự động về sổ điểm Moodle.',
+    panelNoColumn: 'Hoạt động này chưa có cột điểm trong Moodle, nên chưa gửi điểm cả lớp được.',
+    sendButton: 'Gửi điểm cả lớp về Moodle',
+    sending: 'Đang gửi…',
+    sendDone: 'Đã gửi điểm của {rows} sinh viên về Moodle.',
+    sendNone: 'Chưa có sinh viên nào hoàn thành lượt chính thức.',
+    sendFailed: 'Gửi điểm không thành công: {error}',
+  },
+
   roles: {
     STUDENT: 'Sinh viên',
     INSTRUCTOR: 'Giảng viên',
