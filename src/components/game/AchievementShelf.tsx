@@ -3,6 +3,7 @@ import type { Dictionary, Locale } from '@/i18n';
 import { interpolate } from '@/i18n';
 import { Card, CardTitle, InfoNote } from '@/components/ui/primitives';
 import { formatMoneyCompact } from '@/lib/format';
+import { MedalArt } from '@/components/illustrations/Illustrations';
 
 /**
  * What the student earned, beside what they did not.
@@ -69,17 +70,20 @@ export function AchievementShelf({
           {earned.map((achievement) => (
             <li
               key={achievement.key}
-              className={`rounded-lg border p-4 ${TIER_RING[achievement.tier]}`}
+              className={`flex gap-3 rounded-lg border p-4 ${TIER_RING[achievement.tier]}`}
             >
-              <p className="text-sm font-bold text-ink-100">
-                {t.achievementName[achievement.key]}
-              </p>
-              <p className="mt-1 text-xs leading-relaxed text-ink-300">
-                {interpolate(
-                  t.achievementDesc[achievement.key],
-                  withMoney(achievement.values, locale),
-                )}
-              </p>
+              <MedalArt tier={achievement.tier} className="h-14 w-12 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-bold text-ink-100">
+                  {t.achievementName[achievement.key]}
+                </p>
+                <p className="mt-1 text-xs leading-relaxed text-ink-300">
+                  {interpolate(
+                    t.achievementDesc[achievement.key],
+                    withMoney(achievement.values, locale),
+                  )}
+                </p>
+              </div>
             </li>
           ))}
         </ul>
@@ -94,15 +98,18 @@ export function AchievementShelf({
             {locked.map((key) => (
               <li
                 key={key}
-                className="rounded-lg border border-ink-700/50 bg-ink-900/40 px-3 py-2 opacity-60"
+                className="flex gap-2.5 rounded-lg border border-ink-700/50 bg-ink-900/40 px-3 py-2 opacity-60"
               >
-                <p className="text-xs font-semibold text-ink-300">{t.achievementName[key]}</p>
-                {/* Description shown even when locked: a hidden condition is a
+                <MedalArt tier="gold" locked className="h-9 w-8 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-ink-300">{t.achievementName[key]}</p>
+                  {/* Description shown even when locked: a hidden condition is a
                     puzzle, and a locked badge should read as a goal. The values
                     are the student's own, so the sentence still makes sense. */}
-                <p className="mt-0.5 text-[11px] leading-relaxed text-ink-500">
-                  {stripValues(t.achievementDesc[key])}
-                </p>
+                  <p className="mt-0.5 text-[11px] leading-relaxed text-ink-500">
+                    {stripValues(t.achievementDesc[key])}
+                  </p>
+                </div>
               </li>
             ))}
           </ul>

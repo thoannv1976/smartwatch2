@@ -1,4 +1,4 @@
-import { Trophy } from 'lucide-react';
+import { PodiumArt } from '@/components/illustrations/Illustrations';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
@@ -36,21 +36,12 @@ import {
   Th,
   WarningNote,
 } from '@/components/ui/primitives';
-import {
-  formatDecimal,
-  formatMoneyCompact,
-  formatPercent,
-  formatScore,
-} from '@/lib/format';
+import { formatDecimal, formatMoneyCompact, formatPercent, formatScore } from '@/lib/format';
 
 export const metadata = { title: 'Báo cáo tổng kết — Smartwatch CEO Challenge' };
 
 /** Final report (spec 8.4): results, scores, class rank and rule-based analysis. */
-export default async function ReportPage({
-  params,
-}: {
-  params: Promise<{ sessionId: string }>;
-}) {
+export default async function ReportPage({ params }: { params: Promise<{ sessionId: string }> }) {
   const { sessionId } = await params;
   const user = await requireUserPage(`/report/${sessionId}`);
   const { t, locale } = await getTranslations();
@@ -168,9 +159,10 @@ export default async function ReportPage({
         />
         <div className="relative flex flex-wrap items-end justify-between gap-6">
           <div className="flex items-center gap-4">
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15">
-              <Trophy className="h-7 w-7 text-amber-300" aria-hidden />
-            </span>
+            <PodiumArt
+              rank={playerScore.gameRank}
+              className="h-auto w-28 shrink-0 sm:w-36 print:hidden"
+            />
             <div>
               <p className="text-xs font-bold tracking-wide text-indigo-200 uppercase">
                 {t.report.finalScore}
@@ -373,7 +365,11 @@ export default async function ReportPage({
         </div>
 
         <dl className="mt-4 grid grid-cols-2 gap-3 text-xs sm:grid-cols-3 lg:grid-cols-6">
-          <Average label={t.decision.product} value={analysis.averages.productPoints} locale={locale} />
+          <Average
+            label={t.decision.product}
+            value={analysis.averages.productPoints}
+            locale={locale}
+          />
           <Average
             label={t.decision.technology}
             value={analysis.averages.technologyPoints}
@@ -494,15 +490,7 @@ function ScoreRow({
   );
 }
 
-function Average({
-  label,
-  value,
-  locale,
-}: {
-  label: string;
-  value: number;
-  locale: 'vi' | 'en';
-}) {
+function Average({ label, value, locale }: { label: string; value: number; locale: 'vi' | 'en' }) {
   return (
     <div className="rounded-lg border border-ink-700/60 bg-ink-900/50 p-2.5">
       <dt className="truncate text-ink-400" title={label}>

@@ -16,6 +16,7 @@ import {
   WarningNote,
 } from '@/components/ui/primitives';
 import { formatDate, formatDateOnly, formatDecimal } from '@/lib/format';
+import { HeroArt } from '@/components/illustrations/Illustrations';
 
 export const metadata = { title: 'Trang chủ — Smartwatch CEO Challenge' };
 
@@ -70,6 +71,7 @@ export default async function HomePage({
               </Link>
             </div>
           </div>
+          <HeroArt className="hidden h-auto w-40 shrink-0 lg:block" />
           <dl className="grid grid-cols-3 gap-2">
             {[
               { label: t.home.statAssignments, value: assignments.length },
@@ -162,7 +164,8 @@ export default async function HomePage({
                     ) : completedResult ? (
                       <>
                         <Badge tone="good">
-                          {t.home.finalScore}: {formatDecimal(completedResult.finalScore, locale, 2)}
+                          {t.home.finalScore}:{' '}
+                          {formatDecimal(completedResult.finalScore, locale, 2)}
                         </Badge>
                         <Link
                           href={`/report/${completedResult.sessionId}`}
@@ -237,8 +240,7 @@ export default async function HomePage({
                   {row.archived ? <Badge tone="warn">{t.enroll.archivedCourse}</Badge> : null}
                 </span>
                 <span className="text-xs text-ink-400">
-                  {row.course.semester} ·{' '}
-                  <span className="font-mono">{row.studentCode}</span>
+                  {row.course.semester} · <span className="font-mono">{row.studentCode}</span>
                 </span>
               </li>
             ))}

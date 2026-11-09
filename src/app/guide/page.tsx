@@ -7,6 +7,7 @@ import { interpolate } from '@/i18n';
 import { LocaleSwitcher } from '@/components/chrome/LocaleSwitcher';
 import { LessonList } from '@/components/guide/LessonList';
 import { Card, CardTitle, WarningNote } from '@/components/ui/primitives';
+import { GuideArt } from '@/components/illustrations/Illustrations';
 
 export const metadata = { title: 'Giới thiệu & Hướng dẫn — Smartwatch CEO Challenge' };
 
@@ -97,9 +98,14 @@ export default async function GuidePage() {
       {/* max-w-3xl, not 5xl: this is the only prose-length page in the app and
           a 90-character line is unreadable. */}
       <main className="mx-auto flex max-w-3xl flex-col gap-6 px-4 py-10 sm:px-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-ink-100 sm:text-4xl">{g.title}</h1>
-          <p className="mt-3 max-w-prose text-base leading-relaxed text-ink-300">{g.subtitle}</p>
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-3xl font-bold tracking-tight text-ink-100 sm:text-4xl">
+              {g.title}
+            </h1>
+            <p className="mt-3 max-w-prose text-base leading-relaxed text-ink-300">{g.subtitle}</p>
+          </div>
+          <GuideArt className="h-auto w-44 shrink-0 sm:w-52" />
         </div>
 
         {/* --- 1. What this is --- */}

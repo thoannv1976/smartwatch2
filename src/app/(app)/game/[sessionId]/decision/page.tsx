@@ -18,11 +18,7 @@ import { formatInteger } from '@/lib/format';
 
 export const metadata = { title: 'Quyết định chiến lược — Smartwatch CEO Challenge' };
 
-export default async function DecisionPage({
-  params,
-}: {
-  params: Promise<{ sessionId: string }>;
-}) {
+export default async function DecisionPage({ params }: { params: Promise<{ sessionId: string }> }) {
   const { sessionId } = await params;
   const user = await requireUserPage(`/game/${sessionId}/decision`);
   const { t, locale } = await getTranslations();
@@ -70,6 +66,7 @@ export default async function DecisionPage({
 
       <EventBanner
         eyebrow={`${t.common.quarterShort}${quarter} · ${t.dashboard.marketEvent}`}
+        eventKey={event.key}
         title={t.events[event.key]}
         description={t.eventDesc[event.key]}
         footnote={`${t.dashboard.marketSize}: ${formatInteger(event.marketUnits, locale)} ${t.dashboard.units}`}

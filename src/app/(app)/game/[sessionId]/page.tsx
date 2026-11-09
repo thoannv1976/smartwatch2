@@ -14,7 +14,15 @@ import { getTranslations } from '@/i18n/server';
 import { RankingTable } from '@/components/game/RankingTable';
 import { QuarterStepper } from '@/components/game/QuarterStepper';
 import { EventBanner, bannerButtonClass } from '@/components/game/EventBanner';
-import { ArrowRight, Banknote, HeartHandshake, PackageCheck, PieChart, TrendingUp, Wallet } from 'lucide-react';
+import {
+  ArrowRight,
+  Banknote,
+  HeartHandshake,
+  PackageCheck,
+  PieChart,
+  TrendingUp,
+  Wallet,
+} from 'lucide-react';
 import {
   Badge,
   CapabilityBar,
@@ -64,7 +72,8 @@ export default async function GameDashboardPage({
   const lastQuarter = quarters[quarters.length - 1] ?? null;
   const previousQuarter = quarters[quarters.length - 2] ?? null;
 
-  const playerResult = lastQuarter?.results.find((r) => r.companyKey === PLAYER_COMPANY_KEY) ?? null;
+  const playerResult =
+    lastQuarter?.results.find((r) => r.companyKey === PLAYER_COMPANY_KEY) ?? null;
   const previousResult =
     previousQuarter?.results.find((r) => r.companyKey === PLAYER_COMPANY_KEY) ?? null;
 
@@ -106,6 +115,7 @@ export default async function GameDashboardPage({
       {upcomingEvent ? (
         <EventBanner
           eyebrow={`${t.common.quarterShort}${nextQuarter} · ${t.dashboard.marketEvent}`}
+          eventKey={upcomingEvent.key}
           title={t.events[upcomingEvent.key]}
           description={t.eventDesc[upcomingEvent.key]}
           footnote={`${t.dashboard.marketSize}: ${formatInteger(upcomingEvent.marketUnits, locale)} ${t.dashboard.units}`}

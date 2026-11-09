@@ -17,7 +17,8 @@ import { createGroupService } from '@/server/group/service';
 import { isGroupError } from '@/server/group/errors';
 import { getTranslations } from '@/i18n/server';
 import { GroupDecisionScreen } from '@/components/group/GroupDecisionScreen';
-import { Card, CardTitle, PageHeader } from '@/components/ui/primitives';
+import { PageHeader } from '@/components/ui/primitives';
+import { EventBanner } from '@/components/game/EventBanner';
 import { formatInteger } from '@/lib/format';
 
 export const metadata = { title: 'Quyết định nhóm — Smartwatch CEO Challenge' };
@@ -129,15 +130,13 @@ export default async function GroupDecisionPage({
         subtitle={`${state.group.name} · ${member.companyName}`}
       />
 
-      <Card>
-        <CardTitle>
-          {t.dashboard.marketEvent}: {t.events[event.key]}
-        </CardTitle>
-        <p className="max-w-prose text-sm text-ink-300">{t.eventDesc[event.key]}</p>
-        <p className="tnum mt-2 text-xs text-ink-400">
-          {t.dashboard.marketSize}: {formatInteger(event.marketUnits, locale)} {t.dashboard.units}
-        </p>
-      </Card>
+      <EventBanner
+        eventKey={event.key}
+        eyebrow={`${t.common.quarterShort}${quarter} · ${t.dashboard.marketEvent}`}
+        title={t.events[event.key]}
+        description={t.eventDesc[event.key]}
+        footnote={`${t.dashboard.marketSize}: ${formatInteger(event.marketUnits, locale)} ${t.dashboard.units}`}
+      />
 
       <GroupDecisionScreen
         groupId={groupId}
