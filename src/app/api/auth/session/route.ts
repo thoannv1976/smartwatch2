@@ -1,8 +1,10 @@
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { getAdminAuth } from '@/db/firestore';
 import { getRepositories } from '@/db/repositories/firestore';
-import { SESSION_COOKIE, createSessionCookie, resolveInitialRole } from '@/server/auth/session';
+import { createSessionCookie, resolveInitialRole } from '@/server/auth/session';
+import { readAppCookie, writeAppCookie } from '@/lib/app-cookie';
 
 /**
  * Exchanges a Firebase ID token for an httpOnly session cookie, and creates the
@@ -44,16 +46,12 @@ export async function POST(request: Request) {
       role,
     });
 
-    const { value, maxAgeSeconds } = await createSessionCookie(parsed.idToken);
+    const { value } = await createSessionCookie(parsed.idToken);
 
     const response = NextResponse.json({ role: user.role, displayName: user.displayName });
-    response.cookies.set(SESSION_COOKIE, value, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: maxAgeSeconds,
-    });
+    // Keep the visitor's language; replace only the session part.
+    const { locale } = readAppCookie(await cookies());
+    writeAppCookie(response.cookies, { session: value, locale });
     return response;
   } catch (error) {
     console.error(
@@ -63,15 +61,10 @@ export async function POST(request: Request) {
   }
 }
 
-/** Sign out: clears the cookie. */
+/** Sign out: clears the session but keeps the language preference. */
 export async function DELETE() {
   const response = NextResponse.json({ ok: true });
-  response.cookies.set(SESSION_COOKIE, '', {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
-    maxAge: 0,
-  });
+  const { locale } = readAppCookie(await cookies());
+  writeAppCookie(response.cookies, { session: null, locale });
   return response;
 }

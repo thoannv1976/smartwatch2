@@ -1,22 +1,26 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { LOCALES, LOCALE_COOKIE, LOCALE_LABELS, type Locale } from '@/i18n';
+import { LOCALES, LOCALE_LABELS, type Locale } from '@/i18n';
 import { useI18n } from '@/i18n/client';
 
 /**
- * Language switcher. Writes a cookie and refreshes, so the server re-renders in
- * the chosen language — no client-side translation loading, no flash of the
- * wrong locale.
+ * Language switcher. Asks the server to store the choice (in the app cookie,
+ * see src/lib/app-cookie.ts) and refreshes, so the server re-renders in the
+ * chosen language — no client-side translation loading, no flash of the wrong
+ * locale.
  */
 export function LocaleSwitcher() {
   const { locale } = useI18n();
   const router = useRouter();
 
-  const choose = (next: Locale) => {
+  const choose = async (next: Locale) => {
     if (next === locale) return;
-    // One year; the locale is a preference, not sensitive data.
-    document.cookie = `${LOCALE_COOKIE}=${next}; path=/; max-age=${60 * 60 * 24 * 365}; samesite=lax`;
+    await fetch('/api/locale', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ locale: next }),
+    });
     router.refresh();
   };
 

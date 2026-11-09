@@ -5,7 +5,6 @@ export type Locale = 'vi' | 'en';
 
 export const LOCALES: readonly Locale[] = ['vi', 'en'] as const;
 export const DEFAULT_LOCALE: Locale = 'vi';
-export const LOCALE_COOKIE = 'locale';
 
 export const LOCALE_LABELS: Record<Locale, string> = {
   vi: 'Tiếng Việt',
