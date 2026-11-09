@@ -237,6 +237,32 @@ Firebase rejects sign-in from a domain it does not know.
 domain**, and add the Cloud Run hostname (for example
 `smartwatch-ceo-challenge-abc123-as.a.run.app`).
 
+## 8b. Optional: a short address (`<PROJECT_ID>.web.app`)
+
+The Cloud Run address (`https://smartwatch-ceo-challenge-xxxx-as.a.run.app`) cannot
+be renamed. Firebase Hosting can put a short, free address in front of it:
+`https://<PROJECT_ID>.web.app`. Both addresses then serve the same app and data.
+
+```bash
+firebase deploy --only hosting --project "$PROJECT_ID"
+```
+
+`firebase.json` forwards every path to the Cloud Run service `smartwatch-ceo-challenge`
+in `asia-southeast1`; change `hosting.rewrites[0].run` there if your `.deploy.env`
+uses a different `SERVICE` or `REGION`. This only has to be done once: later
+`./scripts/deploy.sh` runs update Cloud Run, and Hosting follows automatically.
+
+Two things to know:
+
+- Firebase Hosting forwards only one cookie, `__session`, to Cloud Run. The app keeps
+  the sign-in and the language in that single cookie (`src/lib/app-cookie.ts`), so
+  this works without further setup.
+- Requests through Hosting time out after 60 seconds. No page in this app takes
+  that long.
+
+`<PROJECT_ID>.web.app` and `<PROJECT_ID>.firebaseapp.com` are on Firebase
+Authentication's authorised domains list by default, so sign-in works there too.
+
 ## 9. First sign-in
 
 1. Open the URL and sign in with the address you passed as

@@ -5,6 +5,7 @@ import { getAdminAuth } from '@/db/firestore';
 import { getRepositories } from '@/db/repositories/firestore';
 import type { Role, UserDoc } from '@/db/models';
 import type { Repositories } from '@/db/repositories/types';
+import { readAppCookie } from '@/lib/app-cookie';
 
 /**
  * Server-side authentication (spec 9.3, 13.1).
@@ -18,7 +19,6 @@ import type { Repositories } from '@/db/repositories/types';
  * claim, because the claim is not consulted.
  */
 
-export const SESSION_COOKIE = 'session';
 const SESSION_MAX_AGE_MS = 1000 * 60 * 60 * 24 * 5; // 5 days
 
 /** The signed-in user. Aliased so call sites read as authentication, not storage. */
@@ -53,8 +53,8 @@ function isAuthTokenError(error: unknown): boolean {
  * request.
  */
 export const getCurrentUser = cache(async (): Promise<AuthenticatedUser | null> => {
-  const store = await cookies();
-  const cookie = store.get(SESSION_COOKIE)?.value;
+  // The session lives inside the app cookie (see src/lib/app-cookie.ts).
+  const cookie = readAppCookie(await cookies()).session;
   if (!cookie) return null;
 
   let uid: string;
