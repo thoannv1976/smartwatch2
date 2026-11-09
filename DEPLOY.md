@@ -263,6 +263,35 @@ Two things to know:
 `<PROJECT_ID>.web.app` and `<PROJECT_ID>.firebaseapp.com` are on Firebase
 Authentication's authorised domains list by default, so sign-in works there too.
 
+## 8c. Optional: open the game from Moodle (UniGame Hub, LTI 1.3)
+
+The app can be launched from an LMS through UniGame Hub. Students are signed in
+automatically and official scores go to the LMS gradebook.
+
+1. In the Hub, register this game (`launchUrl` = `https://<PROJECT_ID>.web.app/lti-launch`)
+   and create its shared secret (`game-secret-<gameId>`).
+2. Store the same secret in this project and give the runtime service account access:
+   `gcloud secrets create unigamehub-game-secret --data-file=-` and
+   `roles/secretmanager.secretAccessor`.
+3. Let the service account sign Firebase custom tokens (the LMS sign-in uses them):
+   enable `iamcredentials.googleapis.com` and grant the service account
+   `roles/iam.serviceAccountTokenCreator` on itself.
+4. Turn it on (kept across redeploys, because the deploy uses `--update-env-vars`):
+
+```bash
+gcloud run services update "$SERVICE" --region "$REGION" --project "$PROJECT_ID"   --update-env-vars=LTI_ENABLED=true,LTI_HUB_URL=<hub url>,LTI_GAME_ID=<gameId>,LTI_TENANTS=<tenant>   --update-secrets=LTI_GAME_SECRET=unigamehub-game-secret:latest
+```
+
+How it behaves:
+
+- The first instructor to open an LMS activity links it to an assignment (a new
+  course + assignment in one click, or one they already have).
+- A student who opens a linked activity is matched by e-mail (or a new account is
+  created), put on the course roster with their LMS username as student code, and
+  sent straight to the official game.
+- A finished official game is sent to the gradebook automatically (score out of
+  100); the assignment page also has "Send class grades to Moodle".
+
 ## 9. First sign-in
 
 1. Open the URL and sign in with the address you passed as
