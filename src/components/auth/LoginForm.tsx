@@ -121,7 +121,7 @@ export function LoginForm() {
 
   return (
     <Card className="w-full max-w-md">
-      <h1 className="text-xl font-bold">{t.auth.loginTitle}</h1>
+      <h1 className="text-xl font-extrabold text-ink-100">{t.auth.loginTitle}</h1>
       <p className="mt-1 text-sm text-ink-300">{t.auth.loginSubtitle}</p>
 
       {forbidden ? (
@@ -166,7 +166,7 @@ export function LoginForm() {
               <button
                 type="submit"
                 disabled={busy || !configured || !email.trim()}
-                className="rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-brand-500/25 transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {busy ? t.auth.resetSending : t.auth.resetSend}
               </button>
@@ -191,7 +191,7 @@ export function LoginForm() {
             type="button"
             onClick={handleGoogle}
             disabled={busy || !configured}
-            className="mt-5 flex w-full items-center justify-center gap-2 rounded-lg border border-ink-600 bg-ink-100 px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+            className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-ink-600 bg-ink-850 px-4 py-2.5 text-sm font-semibold text-ink-100 shadow-sm transition hover:bg-ink-900 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <GoogleMark />
             {t.auth.googleSignIn}
@@ -235,7 +235,7 @@ export function LoginForm() {
             <button
               type="submit"
               disabled={busy || !configured}
-              className="mt-1 rounded-lg bg-brand-500 px-4 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50"
+              className="mt-1 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-bold text-white shadow-md shadow-brand-500/25 transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {mode === 'signUp' ? t.auth.signUp : t.auth.signIn}
             </button>
@@ -287,7 +287,7 @@ function Field({
   required?: boolean;
 }) {
   return (
-    <label className="flex flex-col gap-1 text-xs text-ink-300">
+    <label className="flex flex-col gap-1 text-xs font-semibold text-ink-300">
       {label}
       <input
         type={type}
@@ -295,7 +295,7 @@ function Field({
         required={required}
         autoComplete={autoComplete}
         onChange={(e) => onChange(e.target.value)}
-        className="rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:outline-none"
+        className="rounded-xl border border-ink-600 bg-ink-850 px-3 py-2.5 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
       />
     </label>
   );

@@ -11,7 +11,9 @@ import { createGameService } from '@/server/game/service';
 import { isGameError } from '@/server/game/errors';
 import { getTranslations } from '@/i18n/server';
 import { DecisionScreen } from '@/components/game/DecisionScreen';
-import { Card, CardTitle, PageHeader } from '@/components/ui/primitives';
+import { PageHeader } from '@/components/ui/primitives';
+import { QuarterStepper } from '@/components/game/QuarterStepper';
+import { EventBanner } from '@/components/game/EventBanner';
 import { formatInteger } from '@/lib/format';
 
 export const metadata = { title: 'Quyết định chiến lược — Smartwatch CEO Challenge' };
@@ -60,15 +62,18 @@ export default async function DecisionPage({
         subtitle={session.companyName}
       />
 
-      <Card>
-        <CardTitle>
-          {t.dashboard.marketEvent}: {t.events[event.key]}
-        </CardTitle>
-        <p className="max-w-prose text-sm text-ink-300">{t.eventDesc[event.key]}</p>
-        <p className="tnum mt-2 text-xs text-ink-400">
-          {t.dashboard.marketSize}: {formatInteger(event.marketUnits, locale)} {t.dashboard.units}
-        </p>
-      </Card>
+      <QuarterStepper
+        total={config.quarters}
+        completed={session.currentRound}
+        label={t.dashboard.progress}
+      />
+
+      <EventBanner
+        eyebrow={`${t.common.quarterShort}${quarter} · ${t.dashboard.marketEvent}`}
+        title={t.events[event.key]}
+        description={t.eventDesc[event.key]}
+        footnote={`${t.dashboard.marketSize}: ${formatInteger(event.marketUnits, locale)} ${t.dashboard.units}`}
+      />
 
       <DecisionScreen
         sessionId={sessionId}

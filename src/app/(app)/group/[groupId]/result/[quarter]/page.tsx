@@ -218,7 +218,7 @@ export default async function GroupQuarterResultPage({
       <div className="flex flex-wrap gap-3">
         <Link
           href={`/group/${groupId}`}
-          className="rounded-md bg-brand-500 px-5 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-brand-400"
+          className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-400"
         >
           {isLastQuarter ? t.group.viewReport : t.group.lobbyTitle}
         </Link>

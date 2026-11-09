@@ -12,6 +12,9 @@ import { createGameService } from '@/server/game/service';
 import { isGameError } from '@/server/game/errors';
 import { getTranslations } from '@/i18n/server';
 import { RankingTable } from '@/components/game/RankingTable';
+import { QuarterStepper } from '@/components/game/QuarterStepper';
+import { EventBanner, bannerButtonClass } from '@/components/game/EventBanner';
+import { ArrowRight, Banknote, HeartHandshake, PackageCheck, PieChart, TrendingUp, Wallet } from 'lucide-react';
 import {
   Badge,
   CapabilityBar,
@@ -93,35 +96,33 @@ export default async function GameDashboardPage({
         }
       />
 
+      <QuarterStepper
+        total={config.quarters}
+        completed={session.currentRound}
+        label={t.dashboard.progress}
+      />
+
       {/* The upcoming quarter's event, shown BEFORE the decision (spec 3.1 step 1) */}
       {upcomingEvent ? (
-        <Card>
-          <CardTitle
-            right={
-              <Link
-                href={`/game/${sessionId}/decision`}
-                className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-ink-950 transition hover:bg-brand-400"
-              >
-                {t.dashboard.goToDecision}
-              </Link>
-            }
-          >
-            {t.common.quarterShort}
-            {nextQuarter} · {t.dashboard.marketEvent}: {t.events[upcomingEvent.key]}
-          </CardTitle>
-          <p className="max-w-prose text-sm text-ink-300">{t.eventDesc[upcomingEvent.key]}</p>
-          <p className="tnum mt-2 text-xs text-ink-400">
-            {t.dashboard.marketSize}: {formatInteger(upcomingEvent.marketUnits, locale)}{' '}
-            {t.dashboard.units}
-          </p>
-        </Card>
+        <EventBanner
+          eyebrow={`${t.common.quarterShort}${nextQuarter} · ${t.dashboard.marketEvent}`}
+          title={t.events[upcomingEvent.key]}
+          description={t.eventDesc[upcomingEvent.key]}
+          footnote={`${t.dashboard.marketSize}: ${formatInteger(upcomingEvent.marketUnits, locale)} ${t.dashboard.units}`}
+          action={
+            <Link href={`/game/${sessionId}/decision`} className={bannerButtonClass}>
+              {t.dashboard.goToDecision}
+              <ArrowRight className="h-4 w-4" aria-hidden />
+            </Link>
+          }
+        />
       ) : (
         <Card>
           <InfoNote>{t.dashboard.gameCompleted}</InfoNote>
           <div className="mt-3 flex gap-2">
             <Link
               href={`/report/${sessionId}`}
-              className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-ink-950 transition hover:bg-brand-400"
+              className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400"
             >
               {t.dashboard.viewReport}
             </Link>
@@ -214,14 +215,14 @@ export default async function GameDashboardPage({
         {lastQuarter ? (
           <Link
             href={`/game/${sessionId}/result/${lastQuarter.quarter}`}
-            className="rounded-md border border-ink-600 bg-ink-800 px-4 py-2 text-sm text-ink-100 transition hover:bg-ink-700"
+            className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-4 py-2 text-sm font-semibold text-ink-100 transition hover:bg-ink-900"
           >
             {t.dashboard.viewLastResult}
           </Link>
         ) : null}
         <Link
           href={`/game/${sessionId}/history`}
-          className="rounded-md border border-ink-600 bg-ink-800 px-4 py-2 text-sm text-ink-100 transition hover:bg-ink-700"
+          className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-4 py-2 text-sm font-semibold text-ink-100 transition hover:bg-ink-900"
         >
           {t.dashboard.viewHistory}
         </Link>
@@ -252,7 +253,8 @@ function KpiGrid({
   return (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
       <StatTile
-        emphasis
+        accent="indigo"
+        icon={<Banknote className="h-4 w-4" aria-hidden />}
         label={labels.revenue}
         value={formatMoneyCompact(result.revenue, locale)}
         delta={
@@ -263,7 +265,8 @@ function KpiGrid({
         deltaTone={revenueChange === null ? 'neutral' : revenueChange >= 0 ? 'good' : 'bad'}
       />
       <StatTile
-        emphasis
+        accent="emerald"
+        icon={<TrendingUp className="h-4 w-4" aria-hidden />}
         label={labels.netProfit}
         value={formatMoneyCompact(result.netProfit, locale)}
         delta={
@@ -274,25 +277,32 @@ function KpiGrid({
         deltaTone={result.netProfit >= 0 ? 'good' : 'bad'}
       />
       <StatTile
-        emphasis
+        accent="violet"
+        icon={<PieChart className="h-4 w-4" aria-hidden />}
         label={labels.marketShare}
         value={formatPercent(result.marketShare, locale)}
         delta={shareChange === null ? undefined : formatPercentagePoints(shareChange, locale)}
         deltaTone={shareChange === null ? 'neutral' : shareChange >= 0 ? 'good' : 'bad'}
       />
       <StatTile
+        accent="sky"
+        icon={<PackageCheck className="h-4 w-4" aria-hidden />}
         label={labels.unitsSold}
         value={formatInteger(result.unitsSold, locale)}
         delta={unitsChange === null ? undefined : formatSignedPercent(unitsChange, locale)}
         deltaTone={unitsChange === null ? 'neutral' : unitsChange >= 0 ? 'good' : 'bad'}
       />
       <StatTile
+        accent="amber"
+        icon={<Wallet className="h-4 w-4" aria-hidden />}
         label={labels.cash}
         value={formatMoneyCompact(result.cash, locale)}
         deltaTone={result.cash >= 0 ? 'neutral' : 'bad'}
         delta={result.cash < 0 ? '⚠' : undefined}
       />
       <StatTile
+        accent="rose"
+        icon={<HeartHandshake className="h-4 w-4" aria-hidden />}
         label={labels.customerSatisfaction}
         value={formatScore(result.customerSatisfaction, locale)}
         delta={

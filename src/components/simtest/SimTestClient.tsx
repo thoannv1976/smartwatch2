@@ -239,7 +239,7 @@ export function SimTestClient() {
                 setScenarioVersion(e.target.value);
                 reset(e.target.value);
               }}
-              className="rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100"
+              className="rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
             >
               <option value={SCENARIO_VERSION}>{SCENARIO_VERSION}</option>
               <option value={CHALLENGER_SCENARIO_VERSION}>{CHALLENGER_SCENARIO_VERSION}</option>
@@ -251,7 +251,7 @@ export function SimTestClient() {
             <input
               value={seed}
               onChange={(e) => setSeed(e.target.value)}
-              className="w-64 rounded-md border border-ink-600 bg-ink-950 px-3 py-2 font-mono text-sm text-ink-100"
+              className="w-64 rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 font-mono text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none"
             />
           </label>
 
@@ -260,7 +260,7 @@ export function SimTestClient() {
               type="button"
               onClick={runOne}
               disabled={!canRun}
-              className="rounded-md bg-brand-500 px-4 py-2 text-sm font-semibold text-ink-950 transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {finished ? t.simTest.allQuartersDone : `${t.simTest.runOne} (Q${nextQuarter})`}
             </button>
@@ -268,7 +268,7 @@ export function SimTestClient() {
               type="button"
               onClick={runAll}
               disabled={totalPoints !== config.strategyPoints}
-              className="rounded-md border border-ink-600 bg-ink-800 px-4 py-2 text-sm font-semibold text-ink-100 transition hover:bg-ink-700 disabled:cursor-not-allowed disabled:opacity-40"
+              className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-4 py-2 text-sm font-semibold text-ink-100 transition hover:bg-ink-900 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {t.simTest.runAll}
             </button>
@@ -526,7 +526,7 @@ export function SimTestClient() {
             <button
               type="button"
               onClick={runComparison}
-              className="rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-xs font-semibold text-ink-100 transition hover:bg-ink-700"
+              className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-3 py-1.5 text-xs font-semibold text-ink-100 transition hover:bg-ink-900"
             >
               {t.simTest.compareRun}
             </button>

@@ -156,7 +156,7 @@ export function DecisionScreen({
         type="button"
         onClick={submit}
         disabled={!canSubmit}
-        className="w-full rounded-lg bg-brand-500 px-6 py-3 text-base font-bold text-ink-950 transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:self-start"
+        className="w-full rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-6 py-3 text-base font-bold text-white transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:self-start"
       >
         {pending ? t.decision.submitting : t.decision.submitDecision}
       </button>

@@ -175,7 +175,7 @@ export function SandboxPanel({
           <button
             type="button"
             onClick={() => setShown(true)}
-            className="rounded-md border border-ink-600 bg-ink-800 px-5 py-2.5 text-sm text-ink-100 transition hover:bg-ink-700"
+            className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-5 py-2.5 text-sm font-semibold text-ink-100 transition hover:bg-ink-900"
           >
             {t.sandbox.run}
           </button>

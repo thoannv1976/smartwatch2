@@ -77,7 +77,7 @@ export function ForecastInputs({
                 disabled={disabled}
                 className={`tnum h-11 w-11 rounded-lg border text-base font-bold transition disabled:opacity-50 ${
                   selected
-                    ? 'border-brand-500 bg-brand-500 text-ink-950'
+                    ? 'border-brand-500 bg-brand-500 shadow-sm shadow-brand-500/25 text-white'
                     : 'border-ink-600 bg-ink-900/50 text-ink-200 hover:border-ink-500 hover:bg-ink-800'
                 }`}
               >
@@ -110,7 +110,7 @@ export function ForecastInputs({
                 value={sharePercent}
                 onChange={(e) => setShare(e.target.value)}
                 disabled={disabled}
-                className="tnum w-28 rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:outline-none disabled:opacity-50"
+                className="tnum w-28 rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none disabled:opacity-50"
               />
               <span className="text-sm text-ink-400">%</span>
             </span>
@@ -128,7 +128,7 @@ export function ForecastInputs({
               placeholder={t.forecast.notePlaceholder}
               onChange={(e) => onChange({ ...value, note: e.target.value })}
               disabled={disabled}
-              className="w-full resize-y rounded-md border border-ink-600 bg-ink-950 px-3 py-2 text-sm text-ink-100 placeholder:text-ink-600 focus:border-brand-500 focus:outline-none disabled:opacity-50"
+              className="w-full resize-y rounded-lg border border-ink-600 bg-ink-850 px-3 py-2 text-sm text-ink-100 placeholder:text-ink-600 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 focus:outline-none disabled:opacity-50"
             />
             <span className="tnum self-end text-xs text-ink-500">
               {(value.note ?? '').length}/{FORECAST_NOTE_MAX}

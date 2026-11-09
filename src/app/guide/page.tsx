@@ -77,7 +77,7 @@ export default async function GuidePage() {
     <div className="min-h-screen">
       {/* Its own header: this page lives outside the authenticated layout, so
           the app header (which needs a user and a role) is not available. */}
-      <header className="border-b border-ink-800 bg-ink-950/70 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-ink-700 bg-ink-850/90 shadow-sm shadow-slate-200/50 backdrop-blur-md">
         <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 sm:px-6">
           <Link href="/" className="text-sm font-bold tracking-tight text-ink-100">
             <span className="text-brand-500">◷</span> {t.common.appName}
@@ -86,7 +86,7 @@ export default async function GuidePage() {
             <LocaleSwitcher />
             <Link
               href={user ? '/home' : '/login'}
-              className="rounded-md border border-ink-600 bg-ink-800 px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-700"
+              className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-900"
             >
               {user ? g.backHome : g.signIn}
             </Link>
@@ -228,14 +228,14 @@ export default async function GuidePage() {
           <div className="mt-5 flex flex-wrap gap-3">
             <Link
               href={user ? '/new-game?mode=PRACTICE' : '/login'}
-              className="rounded-md bg-brand-500 px-5 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-brand-400"
+              className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-400"
             >
               {user ? g.closing.startPractice : g.signIn}
             </Link>
             {user ? (
               <Link
                 href="/home"
-                className="rounded-md border border-ink-600 bg-ink-800 px-5 py-2.5 text-sm text-ink-100 transition hover:bg-ink-700"
+                className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-5 py-2.5 text-sm font-semibold text-ink-100 transition hover:bg-ink-900"
               >
                 {g.closing.goHome}
               </Link>

@@ -70,7 +70,7 @@ export default async function HistoryPage({
         right={
           <Link
             href={`/game/${sessionId}`}
-            className="rounded-md border border-ink-600 bg-ink-800 px-4 py-2 text-sm text-ink-100 transition hover:bg-ink-700"
+            className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-4 py-2 text-sm font-semibold text-ink-100 transition hover:bg-ink-900"
           >
             {t.dashboard.title}
           </Link>

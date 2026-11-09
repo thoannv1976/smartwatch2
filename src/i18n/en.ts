@@ -38,6 +38,46 @@ export const en: Dictionary = {
     you: 'You',
     unknown: '—',
   },
+  landing: {
+    badge: 'E-commerce strategy simulation',
+    title: 'Become the CEO of a smartwatch brand',
+    subtitle:
+      'Run the company for six quarters against five major brands, decide on product, technology, marketing, distribution and price — then see how the market responds.',
+    start: 'Sign in to start',
+    learnMore: 'About & guide',
+    facts: [
+      { value: '6 quarters', label: 'Time in charge' },
+      { value: '100 points', label: 'Strategy budget per quarter' },
+      { value: '5 brands', label: 'Competitors' },
+      { value: '$5M', label: 'Starting cash' },
+    ],
+    rolesTitle: 'Who is it for?',
+    roles: [
+      {
+        key: 'student',
+        title: 'Students (CEO)',
+        text: 'Found a company, decide every quarter, read the reports and the class leaderboard.',
+      },
+      {
+        key: 'instructor',
+        title: 'Instructors',
+        text: 'Open courses, set official assignments, follow each student’s progress and results.',
+      },
+      {
+        key: 'admin',
+        title: 'Administrators',
+        text: 'Manage accounts, grant instructor access and configure the system.',
+      },
+    ],
+    stepsTitle: 'How it works',
+    steps: [
+      'Sign in with Google or email.',
+      'Join a course and open an assignment (or play a practice game).',
+      'Each quarter: read the market event, allocate 100 points and set a price.',
+      'After six quarters: read the final report, score and ranking.',
+    ],
+  },
+
   roles: {
     STUDENT: 'Student',
     INSTRUCTOR: 'Instructor',
@@ -100,6 +140,9 @@ export const en: Dictionary = {
     modeOfficial: 'Official',
     startedAt: 'Started',
     finalScore: 'Final Score',
+    statAssignments: 'Assignments',
+    statGames: 'Games played',
+    statCompleted: 'Completed',
   },
   newGame: {
     variedMarket: 'Randomised market (practice only)',
@@ -138,6 +181,7 @@ export const en: Dictionary = {
     BALANCED: 'No strong tilt in any direction',
   },
   dashboard: {
+    progress: 'Term progress',
     title: 'CEO Dashboard',
     currentQuarter: 'Current quarter',
     marketEvent: 'Market event',

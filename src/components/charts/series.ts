@@ -5,13 +5,17 @@ import type { CompanyKey } from '@/domain/simulation';
  *
  * These are the documented categorical palette's dark steps, in the documented
  * slot order. That order is the colour-blindness safety mechanism, not a
- * cosmetic choice: validated against this app's chart surface (#111c33) it
+ * cosmetic choice: validated against the original dark chart surface (#111c33) it
  * passes the lightness band, chroma floor, adjacent CVD separation
  * (worst adjacent dE 8.4 protan), normal-vision floor (worst adjacent 19.3) and
  * the 3:1 contrast gate. Re-ordering it to give the player the amber accent was
  * tried and fails CVD separation, so the player instead gets mandatory
  * SECONDARY encoding everywhere: a thicker stroke, a filled marker, a bold
  * label and a "you" badge. Identity is therefore never colour-alone.
+ *
+ * The light theme keeps the same order; every slot stays at or above roughly
+ * 3:1 against the white card, except slot 4 (yellow), which is never the
+ * player's colour and always carries a text label beside it.
  */
 export const SERIES_COLORS: Record<CompanyKey, string> = {
   player: '#3987e5', // slot 1 blue
@@ -44,8 +48,8 @@ export const STATUS = {
   info: '#4aa8f0',
 } as const;
 
-/** Chart surface and ink, matching the app's design tokens. */
-export const CHART_SURFACE = '#111c33';
-export const CHART_GRID = '#1f3050';
-export const CHART_INK_MUTED = '#6b82a8';
-export const CHART_INK = '#c5d0e2';
+/** Chart surface and ink, matching the app's design tokens (light theme). */
+export const CHART_SURFACE = '#ffffff';
+export const CHART_GRID = '#e2e8f0';
+export const CHART_INK_MUTED = '#64748b';
+export const CHART_INK = '#334155';

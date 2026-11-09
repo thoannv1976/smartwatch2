@@ -98,7 +98,7 @@ export function StrategyCoach({
                   setAppliedKey(suggestion.key);
                 }}
                 disabled={disabled}
-                className="rounded-md border border-brand-500/50 bg-brand-500/10 px-3 py-2 text-xs font-semibold text-brand-400 transition hover:bg-brand-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg border border-brand-500/50 bg-brand-500/10 px-3 py-2 text-xs font-semibold text-brand-400 transition hover:bg-brand-500/20 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {appliedKey === suggestion.key ? t.coach.applied : t.coach.apply}
               </button>

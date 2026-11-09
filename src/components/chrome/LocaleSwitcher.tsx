@@ -28,9 +28,9 @@ export function LocaleSwitcher() {
           type="button"
           onClick={() => choose(code)}
           aria-current={code === locale}
-          className={`rounded-md px-2.5 py-1 transition ${
+          className={`rounded-md px-2.5 py-1 font-semibold transition ${
             code === locale
-              ? 'bg-ink-700 font-semibold text-ink-100'
+              ? 'bg-ink-850 font-semibold text-brand-400 shadow-sm'
               : 'text-ink-400 hover:text-ink-200'
           }`}
         >

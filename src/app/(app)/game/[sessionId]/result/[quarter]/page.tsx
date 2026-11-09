@@ -1,3 +1,4 @@
+import { Banknote, PieChart, TrendingUp, Trophy } from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
@@ -147,28 +148,32 @@ export default async function QuarterResultPage({
         <CardTitle>{t.result.title}</CardTitle>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatTile
-            emphasis
+            accent="indigo"
+            icon={<Banknote className="h-4 w-4" aria-hidden />}
             label={t.kpi.revenue}
             value={formatMoneyCompact(result.revenue, locale)}
             delta={revenueChange === null ? undefined : formatSignedPercent(revenueChange, locale)}
             deltaTone={revenueChange === null ? 'neutral' : revenueChange >= 0 ? 'good' : 'bad'}
           />
           <StatTile
-            emphasis
+            accent="emerald"
+            icon={<TrendingUp className="h-4 w-4" aria-hidden />}
             label={t.kpi.netProfit}
             value={formatMoneyCompact(result.netProfit, locale)}
             delta={profitChange === null ? undefined : formatSignedPercent(profitChange, locale)}
             deltaTone={result.netProfit >= 0 ? 'good' : 'bad'}
           />
           <StatTile
-            emphasis
+            accent="violet"
+            icon={<PieChart className="h-4 w-4" aria-hidden />}
             label={t.kpi.marketShare}
             value={formatPercent(result.marketShare, locale)}
             delta={shareChange === null ? undefined : formatPercentagePoints(shareChange, locale)}
             deltaTone={shareChange === null ? 'neutral' : shareChange >= 0 ? 'good' : 'bad'}
           />
           <StatTile
-            emphasis
+            accent="amber"
+            icon={<Trophy className="h-4 w-4" aria-hidden />}
             label={t.kpi.rank}
             value={`${result.rank} / ${current.results.length}`}
           />
@@ -284,21 +289,21 @@ export default async function QuarterResultPage({
         {isLastQuarter || !hasNextQuarter ? (
           <Link
             href={`/report/${sessionId}`}
-            className="rounded-md bg-brand-500 px-5 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-brand-400"
+            className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-400"
           >
             {t.result.finish}
           </Link>
         ) : (
           <Link
             href={`/game/${sessionId}/decision`}
-            className="rounded-md bg-brand-500 px-5 py-2.5 text-sm font-semibold text-ink-950 transition hover:bg-brand-400"
+            className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-400"
           >
             {t.result.continueNext}
           </Link>
         )}
         <Link
           href={`/game/${sessionId}/history`}
-          className="rounded-md border border-ink-600 bg-ink-800 px-5 py-2.5 text-sm text-ink-100 transition hover:bg-ink-700"
+          className="rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-5 py-2.5 text-sm font-semibold text-ink-100 transition hover:bg-ink-900"
         >
           {t.dashboard.viewHistory}
         </Link>
