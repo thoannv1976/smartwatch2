@@ -19,11 +19,13 @@
  */
 import { createHash } from 'node:crypto';
 import {
+  ARENA_SCENARIO_VERSION,
   ENGINE_VERSION,
   OFFICIAL_SEED_EXAMPLE,
   SCENARIO_VERSION,
 } from '@/domain/simulation';
-import { ROLES, assignmentMode, isArchived, type Role, type UserDoc } from '@/db/models';
+import { ROLES, assignmentMode, assignmentSeating, isArchived, type Role, type UserDoc } from '@/db/models';
+import { GroupService } from '@/server/group/service';
 import type { Repositories } from '@/db/repositories/types';
 import type { BulkResponse, LaunchContext, ResultInput, BulkInput, SubmitResponse } from './hub-sdk';
 import { linkKey, type LtiActivityRef, type LtiStore } from './store';
@@ -185,9 +187,11 @@ export function createLtiService(deps: LtiDeps) {
   }
 
   /** Where a student should land for this assignment. */
-  async function studentDestination(uid: string, assignmentId: string): Promise<string> {
+  async function studentDestination(user: UserDoc, assignmentId: string): Promise<string> {
+    const uid = user.uid;
     const assignment = await repos.assignments.get(assignmentId);
-    if (!assignment || assignmentMode(assignment) === 'GROUP') return '/home';
+    if (!assignment) return '/home';
+    if (assignmentMode(assignment) === 'GROUP') return groupDestination(user, assignment);
 
     const sessions = (await repos.sessions.listByUser(uid, 50)).filter(
       (s) => s.assignmentId === assignmentId && s.mode === 'OFFICIAL',
@@ -205,6 +209,36 @@ export function createLtiService(deps: LtiDeps) {
       .filter((s) => s.status === 'COMPLETED')
       .sort((a, b) => (b.completedAt ?? 0) - (a.completedAt ?? 0))[0];
     return latest ? `/report/${latest.id}` : '/home';
+  }
+
+  /**
+   * Group assignment: straight into the student's industry. With automatic
+   * seating a student who has no seat yet is given one first; with join codes
+   * they land on the code form.
+   */
+  async function groupDestination(
+    user: UserDoc,
+    assignment: NonNullable<Awaited<ReturnType<typeof repos.assignments.get>>>,
+  ): Promise<string> {
+    const groups = new GroupService(repos);
+    const member = await groups.findMembership(assignment.id, user.uid);
+    if (member) return `/group/${member.groupId}`;
+    const t = now();
+    const open = !isArchived(assignment) && assignment.isOpen && t >= assignment.startAt && t <= assignment.deadline;
+    if (!open) return '/home';
+    if (assignmentSeating(assignment) !== 'AUTO') return '/group/join';
+    try {
+      const seat = await groups.autoSeat({
+        assignmentId: assignment.id,
+        uid: user.uid,
+        displayName: user.displayName,
+        email: user.email,
+      });
+      return `/group/${seat.groupId}`;
+    } catch {
+      // The home page explains why (closed, full…) better than a launch error would.
+      return '/home';
+    }
   }
 
   return {
@@ -254,7 +288,7 @@ export function createLtiService(deps: LtiDeps) {
             updatedAt: now(),
           });
         }
-        next = await studentDestination(user.uid, assignment.id);
+        next = await studentDestination(user, assignment.id);
       }
 
       return { customToken: await identity.createCustomToken(user.uid), next };
@@ -276,13 +310,16 @@ export function createLtiService(deps: LtiDeps) {
       const assignments = await repos.assignments.listByCourses(live.map((c) => c.id));
       const byCourse = new Map(live.map((c) => [c.id, c]));
       return assignments
-        .filter((a) => !isArchived(a) && assignmentMode(a) === 'SOLO')
+        .filter((a) => !isArchived(a))
         .map((a) => ({ assignment: a, course: byCourse.get(a.courseId)! }))
         .filter((x) => x.course);
     },
 
-    /** Creates a course + one official assignment for the activity, and links them. */
-    async linkNew(key: string, user: UserDoc): Promise<string> {
+    /**
+     * Creates a course + one official assignment for the activity, and links them.
+     * `GROUP` makes an industry competition: arena scenario, automatic seating.
+     */
+    async linkNew(key: string, user: UserDoc, mode: 'SOLO' | 'GROUP' = 'SOLO'): Promise<string> {
       const pending = await this.pendingFor(key, user);
       const t = now();
       const course = await repos.courses.create({
@@ -297,12 +334,14 @@ export function createLtiService(deps: LtiDeps) {
         startAt: t,
         deadline: t + NEW_ASSIGNMENT_DAYS * 86_400_000,
         maxAttempts: 1,
-        scenarioVersion: SCENARIO_VERSION,
+        // Six humans need the arena scenario, where every seat starts equal.
+        scenarioVersion: mode === 'GROUP' ? ARENA_SCENARIO_VERSION : SCENARIO_VERSION,
         engineVersion: ENGINE_VERSION,
         officialSeed: OFFICIAL_SEED_EXAMPLE,
         isOpen: true,
         createdBy: user.uid,
-        mode: 'SOLO',
+        mode,
+        ...(mode === 'GROUP' ? { seating: 'AUTO' as const } : {}),
       });
       await this.saveLink(pending, assignment.id, course.id, user.uid);
       return assignment.id;

@@ -6,6 +6,7 @@ import { FORECAST_NOTE_MAX, POSITIONINGS } from '@/domain/simulation';
 import { getRepositories } from '@/db/repositories/firestore';
 import { AuthorizationError, requireUser } from '@/server/auth/session';
 import { GroupError, type GroupErrorKey } from './errors';
+import { sendGroupGradesQuietly } from './grades';
 import { createGroupService } from './service';
 
 /**
@@ -106,6 +107,8 @@ export async function submitGroupDecisionAction(
       forecast: parsed.forecast ?? null,
     });
 
+    if (result.state.completed) await sendGroupGradesQuietly(service, parsed.groupId);
+
     revalidatePath(`/group/${parsed.groupId}`);
     return {
       ok: true,
@@ -140,11 +143,43 @@ export async function refreshGroupAction(
 
     await service.advanceIfReady(parsed.groupId);
     const state = await service.getState(parsed.groupId);
+    if (state.completed) await sendGroupGradesQuietly(service, parsed.groupId);
 
     return {
       ok: true,
       data: { currentQuarter: state.currentQuarter, completed: state.completed },
     };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+const companySchema = z.object({
+  groupId: z.string().min(1),
+  companyName: z.string().trim().min(1).max(60),
+  productName: z.string().trim().min(1).max(60),
+  positioning: z.enum(POSITIONINGS as unknown as [string, ...string[]]),
+});
+
+/**
+ * A student names their own company. Only until the industry's first decision
+ * is in: the match is built from these names at that moment.
+ */
+export async function updateCompanyAction(
+  input: z.input<typeof companySchema>,
+): Promise<GroupActionResult<Record<string, never>>> {
+  try {
+    const user = await requireUser();
+    const parsed = companySchema.parse(input);
+    await createGroupService(getRepositories()).updateCompanyProfile({
+      groupId: parsed.groupId,
+      uid: user.uid,
+      companyName: parsed.companyName,
+      productName: parsed.productName,
+      positioning: parsed.positioning as (typeof POSITIONINGS)[number],
+    });
+    revalidatePath(`/group/${parsed.groupId}`);
+    return { ok: true, data: {} };
   } catch (error) {
     return { ok: false, error: toError(error) };
   }

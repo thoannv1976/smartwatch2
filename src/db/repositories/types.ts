@@ -288,6 +288,20 @@ export interface GroupRepository {
     group: Omit<GroupDoc, 'id' | 'createdAt' | 'seats' | 'archivedAt'>,
   ): Promise<CreateGroupOutcome>;
 
+  /**
+   * Creates industry number `slot` of an assignment, or returns it if it
+   * already exists.
+   *
+   * The slot is claimed by a document keyed `${assignmentId}_${slot}` in the
+   * same transaction as the group, so students opening the game at the same
+   * moment all land in the SAME new industry instead of each opening their own.
+   * CODE_TAKEN means only the random join code clashed; retry with a new one.
+   */
+  createIndustry(
+    group: Omit<GroupDoc, 'id' | 'createdAt' | 'seats' | 'archivedAt'>,
+    slot: number,
+  ): Promise<CreateGroupOutcome>;
+
   /** Replaces the join code, releasing the old one. */
   regenerateJoinCode(groupId: string, joinCode: string): Promise<CreateGroupOutcome>;
 
@@ -324,6 +338,20 @@ export interface GroupRepository {
   getMember(groupId: string, uid: string): Promise<GroupMemberDoc | null>;
   /** The one group this student is in for this assignment, if any. */
   findMembership(assignmentId: string, uid: string): Promise<GroupMemberDoc | null>;
+
+  /**
+   * Renames a student's company before the match exists.
+   *
+   * The six companies are built from the member rows when the match is created
+   * (on the first submission), so a change after that would leave the match
+   * playing under the old name. The datastore checks that no match exists in
+   * the same transaction, and answers STARTED otherwise.
+   */
+  updateMemberProfile(
+    groupId: string,
+    uid: string,
+    profile: Pick<GroupMemberDoc, 'companyName' | 'productName' | 'positioning'>,
+  ): Promise<{ status: 'UPDATED'; member: GroupMemberDoc } | { status: 'STARTED' | 'NOT_MEMBER' }>;
 }
 
 /** Result of a student submitting one quarter's decision. */

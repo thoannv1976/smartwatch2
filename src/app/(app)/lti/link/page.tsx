@@ -58,6 +58,7 @@ export default async function LtiLinkPage({
           title: assignment.title,
           courseName: course.courseName,
           semester: course.semester,
+          isGroup: assignment.mode === 'GROUP',
         }))}
       />
     </main>

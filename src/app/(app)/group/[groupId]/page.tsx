@@ -6,6 +6,7 @@ import { createGroupService } from '@/server/group/service';
 import { isGroupError } from '@/server/group/errors';
 import { getTranslations } from '@/i18n/server';
 import { GroupLobby, type LobbySeat } from '@/components/group/GroupLobby';
+import { CompanyProfileForm } from '@/components/group/CompanyProfileForm';
 import { PageHeader } from '@/components/ui/primitives';
 
 export const metadata = { title: 'Nhóm — Smartwatch CEO Challenge' };
@@ -54,10 +55,20 @@ export default async function GroupLobbyPage({
   });
 
   const lastPlayedQuarter = state.game && state.game.currentRound > 0 ? state.game.currentRound : null;
+  // The match (and with it every company name) is built when the first decision arrives.
+  const canEditCompany = state.game == null;
 
   return (
     <main className="mx-auto flex max-w-4xl flex-col gap-6 px-4 py-8 sm:px-6">
       <PageHeader title={t.group.lobbyTitle} subtitle={t.group.subtitle} />
+
+      <CompanyProfileForm
+        groupId={groupId}
+        companyName={member.companyName}
+        productName={member.productName}
+        positioning={member.positioning}
+        editable={canEditCompany}
+      />
 
       <GroupLobby
         groupId={groupId}

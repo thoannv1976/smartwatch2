@@ -565,6 +565,33 @@ class MemoryGroupRepository implements GroupRepository {
     return { status: 'CREATED', group: clone(doc) };
   }
 
+  /** `${assignmentId}_${slot}` -> groupId. Mirrors the `groupIndustrySlots` documents. */
+  private readonly slots = new Map<string, string>();
+
+  /** No `await` between the slot check and the write, like `claimSeat`. */
+  async createIndustry(
+    group: Omit<GroupDoc, 'id' | 'createdAt' | 'seats' | 'archivedAt'>,
+    slot: number,
+  ): Promise<CreateGroupOutcome> {
+    const key = `${group.assignmentId}_${slot}`;
+    const existing = this.slots.get(key);
+    if (existing) return { status: 'CREATED', group: clone(this.groups.get(existing)!) };
+    const code = group.joinCode.toUpperCase();
+    if (this.codes.has(code)) return { status: 'CODE_TAKEN' };
+    const doc: GroupDoc = {
+      ...group,
+      joinCode: code,
+      id: `group-${this.nextId++}`,
+      seats: this.emptySeats(),
+      createdAt: Date.now(),
+      archivedAt: null,
+    };
+    this.groups.set(doc.id, doc);
+    this.codes.set(code, doc.id);
+    this.slots.set(key, doc.id);
+    return { status: 'CREATED', group: clone(doc) };
+  }
+
   async regenerateJoinCode(groupId: string, joinCode: string): Promise<CreateGroupOutcome> {
     const group = this.groups.get(groupId);
     if (!group) throw new Error(`Group ${groupId} not found`);
@@ -703,6 +730,24 @@ class MemoryGroupRepository implements GroupRepository {
     const groupId = this.seatClaims.get(this.claimKey(assignmentId, uid));
     return groupId ? this.getMember(groupId, uid) : null;
   }
+
+  /** Same contract as Firestore: refuses once the match exists. No await between check and write. */
+  async updateMemberProfile(
+    groupId: string,
+    uid: string,
+    profile: Pick<GroupMemberDoc, 'companyName' | 'productName' | 'positioning'>,
+  ): Promise<{ status: 'UPDATED'; member: GroupMemberDoc } | { status: 'STARTED' | 'NOT_MEMBER' }> {
+    if (this.gameExists?.(groupId)) return { status: 'STARTED' };
+    const bucket = this.members.get(groupId);
+    const member = bucket?.get(uid);
+    if (!bucket || !member || hasLeftGroup(member)) return { status: 'NOT_MEMBER' };
+    const updated: GroupMemberDoc = { ...member, ...profile };
+    bucket.set(uid, updated);
+    return { status: 'UPDATED', member: clone(updated) };
+  }
+
+  /** Wired by `createMemoryRepositories` so the profile check can see the match, like a transaction would. */
+  gameExists?: (groupId: string) => boolean;
 }
 
 class MemoryGroupGameRepository implements GroupGameRepository {
@@ -715,6 +760,11 @@ class MemoryGroupGameRepository implements GroupGameRepository {
 
   private submissionKey(quarter: number, seatKey: string): string {
     return `q${quarter}_${seatKey}`;
+  }
+
+  /** Synchronous existence check, for `MemoryGroupRepository.updateMemberProfile`. */
+  has(groupId: string): boolean {
+    return this.games.has(groupId);
   }
 
   async create(game: Omit<GroupGameDoc, 'id'>): Promise<GroupGameDoc> {
@@ -813,6 +863,9 @@ class MemoryGroupGameRepository implements GroupGameRepository {
 
 /** A fresh, isolated repository set. One per test. */
 export function createMemoryRepositories(): Repositories {
+  const groups = new MemoryGroupRepository();
+  const groupGames = new MemoryGroupGameRepository();
+  groups.gameExists = (groupId) => groupGames.has(groupId);
   return {
     users: new MemoryUserRepository(),
     courses: new MemoryCourseRepository(),
@@ -820,7 +873,7 @@ export function createMemoryRepositories(): Repositories {
     sessions: new MemorySessionRepository(),
     finalResults: new MemoryFinalResultRepository(),
     roleInvites: new MemoryRoleInviteRepository(),
-    groups: new MemoryGroupRepository(),
-    groupGames: new MemoryGroupGameRepository(),
+    groups,
+    groupGames,
   };
 }

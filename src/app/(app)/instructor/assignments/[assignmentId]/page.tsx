@@ -1,7 +1,13 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ARENA_SEATS } from '@/domain/simulation';
-import { assignmentMode, isArchived, LEADERBOARD_SORTS, type LeaderboardSort } from '@/db/models';
+import {
+  assignmentMode,
+  assignmentSeating,
+  isArchived,
+  LEADERBOARD_SORTS,
+  type LeaderboardSort,
+} from '@/db/models';
 import { requireRolePage } from '@/server/auth/guards';
 import { hasRole } from '@/server/auth/session';
 import {
@@ -16,6 +22,8 @@ import { LtiAssignmentPanel } from '@/components/lti/LtiAssignmentPanel';
 import { AssignmentArchiveButton, AssignmentToggle } from '@/components/instructor/CourseForms';
 import {
   AddGroupsForm,
+  AutoAssignIndustriesButton,
+  SeatingToggle,
   ForceQuarterButton,
   RegenerateCodeButton,
   ReleaseSeatButton,
@@ -86,6 +94,12 @@ export default async function AssignmentDetailPage({
   const { assignment } = analytics;
   const mode = assignmentMode(assignment);
   const groups = mode === 'GROUP' ? await listGroupProgress(assignmentId) : [];
+  // Industry mode needs to know who on the roster still has no seat.
+  const liveRoster = participation.filter((p) => !p.removed);
+  const seatedUids = new Set(
+    groups.flatMap((g) => g.members.filter((m) => m.leftAt == null).map((m) => m.uid)),
+  );
+  const seatedCount = liveRoster.filter((p) => seatedUids.has(p.member.uid)).length;
 
   return (
     <main className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8 sm:px-6">
@@ -277,6 +291,31 @@ export default async function AssignmentDetailPage({
       {/* Groups. The column that matters is WAITING ON: with no automatic
           per-quarter deadline, a stalled group is stalled on a person, and the
           instructor needs to see who at a glance. */}
+      {mode === 'GROUP' ? (
+        <Card>
+          <CardTitle hint={t.groupAdmin.autoAssignHint}>{t.groupAdmin.autoAssignTitle}</CardTitle>
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-ink-300">
+              {interpolate(t.groupAdmin.autoAssignPreview, {
+                roster: liveRoster.length,
+                seated: seatedCount,
+                unseated: liveRoster.length - seatedCount,
+              })}
+            </p>
+            <AutoAssignIndustriesButton
+              assignmentId={assignmentId}
+              disabled={liveRoster.length - seatedCount === 0}
+            />
+            <div className="border-t border-ink-700 pt-4">
+              <SeatingToggle
+                assignmentId={assignmentId}
+                seating={assignmentSeating(assignment)}
+              />
+            </div>
+          </div>
+        </Card>
+      ) : null}
+
       {mode === 'GROUP' ? (
         <Card>
           <CardTitle right={<AddGroupsForm assignmentId={assignmentId} />}>

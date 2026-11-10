@@ -2,9 +2,9 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Link2, Sparkles } from 'lucide-react';
+import { Link2, Sparkles, Users } from 'lucide-react';
 import { useI18n } from '@/i18n/client';
-import { Card, CardTitle, EmptyState, ErrorNote } from '@/components/ui/primitives';
+import { Badge, Card, CardTitle, EmptyState, ErrorNote } from '@/components/ui/primitives';
 import { linkExistingAssignmentAction, linkNewAssignmentAction } from '@/server/lti/actions';
 
 export interface LinkableAssignment {
@@ -12,6 +12,7 @@ export interface LinkableAssignment {
   title: string;
   courseName: string;
   semester: string;
+  isGroup?: boolean;
 }
 
 /** The two ways an instructor can link an LMS activity: a new assignment, or one they have. */
@@ -48,6 +49,19 @@ export function LtiLinkChoices({ linkKey, assignments }: { linkKey: string; assi
       </Card>
 
       <Card>
+        <CardTitle hint={t.lti.linkNewGroupDesc}>{t.lti.linkNewGroupTitle}</CardTitle>
+        <button
+          type="button"
+          disabled={pending}
+          onClick={() => run(() => linkNewAssignmentAction({ key: linkKey, mode: 'GROUP' }))}
+          className="flex items-center gap-2 rounded-lg border border-brand-500 bg-ink-850 px-5 py-2.5 text-sm font-semibold text-brand-500 shadow-sm transition hover:bg-brand-50 disabled:opacity-50"
+        >
+          <Users className="h-4 w-4" aria-hidden />
+          {pending ? t.lti.linking : t.lti.linkNewGroupButton}
+        </button>
+      </Card>
+
+      <Card>
         <CardTitle>{t.lti.linkExistingTitle}</CardTitle>
         {assignments.length === 0 ? (
           <EmptyState>{t.lti.linkExistingNone}</EmptyState>
@@ -59,7 +73,10 @@ export function LtiLinkChoices({ linkKey, assignments }: { linkKey: string; assi
                 className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-ink-700 bg-ink-900 p-3"
               >
                 <div>
-                  <p className="text-sm font-semibold text-ink-100">{a.title}</p>
+                  <p className="text-sm font-semibold text-ink-100">
+                    {a.title}{' '}
+                    {a.isGroup ? <Badge tone="brand">{t.lti.groupBadge}</Badge> : null}
+                  </p>
                   <p className="text-xs text-ink-400">
                     {a.courseName} · {a.semester}
                   </p>

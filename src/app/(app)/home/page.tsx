@@ -5,6 +5,7 @@ import { getRepositories } from '@/db/repositories/firestore';
 import { createEnrollmentService } from '@/server/game/enrollment';
 import { listAssignmentsForStudent, listSessionsForStudent } from '@/server/game/queries';
 import { getTranslations } from '@/i18n/server';
+import { assignmentSeating } from '@/db/models';
 import {
   Badge,
   Card,
@@ -155,7 +156,13 @@ export default async function HomePage({
                         </Badge>
                       ) : (
                         <Link
-                          href={groupId ? `/group/${groupId}` : '/group/join'}
+                          href={
+                            groupId
+                              ? `/group/${groupId}`
+                              : assignmentSeating(assignment) === 'AUTO'
+                                ? `/group/auto/${assignment.id}`
+                                : '/group/join'
+                          }
                           className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-brand-400"
                         >
                           {groupId ? t.group.lobbyTitle : t.group.joinButton}

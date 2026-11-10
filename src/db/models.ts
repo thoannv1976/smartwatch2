@@ -158,6 +158,25 @@ export interface AssignmentDoc extends Archivable {
   mode?: 'SOLO' | 'GROUP';
   /** Seats per group. Absent means the full six. */
   groupSize?: number;
+  /**
+   * GROUP only: how a student gets a seat.
+   *
+   * `CODE` — the student types a group's join code (the original behaviour).
+   * `AUTO` — "industry mode": a student who opens the assignment without a seat
+   * is placed in the industry that still has room, and a new industry is opened
+   * when every one is full. Each student runs one company; six companies
+   * compete in one industry.
+   *
+   * Optional for the legacy reason on `Archivable`; absent means `CODE`, so an
+   * existing assignment cannot start seating people by itself after a deploy.
+   * Read it through `assignmentSeating`.
+   */
+  seating?: 'CODE' | 'AUTO';
+}
+
+/** How students get a seat in a group assignment, tolerating older documents. */
+export function assignmentSeating(assignment: Pick<AssignmentDoc, 'seating'>): 'CODE' | 'AUTO' {
+  return assignment.seating === 'AUTO' ? 'AUTO' : 'CODE';
 }
 
 /** Mode of an assignment, tolerating documents written before group mode. */
