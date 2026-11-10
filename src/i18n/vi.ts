@@ -115,6 +115,7 @@ export const vi = {
       'Mỗi sinh viên điều hành một công ty; 6 công ty cạnh tranh trong một ngành. Sinh viên mở từ Moodle được tự xếp vào ngành còn chỗ (lớp 90 em thành 15 ngành). Mở 120 ngày, sửa được sau.',
     linkNewGroupButton: 'Tạo bài thi đấu ngành và gắn',
     groupBadge: 'Thi đấu ngành',
+    teamBadge: 'Thi đấu nhóm',
     linkExistingTitle: 'Dùng bài tập đã có',
     linkExistingButton: 'Gắn vào bài tập này',
     linkExistingNone: 'Bạn chưa có bài tập nào để gắn.',

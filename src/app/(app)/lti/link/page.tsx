@@ -5,6 +5,7 @@ import { ErrorNote, PageHeader } from '@/components/ui/primitives';
 import { LtiLinkChoices } from '@/components/lti/LtiLinkChoices';
 import { LtiError } from '@/server/lti/service';
 import { getLtiService, isLtiEnabled } from '@/server/lti/runtime';
+import { assignmentSeating } from '@/db/models';
 
 export const metadata = { title: 'Moodle — Smartwatch CEO Challenge' };
 
@@ -58,7 +59,12 @@ export default async function LtiLinkPage({
           title: assignment.title,
           courseName: course.courseName,
           semester: course.semester,
-          isGroup: assignment.mode === 'GROUP',
+          groupKind:
+            assignment.mode !== 'GROUP'
+              ? undefined
+              : assignmentSeating(assignment) === 'AUTO'
+                ? 'INDUSTRY'
+                : 'TEAM',
         }))}
       />
     </main>

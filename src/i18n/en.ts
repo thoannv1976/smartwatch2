@@ -107,6 +107,7 @@ export const en: Dictionary = {
       'Each student runs one company; six companies compete in one industry. Students opening it from Moodle are seated in an industry with room (a class of 90 makes 15 industries). Open for 120 days, editable later.',
     linkNewGroupButton: 'Create industry competition and link',
     groupBadge: 'Industry competition',
+    teamBadge: 'Group match',
     linkExistingTitle: 'Use an existing assignment',
     linkExistingButton: 'Link to this assignment',
     linkExistingNone: 'You have no assignments to link.',

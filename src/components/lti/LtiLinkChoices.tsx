@@ -12,7 +12,8 @@ export interface LinkableAssignment {
   title: string;
   courseName: string;
   semester: string;
-  isGroup?: boolean;
+  /** GROUP assignments only: INDUSTRY = students seated automatically, TEAM = join code. */
+  groupKind?: 'INDUSTRY' | 'TEAM';
 }
 
 /** The two ways an instructor can link an LMS activity: a new assignment, or one they have. */
@@ -75,7 +76,11 @@ export function LtiLinkChoices({ linkKey, assignments }: { linkKey: string; assi
                 <div>
                   <p className="text-sm font-semibold text-ink-100">
                     {a.title}{' '}
-                    {a.isGroup ? <Badge tone="brand">{t.lti.groupBadge}</Badge> : null}
+                    {a.groupKind ? (
+                      <Badge tone="brand">
+                        {a.groupKind === 'INDUSTRY' ? t.lti.groupBadge : t.lti.teamBadge}
+                      </Badge>
+                    ) : null}
                   </p>
                   <p className="text-xs text-ink-400">
                     {a.courseName} · {a.semester}
