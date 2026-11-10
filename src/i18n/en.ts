@@ -102,9 +102,14 @@ export const en: Dictionary = {
     linkNewDesc:
       'Creates a course and one official assignment (1 attempt, open for 120 days) just for this Moodle activity. You can change the deadline and attempts later.',
     linkNewButton: 'Create and link',
+    linkNewGroupTitle: 'Create an industry competition (one company per student)',
+    linkNewGroupDesc:
+      'Each student runs one company; six companies compete in one industry. Students opening it from Moodle are seated in an industry with room (a class of 90 makes 15 industries). Open for 120 days, editable later.',
+    linkNewGroupButton: 'Create industry competition and link',
+    groupBadge: 'Industry competition',
     linkExistingTitle: 'Use an existing assignment',
     linkExistingButton: 'Link to this assignment',
-    linkExistingNone: 'You have no solo assignments to link.',
+    linkExistingNone: 'You have no assignments to link.',
     linking: 'Linking…',
     panelTitle: 'Moodle connection (LMS)',
     panelNone:
@@ -835,6 +840,14 @@ export const en: Dictionary = {
     goldenOffTitle: 'Why there is no Golden Strategy in group mode',
     goldenOffWhy:
       'In solo play that button can find the best plan because it knows what the five rule-based rivals will do. Here the five rivals are people, and their decisions DO NOT EXIST YET while you are deciding. There is no way to compute it honestly, so we do not fake it. Use the three suggestions above and what you have seen in previous quarters.',
+    editCompanyTitle: 'Your company',
+    editCompanyHint:
+      'You run one company in this industry. Set its name, product and positioning before quarter 1 starts; after that the name is locked.',
+    saveCompany: 'Save company details',
+    savingCompany: 'Saving…',
+    companySaved: 'Saved.',
+    companyLockedNote: 'The industry has started, so company names are locked.',
+    industryTitle: 'Your industry',
   },
   groupReport: {
     title: 'Group report',
@@ -900,6 +913,22 @@ export const en: Dictionary = {
     archiveGroup: 'Archive group',
     unarchiveGroup: 'Restore group',
     archiveGroupConfirm: 'Archive it?',
+    seatingLabel: 'How students get a seat',
+    seatingAuto: 'Automatic, by industry',
+    seatingCode: 'Students type a group code',
+    seatingAutoHint:
+      'On: a student who opens the assignment (from Moodle or in the app) without a seat is placed in an industry with room; a new industry opens when all six seats are taken. Each student runs one company.',
+    seatingTurnOn: 'Turn on automatic seating',
+    seatingTurnOff: 'Turn off automatic seating',
+    autoAssignTitle: 'Assign the whole class to industries',
+    autoAssignHint:
+      'Randomly places every student on the course roster who has no seat into industries of six companies (e.g. 90 students make 15 industries). Students who already have a seat keep it; industries that have started are not touched. Run it again when more students join.',
+    autoAssignPreview: 'Roster: {roster} students · seated: {seated} · without a seat: {unseated}',
+    autoAssignButton: 'Assign industries automatically',
+    autoAssigning: 'Assigning…',
+    autoAssignDone: 'Seated {seated} students and created {groups} new industries.',
+    autoAssignUnplaced: '{count} students could not be placed. Run it again.',
+    autoAssignNothing: 'Every student on the roster already has a seat.',
   },
   rivals: {
     title: 'Reading the competition',
@@ -1121,6 +1150,7 @@ export const en: Dictionary = {
     cannotDemoteSelf: 'You cannot change your own role',
     invalidInput: 'The submitted data is not valid',
     invalidCompanyName: 'Company or product name is invalid (1-60 characters)',
+    companyLocked: 'The industry has started quarter 1, so the company name can no longer change.',
     notYourSession: 'This is not your game session',
     quarterOutOfRange: 'Invalid quarter',
     gameAlreadyCompleted: 'This game is already completed',

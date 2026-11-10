@@ -110,9 +110,14 @@ export const vi = {
     linkNewDesc:
       'Tạo một khóa học và một bài tập chính thức (1 lượt, mở 120 ngày) dành riêng cho hoạt động Moodle này. Bạn có thể sửa hạn và số lượt sau.',
     linkNewButton: 'Tạo và gắn',
+    linkNewGroupTitle: 'Tạo bài thi đấu ngành (mỗi sinh viên 1 công ty)',
+    linkNewGroupDesc:
+      'Mỗi sinh viên điều hành một công ty; 6 công ty cạnh tranh trong một ngành. Sinh viên mở từ Moodle được tự xếp vào ngành còn chỗ (lớp 90 em thành 15 ngành). Mở 120 ngày, sửa được sau.',
+    linkNewGroupButton: 'Tạo bài thi đấu ngành và gắn',
+    groupBadge: 'Thi đấu ngành',
     linkExistingTitle: 'Dùng bài tập đã có',
     linkExistingButton: 'Gắn vào bài tập này',
-    linkExistingNone: 'Bạn chưa có bài tập cá nhân (SOLO) nào để gắn.',
+    linkExistingNone: 'Bạn chưa có bài tập nào để gắn.',
     linking: 'Đang gắn…',
     panelTitle: 'Kết nối Moodle (LMS)',
     panelNone:
@@ -840,6 +845,14 @@ export const vi = {
     goldenOffTitle: 'Vì sao không có Chiến lược vàng ở chế độ nhóm',
     goldenOffWhy:
       'Ở chế độ chơi đơn, nút đó tìm được phương án tối ưu vì nó biết trước quyết định của 5 đối thủ máy. Ở đây 5 đối thủ là người thật, và quyết định của họ CHƯA TỒN TẠI lúc bạn đang cân nhắc. Không có cách nào tính đúng, nên chúng tôi không làm giả. Hãy dùng ba gợi ý bên trên và những gì bạn quan sát được từ các quý trước.',
+    editCompanyTitle: 'Công ty của bạn',
+    editCompanyHint:
+      'Bạn điều hành một công ty trong ngành này. Đặt tên công ty, tên sản phẩm và định vị trước khi quý 1 bắt đầu; sau đó tên được khoá lại.',
+    saveCompany: 'Lưu thông tin công ty',
+    savingCompany: 'Đang lưu…',
+    companySaved: 'Đã lưu.',
+    companyLockedNote: 'Ngành đã bắt đầu nên tên công ty được giữ nguyên.',
+    industryTitle: 'Ngành của bạn',
   },
   groupReport: {
     title: 'Báo cáo nhóm',
@@ -905,6 +918,22 @@ export const vi = {
     archiveGroup: 'Lưu trữ nhóm',
     unarchiveGroup: 'Bỏ lưu trữ',
     archiveGroupConfirm: 'Lưu trữ thật?',
+    seatingLabel: 'Cách xếp sinh viên',
+    seatingAuto: 'Tự động theo ngành',
+    seatingCode: 'Sinh viên nhập mã nhóm',
+    seatingAutoHint:
+      'Bật: sinh viên mở bài (từ Moodle hoặc trong app) mà chưa có chỗ sẽ được xếp vào ngành còn chỗ, đủ 6 công ty thì mở ngành mới. Mỗi sinh viên điều hành 1 công ty.',
+    seatingTurnOn: 'Bật xếp tự động',
+    seatingTurnOff: 'Tắt xếp tự động',
+    autoAssignTitle: 'Chia ngành cho cả lớp',
+    autoAssignHint:
+      'Xếp ngẫu nhiên mọi sinh viên trong danh sách lớp chưa có chỗ vào các ngành 6 công ty (ví dụ 90 sinh viên → 15 ngành). Sinh viên đã có chỗ giữ nguyên; ngành đã bắt đầu không bị đụng tới. Chạy lại được khi lớp có thêm sinh viên.',
+    autoAssignPreview: 'Danh sách lớp: {roster} sinh viên · đã có chỗ: {seated} · chưa có chỗ: {unseated}',
+    autoAssignButton: 'Chia ngành tự động',
+    autoAssigning: 'Đang chia…',
+    autoAssignDone: 'Đã xếp {seated} sinh viên, tạo {groups} ngành mới.',
+    autoAssignUnplaced: '{count} sinh viên chưa xếp được — hãy chạy lại.',
+    autoAssignNothing: 'Mọi sinh viên trong lớp đều đã có chỗ.',
   },
   rivals: {
     title: 'Đọc vị đối thủ',
@@ -1126,6 +1155,7 @@ export const vi = {
     cannotDemoteSelf: 'Bạn không thể tự thay đổi vai trò của chính mình',
     invalidInput: 'Dữ liệu nhập không hợp lệ',
     invalidCompanyName: 'Tên công ty hoặc tên sản phẩm không hợp lệ (1–60 ký tự)',
+    companyLocked: 'Ngành đã bắt đầu quý 1 nên không đổi được tên công ty nữa.',
     notYourSession: 'Đây không phải lượt chơi của bạn',
     quarterOutOfRange: 'Quý không hợp lệ',
     gameAlreadyCompleted: 'Lượt chơi đã hoàn thành',

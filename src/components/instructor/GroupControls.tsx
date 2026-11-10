@@ -4,11 +4,13 @@ import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   addGroupsAction,
+  autoAssignIndustriesAction,
   forceGroupQuarterAction,
   regenerateGroupCodeAction,
   releaseGroupSeatAction,
   renameGroupAction,
   setGroupArchivedAction,
+  setGroupSeatingAction,
 } from '@/server/instructor/actions';
 import { useI18n } from '@/i18n/client';
 import { interpolate } from '@/i18n';
@@ -281,5 +283,98 @@ export function RefreshButton() {
     >
       {pending ? t.group.refreshing : t.group.refresh}
     </button>
+  );
+}
+
+/**
+ * Industry mode: deals every roster student without a seat into industries of
+ * six (90 students make 15). Students who already have a seat stay put, so it
+ * is safe to press again after more students join.
+ */
+export function AutoAssignIndustriesButton({
+  assignmentId,
+  disabled,
+}: {
+  assignmentId: string;
+  disabled: boolean;
+}) {
+  const { t } = useI18n();
+  const { pending, error, note, setError, setNote, router, startTransition } = useAction();
+
+  const run = () => {
+    setError(null);
+    setNote(null);
+    startTransition(async () => {
+      const result = await autoAssignIndustriesAction({ assignmentId });
+      if (!result.ok) {
+        setError(t.errors[result.error as keyof typeof t.errors] ?? result.error);
+        return;
+      }
+      const d = result.data;
+      const parts = [
+        d.seated === 0
+          ? t.groupAdmin.autoAssignNothing
+          : interpolate(t.groupAdmin.autoAssignDone, { seated: d.seated, groups: d.createdGroups }),
+      ];
+      if (d.unplaced > 0) parts.push(interpolate(t.groupAdmin.autoAssignUnplaced, { count: d.unplaced }));
+      setNote(parts.join(' '));
+      router.refresh();
+    });
+  };
+
+  return (
+    <span className="flex flex-col items-start gap-2">
+      <button
+        type="button"
+        onClick={run}
+        disabled={pending || disabled}
+        className="rounded-lg bg-brand-500 shadow-sm shadow-brand-500/25 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-400 disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {pending ? t.groupAdmin.autoAssigning : t.groupAdmin.autoAssignButton}
+      </button>
+      {note ? <span className="text-sm text-good-400">{note}</span> : null}
+      {error ? <ErrorNote>{error}</ErrorNote> : null}
+    </span>
+  );
+}
+
+/** Industry mode on/off: whether students without a seat are placed automatically. */
+export function SeatingToggle({
+  assignmentId,
+  seating,
+}: {
+  assignmentId: string;
+  seating: 'CODE' | 'AUTO';
+}) {
+  const { t } = useI18n();
+  const { pending, error, setError, router, startTransition } = useAction();
+  const next = seating === 'AUTO' ? 'CODE' : 'AUTO';
+
+  return (
+    <div className="flex flex-col gap-2">
+      <p className="text-sm text-ink-200">
+        {t.groupAdmin.seatingLabel}:{' '}
+        <span className="font-semibold">
+          {seating === 'AUTO' ? t.groupAdmin.seatingAuto : t.groupAdmin.seatingCode}
+        </span>
+      </p>
+      <p className="text-xs text-ink-400">{t.groupAdmin.seatingAutoHint}</p>
+      <button
+        type="button"
+        disabled={pending}
+        onClick={() => {
+          setError(null);
+          startTransition(async () => {
+            const result = await setGroupSeatingAction({ assignmentId, seating: next });
+            if (result.ok) router.refresh();
+            else setError(t.errors[result.error as keyof typeof t.errors] ?? result.error);
+          });
+        }}
+        className="self-start rounded-lg border border-ink-700 bg-ink-850 shadow-sm px-3 py-1.5 text-xs text-ink-100 transition hover:bg-ink-900 disabled:opacity-50"
+      >
+        {seating === 'AUTO' ? t.groupAdmin.seatingTurnOff : t.groupAdmin.seatingTurnOn}
+      </button>
+      {error ? <span className="text-xs text-bad-400">{error}</span> : null}
+    </div>
   );
 }

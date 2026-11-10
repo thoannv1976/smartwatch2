@@ -16,16 +16,20 @@ function toError(error: unknown): LtiErrorCode | 'generic' {
 }
 
 const keySchema = z.object({ key: z.string().min(8).max(80) });
+const newSchema = keySchema.extend({ mode: z.enum(['SOLO', 'GROUP']).optional() });
 
-/** Creates a course + assignment for the pending LMS activity and links it. */
+/**
+ * Creates a course + assignment for the pending LMS activity and links it.
+ * `GROUP` = industry competition: one company per student, six per industry.
+ */
 export async function linkNewAssignmentAction(
-  input: z.input<typeof keySchema>,
+  input: z.input<typeof newSchema>,
 ): Promise<LtiActionResult<{ assignmentId: string }>> {
   try {
     if (!isLtiEnabled()) return { ok: false, error: 'notConfigured' };
     const user = await requireRole('INSTRUCTOR');
-    const { key } = keySchema.parse(input);
-    const assignmentId = await getLtiService().linkNew(key, user);
+    const { key, mode } = newSchema.parse(input);
+    const assignmentId = await getLtiService().linkNew(key, user, mode ?? 'SOLO');
     revalidatePath('/instructor');
     return { ok: true, data: { assignmentId } };
   } catch (error) {

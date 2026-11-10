@@ -8,18 +8,21 @@ import {
   getGameConfig,
   isValidForecast,
   groupResultsByCompany,
+  POSITIONINGS,
   playArenaQuarter,
   validateDecision,
   type ArenaSeatAssignment,
   type CompanyKey,
   type CompanyState,
+  type Positioning,
   type QuarterDecision,
   type QuarterForecast,
   type QuarterSimulationResult,
 } from '@/domain/simulation';
-import { assignmentMode, hasLeftGroup } from '@/db/models';
+import { assignmentMode, hasLeftGroup, isArchived, isRemoved } from '@/db/models';
 import type {
   AssignmentDoc,
+  CourseMemberDoc,
   FinalResultDoc,
   GroupDoc,
   GroupGameDoc,
@@ -47,6 +50,18 @@ import { GroupError } from './errors';
  */
 
 const MAX_CODE_ATTEMPTS = 8;
+/** 60 industries is 360 students: far beyond one class, and a guard against a runaway roster. */
+const MAX_GROUPS_PER_ASSIGNMENT = 60;
+
+/** Fisher-Yates. Industries are dealt at random so students are not grouped by roster order. */
+function shuffle<T>(items: T[]): T[] {
+  const out = [...items];
+  for (let i = out.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [out[i], out[j]] = [out[j]!, out[i]!];
+  }
+  return out;
+}
 
 export interface JoinGroupInput {
   joinCode: string;
@@ -88,8 +103,271 @@ export interface SubmissionStatus {
   wasDefault: boolean;
 }
 
+/** What "Assign everyone to industries" did. */
+export interface AutoAssignSummary {
+  /** Students placed in a seat by this run. */
+  seated: number;
+  /** Industries created by this run. */
+  createdGroups: number;
+  /** Students on the roster who already had a seat and were left where they were. */
+  alreadySeated: number;
+  /** Students who could not be placed (every open industry filled up mid-run). */
+  unplaced: number;
+}
+
+/** Industry names default to this prefix; the instructor can rename any of them. */
+export const INDUSTRY_PREFIX = 'Industry';
+
+/**
+ * Company identity for a student seated automatically.
+ *
+ * Built from the student's own name so the five rivals can tell who is who, plus
+ * the end of the student code so two classmates with the same given name do not
+ * run identically named companies. The student can change all of it until the
+ * industry's first decision is submitted.
+ */
+export function defaultCompanyProfile(
+  displayName: string,
+  studentCode: string | null,
+): { companyName: string; productName: string; positioning: Positioning } {
+  const words = displayName.trim().split(/\s+/).filter(Boolean);
+  const short = (words[words.length - 1] ?? 'Student').slice(0, 30);
+  const tail = studentCode ? studentCode.replace(/[^0-9A-Za-z]/g, '').slice(-3) : '';
+  return {
+    companyName: `${short} Watch${tail ? ` ${tail}` : ''}`.slice(0, 60),
+    productName: `${short} Band`.slice(0, 60),
+    positioning: 'BALANCED',
+  };
+}
+
 export class GroupService {
   constructor(private readonly repos: Repositories) {}
+
+  // -- industry mode: one student, one company, six companies per industry ---
+
+  /**
+   * Industries that can still take students: live, and whose match has not been
+   * created yet. The match is built from the seats when the first decision
+   * arrives, so a seat filled after that would be a company the market already
+   * runs as a bot.
+   */
+  private async openGroups(assignmentId: string): Promise<{ group: GroupDoc; occupied: number }[]> {
+    const groups = (await this.repos.groups.listByAssignment(assignmentId)).filter(
+      (g) => !isArchived(g),
+    );
+    const games = await Promise.all(groups.map((g) => this.repos.groupGames.get(g.id)));
+    return groups
+      .filter((_, i) => games[i] == null)
+      .map((group) => ({
+        group,
+        occupied: ARENA_SEATS.filter((seat) => group.seats[seat] != null).length,
+      }));
+  }
+
+  /**
+   * Opens the next industry, numbered after every group the assignment has.
+   * Two callers that count the same number get the same industry back.
+   */
+  private async openNextIndustry(assignment: AssignmentDoc, createdBy: string, prefix: string) {
+    const slot = (await this.repos.groups.listByAssignment(assignment.id)).length + 1;
+    for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt += 1) {
+      const outcome = await this.repos.groups.createIndustry(
+        {
+          assignmentId: assignment.id,
+          courseId: assignment.courseId,
+          createdBy,
+          name: `${prefix} ${slot}`,
+          joinCode: generateJoinCode(),
+        },
+        slot,
+      );
+      if (outcome.status === 'CREATED') return outcome.group;
+    }
+    throw new GroupError('groupCodeUnavailable');
+  }
+
+  private async seatRosterMember(
+    group: GroupDoc,
+    member: Pick<CourseMemberDoc, 'uid' | 'displayName' | 'email' | 'studentCode'>,
+  ) {
+    return this.repos.groups.claimSeat({
+      groupId: group.id,
+      uid: member.uid,
+      ...defaultCompanyProfile(member.displayName, member.studentCode),
+      displayName: member.displayName,
+      email: member.email.toLowerCase(),
+      studentCode: member.studentCode,
+    });
+  }
+
+  /**
+   * Puts every student on the course roster who has no seat yet into an
+   * industry: as many industries as the class needs (90 students make 15 of
+   * six), filled evenly so no industry ends up with one human and five bots.
+   *
+   * Students who already hold a seat stay where they are. Industries whose
+   * match has started are never touched. Safe to run again after more students
+   * join the course: it only places the newcomers.
+   */
+  async autoAssign(input: {
+    assignmentId: string;
+    createdBy: string;
+    namePrefix?: string;
+    /** Test hook: the order students are dealt in. Defaults to a shuffle. */
+    order?: (members: CourseMemberDoc[]) => CourseMemberDoc[];
+  }): Promise<AutoAssignSummary> {
+    const assignment = await this.requireGroupAssignment(input.assignmentId);
+    const prefix = input.namePrefix ?? INDUSTRY_PREFIX;
+
+    const roster = (await this.repos.courses.listMembers(assignment.courseId)).filter(
+      (m) => !isRemoved(m),
+    );
+    const memberships = await Promise.all(
+      roster.map((m) => this.repos.groups.findMembership(assignment.id, m.uid)),
+    );
+    const unseated = roster.filter((_, i) => {
+      const m = memberships[i];
+      return !m || hasLeftGroup(m);
+    });
+    const summary: AutoAssignSummary = {
+      seated: 0,
+      createdGroups: 0,
+      alreadySeated: roster.length - unseated.length,
+      unplaced: 0,
+    };
+    if (unseated.length === 0) return summary;
+
+    const open = await this.openGroups(assignment.id);
+    const people = unseated.length + open.reduce((n, o) => n + o.occupied, 0);
+    const target = Math.max(open.length, Math.ceil(people / ARENA_SEATS.length));
+    const existing = (await this.repos.groups.listByAssignment(assignment.id)).length;
+    if (existing + (target - open.length) > MAX_GROUPS_PER_ASSIGNMENT) {
+      throw new GroupError('invalidInput');
+    }
+
+    while (open.length < target) {
+      const group = await this.openNextIndustry(assignment, input.createdBy, prefix);
+      if (open.some((o) => o.group.id === group.id)) break; // someone else opened it; recount next run
+      open.push({ group, occupied: ARENA_SEATS.filter((s) => group.seats[s] != null).length });
+      summary.createdGroups += 1;
+    }
+
+    const order = input.order ?? shuffle;
+    for (const student of order(unseated)) {
+      let placed = false;
+      for (;;) {
+        // Fewest humans first, so the class spreads evenly across industries.
+        const slot = open
+          .filter((o) => o.occupied < ARENA_SEATS.length)
+          .sort((a, b) => a.occupied - b.occupied)[0];
+        if (!slot) break;
+        const outcome = await this.seatRosterMember(slot.group, student);
+        if (outcome.status === 'CLAIMED') {
+          slot.occupied += 1;
+          summary.seated += 1;
+          placed = true;
+          break;
+        }
+        if (outcome.status === 'ALREADY_IN_THIS_GROUP' || outcome.status === 'IN_ANOTHER_GROUP') {
+          // Took a seat themselves while this ran.
+          summary.alreadySeated += 1;
+          placed = true;
+          break;
+        }
+        // Filled up or archived underneath us: stop offering it.
+        slot.occupied = ARENA_SEATS.length;
+      }
+      if (!placed) summary.unplaced += 1;
+    }
+    return summary;
+  }
+
+  /**
+   * Gives one student a seat, for an assignment that seats automatically.
+   *
+   * Fills industries one at a time (the fullest open one first) so students who
+   * arrive one by one, typically from Moodle, make complete industries of six
+   * rather than many industries of one. Opens a new industry when every open
+   * one is full. Returns the existing seat if the student already has one.
+   */
+  async autoSeat(input: {
+    assignmentId: string;
+    uid: string;
+    displayName: string;
+    email: string;
+    namePrefix?: string;
+  }): Promise<GroupMemberDoc> {
+    const existing = await this.findMembership(input.assignmentId, input.uid);
+    if (existing) return existing;
+
+    const assignment = await this.requireGroupAssignment(input.assignmentId);
+    this.assertWindowOpen(assignment);
+    const roster = await this.repos.courses.getMember(assignment.courseId, input.uid);
+    if (!roster || isRemoved(roster)) throw new GroupError('notEnrolled');
+
+    const student = {
+      uid: input.uid,
+      displayName: input.displayName || roster.displayName,
+      email: input.email || roster.email,
+      studentCode: roster.studentCode,
+    };
+
+    for (let attempt = 0; attempt < MAX_CODE_ATTEMPTS; attempt += 1) {
+      const open = (await this.openGroups(assignment.id))
+        .filter((o) => o.occupied < ARENA_SEATS.length)
+        .sort((a, b) => b.occupied - a.occupied);
+      const group =
+        open[0]?.group ??
+        (await this.openNextIndustry(
+          assignment,
+          assignment.createdBy,
+          input.namePrefix ?? INDUSTRY_PREFIX,
+        ));
+
+      const outcome = await this.seatRosterMember(group, student);
+      if (outcome.status === 'CLAIMED' || outcome.status === 'ALREADY_IN_THIS_GROUP') {
+        return outcome.member;
+      }
+      if (outcome.status === 'IN_ANOTHER_GROUP') {
+        const member = await this.findMembership(assignment.id, input.uid);
+        if (member) return member;
+      }
+      // GROUP_FULL / GROUP_CLOSED: someone took the last seat first. Look again.
+    }
+    throw new GroupError('groupFull');
+  }
+
+  /**
+   * A student names their own company, product and positioning. Allowed until
+   * the industry's match exists (the first decision of quarter 1 creates it).
+   */
+  async updateCompanyProfile(input: {
+    groupId: string;
+    uid: string;
+    companyName: string;
+    productName: string;
+    positioning: Positioning;
+  }): Promise<GroupMemberDoc> {
+    const companyName = input.companyName.trim();
+    const productName = input.productName.trim();
+    if (!companyName || !productName || companyName.length > 60 || productName.length > 60) {
+      throw new GroupError('invalidCompanyName');
+    }
+    if (!POSITIONINGS.includes(input.positioning)) throw new GroupError('invalidInput');
+
+    const outcome = await this.repos.groups.updateMemberProfile(input.groupId, input.uid, {
+      companyName,
+      productName,
+      positioning: input.positioning,
+    });
+    if (outcome.status === 'UPDATED') return outcome.member;
+    throw new GroupError(outcome.status === 'STARTED' ? 'companyLocked' : 'notInThisGroup');
+  }
+
+  /** Whether the students of this industry can still rename their companies. */
+  async canEditCompany(groupId: string): Promise<boolean> {
+    return (await this.repos.groupGames.get(groupId)) == null;
+  }
 
   // -- setting up -----------------------------------------------------------
 

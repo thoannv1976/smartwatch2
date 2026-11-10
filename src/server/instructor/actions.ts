@@ -14,6 +14,7 @@ import { AuthorizationError, hasRole, requireRole } from '@/server/auth/session'
 import { getAuthAdmin } from '@/server/auth/admin-users';
 import { createAccountAdminService } from '@/server/auth/account-admin';
 import { createGroupService } from '@/server/group/service';
+import { sendGroupGradesQuietly } from '@/server/group/grades';
 import { patchKeepsWindowValid } from './validation';
 import type { GameErrorKey } from '@/server/game/errors';
 
@@ -724,7 +725,9 @@ export async function forceGroupQuarterAction(
     const parsed = groupIdSchema.parse(input);
     const { repos, group } = await requireGroupAccess(parsed.groupId);
 
-    const result = await createGroupService(repos).forceQuarter(group.id);
+    const service = createGroupService(repos);
+    const result = await service.forceQuarter(group.id);
+    await sendGroupGradesQuietly(service, group.id);
 
     revalidatePath(`/instructor/assignments/${group.assignmentId}`);
     revalidatePath(`/group/${group.id}`);
@@ -819,6 +822,60 @@ export async function setGroupArchivedAction(
 
     revalidatePath(`/instructor/assignments/${group.assignmentId}`);
     revalidatePath(`/instructor/groups/${group.id}`);
+    return { ok: true, data: {} };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+// --- industry mode: one company per student, six companies per industry ------
+
+const assignmentIdSchema = z.object({ assignmentId: z.string().min(1) });
+
+/** Places every roster student without a seat into industries of six. */
+export async function autoAssignIndustriesAction(
+  input: z.input<typeof assignmentIdSchema>,
+): Promise<
+  StaffActionResult<{ seated: number; createdGroups: number; alreadySeated: number; unplaced: number }>
+> {
+  try {
+    const parsed = assignmentIdSchema.parse(input);
+    const repos = getRepositories();
+    const assignment = await repos.assignments.get(parsed.assignmentId);
+    if (!assignment) return { ok: false, error: 'assignmentNotFound' };
+    const { user } = await requireCourseAccess(assignment.courseId);
+
+    const summary = await createGroupService(repos).autoAssign({
+      assignmentId: assignment.id,
+      createdBy: user.uid,
+    });
+
+    revalidatePath(`/instructor/assignments/${assignment.id}`);
+    return { ok: true, data: summary };
+  } catch (error) {
+    return { ok: false, error: toError(error) };
+  }
+}
+
+const seatingSchema = z.object({
+  assignmentId: z.string().min(1),
+  seating: z.enum(['CODE', 'AUTO']),
+});
+
+/** Turns automatic seating (industry mode) on or off for a group assignment. */
+export async function setGroupSeatingAction(
+  input: z.input<typeof seatingSchema>,
+): Promise<StaffActionResult<Record<string, never>>> {
+  try {
+    const parsed = seatingSchema.parse(input);
+    const repos = getRepositories();
+    const assignment = await repos.assignments.get(parsed.assignmentId);
+    if (!assignment) return { ok: false, error: 'assignmentNotFound' };
+    await requireCourseAccess(assignment.courseId);
+    if (assignment.mode !== 'GROUP') return { ok: false, error: 'invalidInput' };
+
+    await repos.assignments.update(assignment.id, { seating: parsed.seating });
+    revalidatePath(`/instructor/assignments/${assignment.id}`);
     return { ok: true, data: {} };
   } catch (error) {
     return { ok: false, error: toError(error) };

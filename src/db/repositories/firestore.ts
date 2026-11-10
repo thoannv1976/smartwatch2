@@ -146,6 +146,10 @@ export const COLLECTIONS = {
   groupSeatClaims: 'groupSeatClaims',
   // The shared match, id = the GROUP id. One match per group, by construction.
   groupGames: 'groupGames',
+  // Industry mode: one document per `${assignmentId}_${slot}` naming the group
+  // that is industry number `slot`. Makes "open industry N" happen once however
+  // many students arrive together. By id only, so it needs no index.
+  groupIndustrySlots: 'groupIndustrySlots',
   // Subcollection of a match: decisions waiting for the quarter to run,
   // id = `q{n}_{seatKey}`.
   groupSubmissions: 'submissions',
@@ -881,6 +885,47 @@ class FirestoreGroupRepository implements GroupRepository {
     }
   }
 
+  /** See the contract in `types.ts`. */
+  async createIndustry(
+    group: Omit<GroupDoc, 'id' | 'createdAt' | 'seats' | 'archivedAt'>,
+    slot: number,
+  ): Promise<CreateGroupOutcome> {
+    const slotRef = this.db
+      .collection(COLLECTIONS.groupIndustrySlots)
+      .doc(`${group.assignmentId}_${slot}`);
+    const groupRef = this.db.collection(COLLECTIONS.groups).doc();
+    const joinCode = group.joinCode.trim().toUpperCase();
+    const codeRef = this.codeRef(joinCode);
+
+    try {
+      return await this.db.runTransaction<CreateGroupOutcome>(async (tx) => {
+        const [slotSnap, codeSnap] = await Promise.all([tx.get(slotRef), tx.get(codeRef)]);
+        if (slotSnap.exists) {
+          const existingRef = this.groupRef((slotSnap.data() as { groupId: string }).groupId);
+          const existing = await tx.get(existingRef);
+          if (existing.exists) return { status: 'CREATED' as const, group: existing.data() as GroupDoc };
+        }
+        if (codeSnap.exists) return { status: 'CODE_TAKEN' as const };
+
+        const doc: GroupDoc = {
+          ...group,
+          joinCode,
+          id: groupRef.id,
+          seats: this.emptySeats(),
+          createdAt: Date.now(),
+          archivedAt: null,
+        };
+        tx.create(codeRef, { groupId: doc.id, joinCode });
+        tx.set(slotRef, { groupId: doc.id, assignmentId: group.assignmentId, slot });
+        tx.set(groupRef, doc);
+        return { status: 'CREATED' as const, group: doc };
+      });
+    } catch (error) {
+      if (isAlreadyExists(error)) return { status: 'CODE_TAKEN' };
+      throw error;
+    }
+  }
+
   async regenerateJoinCode(groupId: string, joinCode: string): Promise<CreateGroupOutcome> {
     const groupRef = this.groupRef(groupId);
     const next = joinCode.trim().toUpperCase();
@@ -1076,6 +1121,26 @@ class FirestoreGroupRepository implements GroupRepository {
     const snap = await this.seatClaimRef(assignmentId, uid).get();
     if (!snap.exists) return null;
     return this.getMember((snap.data() as { groupId: string }).groupId, uid);
+  }
+
+  /** See the contract in `types.ts`: the match must not exist, checked in the same transaction. */
+  async updateMemberProfile(
+    groupId: string,
+    uid: string,
+    profile: Pick<GroupMemberDoc, 'companyName' | 'productName' | 'positioning'>,
+  ): Promise<{ status: 'UPDATED'; member: GroupMemberDoc } | { status: 'STARTED' | 'NOT_MEMBER' }> {
+    const memberRef = this.memberRef(groupId, uid);
+    const gameRef = this.db.collection(COLLECTIONS.groupGames).doc(groupId);
+    return this.db.runTransaction(async (tx) => {
+      const [memberSnap, gameSnap] = await Promise.all([tx.get(memberRef), tx.get(gameRef)]);
+      if (gameSnap.exists) return { status: 'STARTED' as const };
+      if (!memberSnap.exists) return { status: 'NOT_MEMBER' as const };
+      const member = memberSnap.data() as GroupMemberDoc;
+      if (hasLeftGroup(member)) return { status: 'NOT_MEMBER' as const };
+      const updated: GroupMemberDoc = { ...member, ...profile };
+      tx.set(memberRef, updated);
+      return { status: 'UPDATED' as const, member: updated };
+    });
   }
 }
 
