@@ -9,17 +9,21 @@ import {
   type QuarterForecast,
 } from '@/domain/simulation';
 import { getRepositories } from '@/db/repositories/firestore';
-import { assignmentMode, isRemoved, quarterForecast } from '@/db/models';
+import { assignmentMode, hasLeftGroup, isRemoved, quarterForecast } from '@/db/models';
 import { createGroupService } from '@/server/group/service';
+import {
+  buildParticipation,
+  countStarted,
+  type GroupPlay,
+  type StudentParticipation,
+} from './participation';
 import type {
   AssignmentDoc,
   CourseDoc,
-  CourseMemberDoc,
   FinalResultDoc,
   GroupDoc,
   GroupGameDoc,
   GroupMemberDoc,
-  GameSessionDoc,
   LeaderboardSort,
 } from '@/db/models';
 
@@ -43,15 +47,7 @@ export interface AssignmentAnalytics {
   averageFinalMarketShare: number | null;
 }
 
-export interface StudentParticipation {
-  member: CourseMemberDoc;
-  /** True when the student is no longer on the roster but did play. */
-  removed: boolean;
-  session: GameSessionDoc | null;
-  result: FinalResultDoc | null;
-  status: 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED';
-  quartersPlayed: number;
-}
+export type { StudentParticipation } from './participation';
 
 /** Courses an instructor may inspect. Admins see every course. */
 export async function listCoursesForStaff(
@@ -69,14 +65,14 @@ export async function getAssignmentAnalytics(
   const assignment = await repos.assignments.get(assignmentId);
   if (!assignment) return null;
 
-  const [course, members, sessions, results] = await Promise.all([
+  const [course, members, sessions, results, groupPlay] = await Promise.all([
     repos.courses.get(assignment.courseId),
     repos.courses.listMembers(assignment.courseId),
     repos.sessions.listByAssignment(assignmentId),
     repos.finalResults.listByAssignment(assignmentId, 'finalScore'),
+    listGroupPlay(assignment),
   ]);
 
-  const startedStudents = new Set(sessions.map((s) => s.userId));
   // Currently enrolled, not "ever enrolled". A student who played and was then
   // removed still counts in `completed`, so `completed` can legitimately exceed
   // `enrolled` — the labels in the UI say which is which.
@@ -89,7 +85,7 @@ export async function getAssignmentAnalytics(
     assignment,
     course,
     enrolled: activeMembers.length,
-    started: startedStudents.size,
+    started: countStarted(sessions, groupPlay),
     completed: results.length,
     averageScore: mean(scores),
     highestScore: scores.length ? Math.max(...scores) : null,
@@ -107,69 +103,43 @@ export async function listParticipation(
   const assignment = await repos.assignments.get(assignmentId);
   if (!assignment) return [];
 
-  const [members, sessions, results] = await Promise.all([
+  const [members, sessions, results, groupPlay] = await Promise.all([
     repos.courses.listMembers(assignment.courseId),
     repos.sessions.listByAssignment(assignmentId),
     repos.finalResults.listByAssignment(assignmentId, 'finalScore'),
+    listGroupPlay(assignment),
   ]);
+  return buildParticipation({ courseId: assignment.courseId, members, sessions, results, groupPlay });
+}
 
-  const sessionsByUser = new Map<string, GameSessionDoc>();
-  for (const session of sessions) {
-    const existing = sessionsByUser.get(session.userId);
-    // Prefer the completed attempt, then the most recent one.
-    if (
-      !existing ||
-      (session.status === 'COMPLETED' && existing.status !== 'COMPLETED') ||
-      (session.status === existing.status && session.startedAt > existing.startedAt)
-    ) {
-      sessionsByUser.set(session.userId, session);
-    }
-  }
-  const resultsBySession = new Map(results.map((r) => [r.sessionId, r]));
-
-  // The row set is the roster UNION everyone who actually played.
-  //
-  // Driving it from the roster alone would drop a student who completed the
-  // assignment and was then removed from the course — while their row is still
-  // on the leaderboard, which reads graded results and never consults a roster.
-  // Two screens for the same instructor would then disagree, and the person who
-  // silently vanished is one who already has a grade. Anyone with a session is
-  // listed whatever their enrolment says; `removed` tells the UI to mark them.
-  const byUid = new Map<string, CourseMemberDoc>(members.map((m) => [m.uid, m]));
-
-  for (const session of sessions) {
-    if (byUid.has(session.userId)) continue;
-    const result = resultsBySession.get(session.id) ?? null;
-    // A stand-in row for someone who played without ever being on the roster.
-    byUid.set(session.userId, {
-      uid: session.userId,
-      courseId: assignment.courseId,
-      studentCode: result?.studentCode ?? '',
-      displayName: result?.displayName ?? '',
-      email: '',
-      joinedAt: session.startedAt,
-      removedAt: session.startedAt,
-    });
-  }
-
-  return [...byUid.values()]
-    .sort((a, b) => a.studentCode.localeCompare(b.studentCode))
-    .map((member) => {
-      const session = sessionsByUser.get(member.uid) ?? null;
-      const result = session ? (resultsBySession.get(session.id) ?? null) : null;
-      return {
-        member,
-        session,
-        result,
-        removed: isRemoved(member),
-        status: !session
-          ? 'NOT_STARTED'
-          : session.status === 'COMPLETED'
-            ? 'COMPLETED'
-            : 'IN_PROGRESS',
-        quartersPlayed: session?.currentRound ?? 0,
-      };
-    });
+/**
+ * Every seated student of a group assignment, with their group's match.
+ * Empty for a solo assignment, which has no groups to read.
+ */
+async function listGroupPlay(assignment: AssignmentDoc): Promise<Map<string, GroupPlay>> {
+  const byUid = new Map<string, GroupPlay>();
+  if (assignmentMode(assignment) !== 'GROUP') return byUid;
+  const repos = getRepositories();
+  const groups = await repos.groups.listByAssignment(assignment.id);
+  await Promise.all(
+    groups.map(async (group) => {
+      const [members, game] = await Promise.all([
+        repos.groups.listMembers(group.id),
+        repos.groupGames.get(group.id),
+      ]);
+      for (const member of members) {
+        if (hasLeftGroup(member)) continue;
+        byUid.set(member.uid, {
+          groupId: group.id,
+          seatKey: member.seatKey,
+          displayName: member.displayName,
+          studentCode: member.studentCode,
+          game,
+        });
+      }
+    }),
+  );
+  return byUid;
 }
 
 export async function listLeaderboard(

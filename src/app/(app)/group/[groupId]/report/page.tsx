@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { classPercentile } from '@/domain/simulation';
 import { requireUserPage } from '@/server/auth/guards';
 import { getRepositories } from '@/db/repositories/firestore';
+import { assignmentSeating } from '@/db/models';
 import { createGroupService } from '@/server/group/service';
 import { isGroupError } from '@/server/group/errors';
 import { getGroupReportView } from '@/server/group/queries';
@@ -80,7 +81,10 @@ export default async function GroupReportPage({
 
   // Where this student sits in the WHOLE class, across every group. Reuses the
   // solo path unchanged, because a group match writes ordinary graded rows.
-  const storedResult = await repos.finalResults.get(`${groupId}__${member.seatKey}`);
+  const [storedResult, assignment] = await Promise.all([
+    repos.finalResults.get(`${groupId}__${member.seatKey}`),
+    repos.assignments.get(report.group.assignmentId),
+  ]);
   const classRank = storedResult ? await getClassRank(storedResult) : null;
   const percentile = classRank ? classPercentile(classRank.rank, classRank.total) : null;
 
@@ -100,7 +104,13 @@ export default async function GroupReportPage({
       <PageHeader
         title={t.groupReport.title}
         subtitle={`${report.group.name} · ${member.companyName} · ${member.productName}`}
-        right={<Badge tone="brand">{t.group.title}</Badge>}
+        right={
+          <Badge tone="brand">
+            {assignment && assignmentSeating(assignment) === 'AUTO'
+              ? t.group.industryMatch
+              : t.group.title}
+          </Badge>
+        }
       />
 
       <Card className="border-brand-600/50 bg-brand-500/5">
