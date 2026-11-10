@@ -88,8 +88,10 @@ export default async function AssignmentDetailPage({
     listLeaderboard(assignmentId, sort),
   ]);
 
-  // Session ids so a row can link straight to the student's six-quarter detail.
-  const sessionByUser = new Map(participation.map((p) => [p.member.uid, p.session?.id ?? null]));
+  // Where "view detail" goes: a solo student's six quarters, or for a group
+  // match the group page, which holds every seat's decisions.
+  const detailHref = (row: { sessionId: string; groupId?: string | null }) =>
+    row.groupId ? `/instructor/groups/${row.groupId}` : `/instructor/students/${row.sessionId}`;
 
   const { assignment } = analytics;
   const mode = assignmentMode(assignment);
@@ -274,7 +276,7 @@ export default async function AssignmentDetailPage({
                     <Td numeric align="center">{entry.gameRank}</Td>
                     <Td align="right">
                       <Link
-                        href={`/instructor/students/${entry.sessionId}`}
+                        href={detailHref(entry)}
                         className="text-brand-400 underline-offset-2 hover:underline"
                       >
                         {t.instructor.viewDetail}
@@ -479,12 +481,15 @@ export default async function AssignmentDetailPage({
                       {row.result ? formatDecimal(row.result.finalScore, locale, 2) : '—'}
                     </Td>
                     <Td className="text-ink-400">
-                      {row.session ? formatDate(row.session.startedAt, locale) : '—'}
+                      {row.startedAt ? formatDate(row.startedAt, locale) : '—'}
                     </Td>
                     <Td align="right">
-                      {sessionByUser.get(row.member.uid) ? (
+                      {row.session || row.groupPlay?.game ? (
                         <Link
-                          href={`/instructor/students/${sessionByUser.get(row.member.uid)}`}
+                          href={detailHref({
+                            sessionId: row.session?.id ?? '',
+                            groupId: row.groupPlay?.groupId ?? null,
+                          })}
                           className="text-brand-400 underline-offset-2 hover:underline"
                         >
                           {t.instructor.viewDetail}

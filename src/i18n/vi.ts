@@ -808,6 +808,8 @@ export const vi = {
   },
   group: {
     title: 'Thi đấu nhóm',
+    /** Same game, industry mode: seats filled automatically, one student per company. */
+    industryMatch: 'Thi đấu ngành',
     subtitle: 'Sáu sinh viên, sáu công ty, một thị trường chung, sáu quý.',
     joinTitle: 'Vào nhóm của bạn',
     joinHint: 'Nhập mã 6 ký tự giảng viên đưa cho nhóm bạn.',

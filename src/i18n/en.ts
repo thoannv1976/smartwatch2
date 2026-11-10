@@ -803,6 +803,8 @@ export const en: Dictionary = {
   },
   group: {
     title: 'Group competition',
+    /** Same game, industry mode: seats filled automatically, one student per company. */
+    industryMatch: 'Industry competition',
     subtitle: 'Six students, six companies, one shared market, six quarters.',
     joinTitle: 'Join your group',
     joinHint: 'Enter the six-character code your instructor gave your group.',

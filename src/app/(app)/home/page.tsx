@@ -134,7 +134,7 @@ export default async function HomePage({
                       {course.courseName} · {course.semester} · {t.home.deadline}:{' '}
                       {formatDateOnly(assignment.deadline, locale)}
                       {mode === 'GROUP'
-                        ? ` · ${t.group.title}`
+                        ? ` · ${assignmentSeating(assignment) === 'AUTO' ? t.group.industryMatch : t.group.title}`
                         : ` · ${t.home.attempts}: ${attemptsUsed}/${assignment.maxAttempts}`}
                     </p>
                     <p className="mt-0.5 font-mono text-xs text-ink-500">
